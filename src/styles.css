@@ -172,3 +172,23 @@
   background-image: radial-gradient(rgba(15,23,42,0.06) 1px, transparent 1px);
   background-size: 3px 3px;
 }
+
+/* Refined scrollbar for the tabbed shell (Aegis) */
+.aegis-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(28, 28, 28, 0.18) transparent;
+}
+.aegis-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.aegis-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.aegis-scroll::-webkit-scrollbar-thumb {
+  background: rgba(28, 28, 28, 0.16);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+.aegis-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(28, 28, 28, 0.28);
+}
