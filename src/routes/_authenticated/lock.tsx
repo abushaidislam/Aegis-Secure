@@ -300,5 +300,3 @@ function LockPage() {
   );
 }
 
-// re-export local placeholder to avoid unused import
-export const Loader = Loader2;
