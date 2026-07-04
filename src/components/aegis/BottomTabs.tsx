@@ -59,18 +59,18 @@ export function BottomTabs() {
                 key={tab.id}
                 to={tab.to}
                 aria-label={tab.label}
-                className="group relative flex flex-1 flex-col items-center justify-end gap-1 rounded-[14px] pt-1"
+                className="relative flex flex-1 flex-col items-center justify-center gap-1 rounded-[14px] py-1.5"
               >
                 <motion.span
                   whileTap={{ scale: 0.92 }}
-                  className="flex h-11 w-11 items-center justify-center rounded-[14px]"
+                  className="flex h-8 w-8 items-center justify-center rounded-[12px]"
                   style={{
                     background: CHARCOAL,
                     color: CREAM_SOFT,
-                    boxShadow: `${INSET_SHADOW}, 0 8px 20px -8px rgba(28,28,28,0.55)`,
+                    boxShadow: `${INSET_SHADOW}, 0 6px 16px -8px rgba(28,28,28,0.55)`,
                   }}
                 >
-                  <Plus className="h-[18px] w-[18px]" strokeWidth={2.2} />
+                  <Plus className="h-[16px] w-[16px]" strokeWidth={2.2} />
                 </motion.span>
                 <span
                   className="text-[10.5px]"
