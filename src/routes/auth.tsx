@@ -180,19 +180,17 @@ function AuthPage() {
                 transition={soft}
                 className="overflow-hidden"
               >
-                <Field icon={<Lock className="h-4 w-4" strokeWidth={1.6} />} delay={0.1}>
-                  <input
-                    type="password"
-                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                    required
-                    minLength={8}
-                    placeholder={mode === "signup" ? "Create a strong password" : "Your password"}
+                <div className="flex flex-col gap-1.5">
+                  <PasswordField
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={inputClass}
-                    style={inputStyle}
+                    onChange={setPassword}
+                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                    minLength={mode === "signup" ? 8 : undefined}
+                    placeholder={mode === "signup" ? "Create a strong password" : "Your password"}
+                    delay={0.1}
                   />
-                </Field>
+                  {mode === "signup" && <StrengthMeter value={password} />}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -200,11 +198,20 @@ function AuthPage() {
           {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
 
           <div className="pt-1">
-            <PrimaryButton type="submit" loading={loading}>
+            <PrimaryButton
+              type="submit"
+              loading={loading}
+              disabled={
+                !email ||
+                (mode !== "reset" && !password) ||
+                (mode === "signup" && scoreStrength(password) < 2)
+              }
+            >
               {mode === "signup" ? "Create account" : mode === "reset" ? "Send reset link" : "Sign in"}
             </PrimaryButton>
           </div>
         </form>
+
 
         <div className="flex items-center gap-3">
           <div className="h-px flex-1" style={{ background: BORDER }} />
