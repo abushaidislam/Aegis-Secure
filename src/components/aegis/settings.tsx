@@ -12,8 +12,14 @@ import { BORDER, CHARCOAL, CREAM_SOFT, DANGER, MUTED, soft } from "./chrome";
 export function AppBar({ title, trailing }: { title?: string; trailing?: ReactNode }) {
   return (
     <div
-      className="flex h-11 shrink-0 items-center justify-between"
-      style={{ color: CHARCOAL }}
+      className="sticky top-0 z-10 -mx-6 flex h-12 shrink-0 items-center justify-between px-6"
+      style={{
+        color: CHARCOAL,
+        background: "color-mix(in oklab, #f7f4ed 88%, transparent)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        borderBottom: `1px solid transparent`,
+      }}
     >
       <span
         className="text-[15px]"
