@@ -18,6 +18,7 @@ import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedLockRouteImport } from './routes/_authenticated/lock'
 import { Route as AuthenticatedLockedRouteRouteImport } from './routes/_authenticated/_locked/route'
 import { Route as AuthenticatedLockedVaultRouteImport } from './routes/_authenticated/_locked/vault'
+import { Route as AuthenticatedLockedVaultNewRouteImport } from './routes/_authenticated/_locked/vault_.new'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -64,6 +65,12 @@ const AuthenticatedLockedVaultRoute =
     path: '/vault',
     getParentRoute: () => AuthenticatedLockedRouteRoute,
   } as any)
+const AuthenticatedLockedVaultNewRoute =
+  AuthenticatedLockedVaultNewRouteImport.update({
+    id: '/vault_/new',
+    path: '/vault/new',
+    getParentRoute: () => AuthenticatedLockedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/vault': typeof AuthenticatedLockedVaultRoute
+  '/vault/new': typeof AuthenticatedLockedVaultNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -82,6 +90,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/vault': typeof AuthenticatedLockedVaultRoute
+  '/vault/new': typeof AuthenticatedLockedVaultNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -94,6 +103,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/_authenticated/_locked/vault': typeof AuthenticatedLockedVaultRoute
+  '/_authenticated/_locked/vault_/new': typeof AuthenticatedLockedVaultNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/reset-password'
     | '/vault'
+    | '/vault/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -114,6 +125,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/reset-password'
     | '/vault'
+    | '/vault/new'
   id:
     | '__root__'
     | '/'
@@ -125,6 +137,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/reset-password'
     | '/_authenticated/_locked/vault'
+    | '/_authenticated/_locked/vault_/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -198,16 +211,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLockedVaultRouteImport
       parentRoute: typeof AuthenticatedLockedRouteRoute
     }
+    '/_authenticated/_locked/vault_/new': {
+      id: '/_authenticated/_locked/vault_/new'
+      path: '/vault/new'
+      fullPath: '/vault/new'
+      preLoaderRoute: typeof AuthenticatedLockedVaultNewRouteImport
+      parentRoute: typeof AuthenticatedLockedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedLockedRouteRouteChildren {
   AuthenticatedLockedVaultRoute: typeof AuthenticatedLockedVaultRoute
+  AuthenticatedLockedVaultNewRoute: typeof AuthenticatedLockedVaultNewRoute
 }
 
 const AuthenticatedLockedRouteRouteChildren: AuthenticatedLockedRouteRouteChildren =
   {
     AuthenticatedLockedVaultRoute: AuthenticatedLockedVaultRoute,
+    AuthenticatedLockedVaultNewRoute: AuthenticatedLockedVaultNewRoute,
   }
 
 const AuthenticatedLockedRouteRouteWithChildren =
