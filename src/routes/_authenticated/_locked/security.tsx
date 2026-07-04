@@ -72,7 +72,7 @@ function SecurityPage() {
 
   return (
     <AegisScreen>
-      <BrandBar right={<AegisMenu userEmail={user.email} />} />
+      <BrandBar />
 
       <motion.div
         initial={{ opacity: 0, y: 6 }}
