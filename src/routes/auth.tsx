@@ -136,9 +136,9 @@ function AuthPage() {
     <AegisScreen>
       <BrandBar />
       <div className="flex flex-1 flex-col justify-center gap-6 pt-2">
-        <div className="flex flex-col items-start gap-4">
+        <div className="flex flex-col items-center gap-5 text-center">
           <HeroIcon Icon={ShieldCheck} />
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col items-center gap-3">
             <Eyebrow>{eyebrow}</Eyebrow>
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
@@ -147,7 +147,7 @@ function AuthPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -4 }}
                 transition={soft}
-                className="flex flex-col gap-2"
+                className="flex flex-col items-center gap-2"
               >
                 <Display>{title}</Display>
                 <Lede>{subtitle}</Lede>
@@ -155,6 +155,7 @@ function AuthPage() {
             </AnimatePresence>
           </div>
         </div>
+
 
         <form onSubmit={handleEmail} className="flex flex-col gap-2.5">
           <Field icon={<Mail className="h-4 w-4" strokeWidth={1.6} />} delay={0.05}>
