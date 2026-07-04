@@ -98,8 +98,8 @@ export function Display({ children, delay = 0 }: { children: ReactNode; delay?: 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ ...soft, delay }}
-      className="text-[34px] leading-[1.02]"
-      style={{ color: CHARCOAL, fontWeight: 600, letterSpacing: "-0.03em", fontFamily: "'Instrument Serif', serif" }}
+      className="text-[30px] leading-[1.05]"
+      style={{ color: CHARCOAL, fontWeight: 600, letterSpacing: "-0.025em", fontFamily: "'Sora', sans-serif" }}
     >
       {children}
     </motion.h1>
