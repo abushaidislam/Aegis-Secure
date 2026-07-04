@@ -143,19 +143,6 @@ function VaultPage() {
   );
 }
 
-function IconAction({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
-  return (
-    <motion.button
-      whileTap={{ scale: 0.94 }}
-      onClick={onClick}
-      className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px]"
-      style={{ color: MUTED, background: "rgba(28,28,28,0.03)", border: `1px solid ${BORDER}` }}
-    >
-      {icon}
-      {label}
-    </motion.button>
-  );
-}
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
