@@ -14,10 +14,12 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth.reset-password'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedLockRouteImport } from './routes/_authenticated/lock'
 import { Route as AuthenticatedLockedRouteRouteImport } from './routes/_authenticated/_locked/route'
 import { Route as AuthenticatedLockedVaultRouteImport } from './routes/_authenticated/_locked/vault'
+import { Route as AuthenticatedLockedSecurityRouteImport } from './routes/_authenticated/_locked/security'
 import { Route as AuthenticatedLockedVaultNewRouteImport } from './routes/_authenticated/_locked/vault_.new'
 
 const AuthRoute = AuthRouteImport.update({
@@ -44,6 +46,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/callback',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -65,6 +72,12 @@ const AuthenticatedLockedVaultRoute =
     path: '/vault',
     getParentRoute: () => AuthenticatedLockedRouteRoute,
   } as any)
+const AuthenticatedLockedSecurityRoute =
+  AuthenticatedLockedSecurityRouteImport.update({
+    id: '/security',
+    path: '/security',
+    getParentRoute: () => AuthenticatedLockedRouteRoute,
+  } as any)
 const AuthenticatedLockedVaultNewRoute =
   AuthenticatedLockedVaultNewRouteImport.update({
     id: '/vault_/new',
@@ -77,8 +90,10 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
   '/lock': typeof AuthenticatedLockRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/security': typeof AuthenticatedLockedSecurityRoute
   '/vault': typeof AuthenticatedLockedVaultRoute
   '/vault/new': typeof AuthenticatedLockedVaultNewRoute
 }
@@ -87,8 +102,10 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/lock': typeof AuthenticatedLockRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/security': typeof AuthenticatedLockedSecurityRoute
   '/vault': typeof AuthenticatedLockedVaultRoute
   '/vault/new': typeof AuthenticatedLockedVaultNewRoute
 }
@@ -100,8 +117,10 @@ export interface FileRoutesById {
   '/_authenticated/_locked': typeof AuthenticatedLockedRouteRouteWithChildren
   '/_authenticated/lock': typeof AuthenticatedLockRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/_authenticated/_locked/security': typeof AuthenticatedLockedSecurityRoute
   '/_authenticated/_locked/vault': typeof AuthenticatedLockedVaultRoute
   '/_authenticated/_locked/vault_/new': typeof AuthenticatedLockedVaultNewRoute
 }
@@ -112,8 +131,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/lock'
     | '/onboarding'
+    | '/profile'
     | '/auth/callback'
     | '/auth/reset-password'
+    | '/security'
     | '/vault'
     | '/vault/new'
   fileRoutesByTo: FileRoutesByTo
@@ -122,8 +143,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/lock'
     | '/onboarding'
+    | '/profile'
     | '/auth/callback'
     | '/auth/reset-password'
+    | '/security'
     | '/vault'
     | '/vault/new'
   id:
@@ -134,8 +157,10 @@ export interface FileRouteTypes {
     | '/_authenticated/_locked'
     | '/_authenticated/lock'
     | '/_authenticated/onboarding'
+    | '/_authenticated/profile'
     | '/auth/callback'
     | '/auth/reset-password'
+    | '/_authenticated/_locked/security'
     | '/_authenticated/_locked/vault'
     | '/_authenticated/_locked/vault_/new'
   fileRoutesById: FileRoutesById
@@ -183,6 +208,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/onboarding': {
       id: '/_authenticated/onboarding'
       path: '/onboarding'
@@ -211,6 +243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLockedVaultRouteImport
       parentRoute: typeof AuthenticatedLockedRouteRoute
     }
+    '/_authenticated/_locked/security': {
+      id: '/_authenticated/_locked/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof AuthenticatedLockedSecurityRouteImport
+      parentRoute: typeof AuthenticatedLockedRouteRoute
+    }
     '/_authenticated/_locked/vault_/new': {
       id: '/_authenticated/_locked/vault_/new'
       path: '/vault/new'
@@ -222,12 +261,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedLockedRouteRouteChildren {
+  AuthenticatedLockedSecurityRoute: typeof AuthenticatedLockedSecurityRoute
   AuthenticatedLockedVaultRoute: typeof AuthenticatedLockedVaultRoute
   AuthenticatedLockedVaultNewRoute: typeof AuthenticatedLockedVaultNewRoute
 }
 
 const AuthenticatedLockedRouteRouteChildren: AuthenticatedLockedRouteRouteChildren =
   {
+    AuthenticatedLockedSecurityRoute: AuthenticatedLockedSecurityRoute,
     AuthenticatedLockedVaultRoute: AuthenticatedLockedVaultRoute,
     AuthenticatedLockedVaultNewRoute: AuthenticatedLockedVaultNewRoute,
   }
@@ -241,12 +282,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedLockedRouteRoute: typeof AuthenticatedLockedRouteRouteWithChildren
   AuthenticatedLockRoute: typeof AuthenticatedLockRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLockedRouteRoute: AuthenticatedLockedRouteRouteWithChildren,
   AuthenticatedLockRoute: AuthenticatedLockRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

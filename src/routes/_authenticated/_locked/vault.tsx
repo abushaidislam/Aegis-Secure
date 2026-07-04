@@ -1,15 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
-import { getVaultKey, lockVault, useActivityKeepAlive, useVaultUnlocked } from "@/lib/vault-session";
+import { getVaultKey, useActivityKeepAlive, useVaultUnlocked } from "@/lib/vault-session";
 import { listAccounts, type DecryptedAccount } from "@/lib/vault-accounts";
 import { AccountCard } from "@/components/vault/AccountCard";
-import { Shield, LogOut, Lock, Plus, Loader2 } from "lucide-react";
+import { Shield, Plus, Loader2 } from "lucide-react";
 import {
   AegisScreen,
-  BORDER,
   BrandBar,
   CHARCOAL,
   CREAM_SOFT,
@@ -23,6 +20,7 @@ import {
   PrimaryButton,
   soft,
 } from "@/components/aegis/chrome";
+import { AegisMenu } from "@/components/aegis/NavSheet";
 
 export const Route = createFileRoute("/_authenticated/_locked/vault")({
   component: VaultPage,
@@ -34,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/_locked/vault")({
 
 function VaultPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  
   const { user } = Route.useRouteContext();
   const unlocked = useVaultUnlocked();
 
@@ -66,29 +64,11 @@ function VaultPage() {
     };
   }, [unlocked]);
 
-  const signOut = async () => {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    lockVault();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  };
-
-  const lockNow = () => {
-    lockVault();
-    navigate({ to: "/lock" });
-  };
 
   return (
     <AegisScreen>
-      <BrandBar
-        right={
-          <div className="flex items-center gap-1">
-            <IconAction onClick={lockNow} icon={<Lock className="h-3.5 w-3.5" strokeWidth={1.8} />} label="Lock" />
-            <IconAction onClick={signOut} icon={<LogOut className="h-3.5 w-3.5" strokeWidth={1.8} />} label="Sign out" />
-          </div>
-        }
-      />
+      <BrandBar right={<AegisMenu userEmail={user.email} />} />
+
 
       <motion.div
         initial={{ opacity: 0, y: 6 }}
@@ -161,19 +141,6 @@ function VaultPage() {
   );
 }
 
-function IconAction({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
-  return (
-    <motion.button
-      whileTap={{ scale: 0.94 }}
-      onClick={onClick}
-      className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px]"
-      style={{ color: MUTED, background: "rgba(28,28,28,0.03)", border: `1px solid ${BORDER}` }}
-    >
-      {icon}
-      {label}
-    </motion.button>
-  );
-}
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
