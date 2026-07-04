@@ -27,6 +27,7 @@ import {
   inputStyle,
   soft,
 } from "@/components/aegis/chrome";
+import { AegisMenu } from "@/components/aegis/NavSheet";
 
 export const Route = createFileRoute("/_authenticated/_locked/vault_/new")({
   component: NewAccountPage,
