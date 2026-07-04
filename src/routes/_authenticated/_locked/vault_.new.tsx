@@ -73,59 +73,64 @@ function NewAccountPage() {
 
   return (
     <AegisScreen>
-      <AppBar
-        title="Add account"
-        trailing={
-          <AppBarButton label="Back" onClick={() => navigate({ to: "/vault" })}>
-            <ArrowLeft className="h-4 w-4" strokeWidth={1.8} />
-          </AppBarButton>
-        }
-      />
+      <div
+        className="-mx-6 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-6 pb-[calc(112px+env(safe-area-inset-bottom))]"
+        style={{ WebkitOverflowScrolling: "touch" as never }}
+      >
+        <AppBar
+          title="Add account"
+          trailing={
+            <AppBarButton label="Back" onClick={() => navigate({ to: "/vault" })}>
+              <ArrowLeft className="h-4 w-4" strokeWidth={1.8} />
+            </AppBarButton>
+          }
+        />
 
-      <LargeTitle
-        title="New code"
-        subtitle="Scan a QR from any service, or type in the secret by hand."
-      />
+        <LargeTitle
+          title="New code"
+          subtitle="Scan a QR from any service, or type in the secret by hand."
+        />
 
-      <div className="flex flex-1 flex-col gap-1 overflow-y-auto pt-1 pb-[calc(96px+env(safe-area-inset-bottom))]">
-        <SegmentedTabs tab={tab} setTab={setTab} />
+        <div className="flex flex-col gap-1 pt-1">
+          <SegmentedTabs tab={tab} setTab={setTab} />
 
-        {notice && (
+          {notice && (
+            <div className="pt-3">
+              <Notice kind={notice.kind}>{notice.text}</Notice>
+            </div>
+          )}
+
           <div className="pt-3">
-            <Notice kind={notice.kind}>{notice.text}</Notice>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={tab}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={soft}
+              >
+                {tab === "scan" ? (
+                  <ScanTab
+                    onDetected={(uri) => {
+                      try {
+                        const parsed = parseOtpauthUri(uri);
+                        save(parsed);
+                      } catch (err) {
+                        setNotice({
+                          kind: "error",
+                          text: err instanceof Error ? err.message : "That QR isn't a valid otpauth code.",
+                        });
+                      }
+                    }}
+                    onError={(msg) => setNotice({ kind: "error", text: msg })}
+                    saving={saving}
+                  />
+                ) : (
+                  <ManualTab onSubmit={save} saving={saving} />
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
-        )}
-
-        <div className="pt-3">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={tab}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={soft}
-            >
-              {tab === "scan" ? (
-                <ScanTab
-                  onDetected={(uri) => {
-                    try {
-                      const parsed = parseOtpauthUri(uri);
-                      save(parsed);
-                    } catch (err) {
-                      setNotice({
-                        kind: "error",
-                        text: err instanceof Error ? err.message : "That QR isn't a valid otpauth code.",
-                      });
-                    }
-                  }}
-                  onError={(msg) => setNotice({ kind: "error", text: msg })}
-                  saving={saving}
-                />
-              ) : (
-                <ManualTab onSubmit={save} saving={saving} />
-              )}
-            </motion.div>
-          </AnimatePresence>
         </div>
       </div>
       <BottomTabs />
