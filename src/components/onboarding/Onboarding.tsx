@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Shield,
@@ -759,13 +759,39 @@ function StepDone({ next }: { next: () => void }) {
 
 const TOTAL = 7;
 
+/* Subtle haptics — silent no-op where unsupported (desktop, iOS Safari). */
+type HapticKind = "tick" | "soft" | "success";
+function haptic(kind: HapticKind = "tick") {
+  if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
+  const pattern =
+    kind === "success" ? [8, 40, 14] : kind === "soft" ? 6 : 10;
+  try {
+    navigator.vibrate(pattern);
+  } catch {
+    /* ignore */
+  }
+}
+
 export default function Onboarding() {
   const [[step, dir], setState] = useState<[number, number]>([0, 1]);
+  const thresholdArmedRef = useRef<null | "next" | "back">(null);
 
-  const next = () => setState(([s]) => [Math.min(s + 1, TOTAL - 1), 1]);
-  const back = () => setState(([s]) => [Math.max(s - 1, 0), -1]);
-  const skip = () => setState(([s]) => [TOTAL - 1, s < TOTAL - 1 ? 1 : -1]);
-  const restart = () => setState([0, -1]);
+  const goNext = () => {
+    haptic("tick");
+    setState(([s]) => [Math.min(s + 1, TOTAL - 1), 1]);
+  };
+  const goBack = () => {
+    haptic("soft");
+    setState(([s]) => [Math.max(s - 1, 0), -1]);
+  };
+  const goSkip = () => {
+    haptic("soft");
+    setState(([s]) => [TOTAL - 1, s < TOTAL - 1 ? 1 : -1]);
+  };
+  const restart = () => {
+    haptic("success");
+    setState([0, -1]);
+  };
 
   const canSkip = step > 0 && step < TOTAL - 1;
 
@@ -788,7 +814,7 @@ export default function Onboarding() {
         className="relative z-10 mx-auto flex h-full w-full max-w-[440px] flex-col"
         style={{ paddingTop: "max(8px, env(safe-area-inset-top))" }}
       >
-        <TopBar step={step} total={TOTAL} onBack={back} onSkip={skip} canSkip={canSkip} />
+        <TopBar step={step} total={TOTAL} onBack={goBack} onSkip={goSkip} canSkip={canSkip} />
 
         <div className="relative flex-1 overflow-hidden" style={{ touchAction: "pan-y" }}>
           <AnimatePresence mode="wait" initial={false} custom={dir}>
@@ -804,20 +830,38 @@ export default function Onboarding() {
               dragElastic={0.14}
               dragMomentum={false}
               dragConstraints={{ left: 0, right: 0 }}
+              onDragStart={() => {
+                thresholdArmedRef.current = null;
+              }}
+              onDrag={(_, info) => {
+                // Fire a light tick the first time the user crosses the commit threshold
+                const x = info.offset.x;
+                if (x < -70 && step < TOTAL - 1 && thresholdArmedRef.current !== "next") {
+                  thresholdArmedRef.current = "next";
+                  haptic("soft");
+                } else if (x > 70 && step > 0 && thresholdArmedRef.current !== "back") {
+                  thresholdArmedRef.current = "back";
+                  haptic("soft");
+                } else if (x > -50 && x < 50 && thresholdArmedRef.current) {
+                  // re-arm when the user pulls back below threshold
+                  thresholdArmedRef.current = null;
+                }
+              }}
               onDragEnd={(_, info) => {
                 const power = info.offset.x + info.velocity.x * 0.2;
-                if (power < -80 && step < TOTAL - 1) next();
-                else if (power > 80 && step > 0) back();
+                if (power < -80 && step < TOTAL - 1) goNext();
+                else if (power > 80 && step > 0) goBack();
+                thresholdArmedRef.current = null;
               }}
               className="absolute inset-0"
               style={{ willChange: "transform, opacity", backfaceVisibility: "hidden" }}
             >
-              {step === 0 && <StepWelcome next={next} />}
-              {step === 1 && <StepFeatures next={next} />}
-              {step === 2 && <StepImport next={next} />}
-              {step === 3 && <StepBackup next={next} />}
-              {step === 4 && <StepNotifications next={next} />}
-              {step === 5 && <StepBiometrics next={next} />}
+              {step === 0 && <StepWelcome next={goNext} />}
+              {step === 1 && <StepFeatures next={goNext} />}
+              {step === 2 && <StepImport next={goNext} />}
+              {step === 3 && <StepBackup next={goNext} />}
+              {step === 4 && <StepNotifications next={goNext} />}
+              {step === 5 && <StepBiometrics next={goNext} />}
               {step === 6 && <StepDone next={restart} />}
             </motion.div>
           </AnimatePresence>
@@ -826,6 +870,7 @@ export default function Onboarding() {
     </div>
   );
 }
+
 
 
 /* Silence unused warnings for helpers reserved for later expansion */
