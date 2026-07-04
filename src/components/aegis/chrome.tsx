@@ -98,8 +98,13 @@ export function Display({ children, delay = 0 }: { children: ReactNode; delay?: 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ ...soft, delay }}
-      className="text-[30px] leading-[1.05]"
-      style={{ color: CHARCOAL, fontWeight: 600, letterSpacing: "-0.025em", fontFamily: "'Sora', sans-serif" }}
+      className="text-[40px] leading-[1.02]"
+      style={{
+        color: CHARCOAL,
+        fontWeight: 600,
+        letterSpacing: "-0.02em",
+        fontFamily: "'Playfair Display', 'Sora', serif",
+      }}
     >
       {children}
     </motion.h1>
@@ -112,7 +117,7 @@ export function Lede({ children, delay = 0.05 }: { children: ReactNode; delay?: 
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ ...soft, delay }}
-      className="text-[15px] leading-[1.5]"
+      className="text-[15px] leading-[1.55]"
       style={{ color: MUTED, maxWidth: "34ch" }}
     >
       {children}
@@ -124,8 +129,16 @@ export function Eyebrow({ children }: { children: ReactNode }) {
   return (
     <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={soft} className="flex">
       <span
-        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] uppercase"
-        style={{ color: CHARCOAL, background: CREAM_SOFT, border: `1px solid ${BORDER}`, letterSpacing: "0.12em", fontWeight: 500 }}
+        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] uppercase"
+        style={{
+          color: `color-mix(in oklab, ${CHARCOAL} 65%, transparent)`,
+          background: "rgba(255,255,255,0.55)",
+          border: `1px solid rgba(28,28,28,0.06)`,
+          letterSpacing: "0.25em",
+          fontWeight: 500,
+          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+          boxShadow: "0 1px 0 rgba(255,255,255,0.6) inset",
+        }}
       >
         {children}
       </span>
