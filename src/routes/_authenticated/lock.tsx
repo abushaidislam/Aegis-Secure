@@ -19,7 +19,7 @@ import {
   isBiometricSupported,
   unlockWithBiometric,
 } from "@/lib/biometric";
-import { Lock, KeyRound, Sparkles, Fingerprint } from "lucide-react";
+import { Lock, KeyRound, Sparkles, Fingerprint, LogOut } from "lucide-react";
 import {
   AegisScreen,
   BrandBar,
@@ -38,6 +38,7 @@ import {
   inputStyle,
   soft,
 } from "@/components/aegis/chrome";
+import { PasswordField, StrengthMeter, scoreStrength } from "@/components/aegis/password-field";
 import { Loader2 } from "lucide-react";
 
 
