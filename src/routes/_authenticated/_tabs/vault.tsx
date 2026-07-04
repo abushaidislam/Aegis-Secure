@@ -20,7 +20,7 @@ import {
   PrimaryButton,
   soft,
 } from "@/components/aegis/chrome";
-import { AppBar, LargeTitle } from "@/components/aegis/settings";
+import { LargeTitle } from "@/components/aegis/settings";
 
 export const Route = createFileRoute("/_authenticated/_tabs/vault")({
   beforeLoad: ({ location }) => {
@@ -81,7 +81,6 @@ function VaultPage() {
 
   return (
     <>
-      <AppBar title="Vault" />
 
       <LargeTitle
         title="Your codes"

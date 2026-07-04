@@ -16,7 +16,7 @@ function TabsLayout() {
   return (
     <AegisScreen>
       <div
-        className="-mx-6 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-6 pb-[calc(112px+env(safe-area-inset-bottom))]"
+        className="aegis-scroll -mx-6 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-6 pb-[calc(112px+env(safe-area-inset-bottom))]"
         style={{ WebkitOverflowScrolling: "touch" as never }}
       >
         <Outlet />

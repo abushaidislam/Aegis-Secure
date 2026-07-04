@@ -14,7 +14,7 @@ import {
   soft,
 } from "@/components/aegis/chrome";
 import {
-  AppBar,
+
   LargeTitle,
   SectionLabel,
   SettingsGroup,
@@ -109,7 +109,6 @@ function ProfilePage() {
 
   return (
     <>
-      <AppBar title="Profile" />
 
       <LargeTitle title="Account" subtitle="How you show up inside Aegis." />
 

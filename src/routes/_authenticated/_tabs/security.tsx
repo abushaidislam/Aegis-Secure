@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { KeyRound, RotateCcw, Timer, Sparkles, Lock, ShieldCheck } from "lucide-react";
 import { BORDER, CHARCOAL, CREAM_SOFT, MUTED, Notice, soft } from "@/components/aegis/chrome";
 import {
-  AppBar,
+
   LargeTitle,
   SectionLabel,
   SettingsGroup,
@@ -74,7 +74,6 @@ function SecurityPage() {
 
   return (
     <>
-      <AppBar title="Security" />
 
       <LargeTitle
         title="Locks & recovery"
