@@ -1,12 +1,5 @@
-import { useState, useMemo, type ReactNode } from "react";
-import {
-  motion,
-  AnimatePresence,
-  useReducedMotion,
-  useMotionValue,
-  useTransform,
-  type PanInfo,
-} from "framer-motion";
+import { useState, type ReactNode } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Shield,
   Zap,
@@ -20,54 +13,59 @@ import {
   Fingerprint,
   Check,
   ArrowRight,
-  Sparkles,
   ChevronLeft,
 } from "lucide-react";
 
-/* Motion tokens */
-const spring = { type: "spring" as const, stiffness: 280, damping: 28, mass: 0.8 };
-const softSpring = { type: "spring" as const, stiffness: 220, damping: 30, mass: 0.9 };
-const gentle = { type: "spring" as const, stiffness: 160, damping: 24, mass: 1 };
-
 /* ------------------------------------------------------------------ */
-/*  Ambient background — deep, cinematic, still calm                   */
+/*  Design tokens (Lovable-inspired warm cream system)                 */
 /* ------------------------------------------------------------------ */
 
-function AmbientBackground() {
+const CREAM = "#f7f4ed";
+const CREAM_SOFT = "#fcfbf8";
+const CHARCOAL = "#1c1c1c";
+const BORDER = "#eceae4";
+const MUTED = "#5f5f5d";
+
+const INSET_SHADOW =
+  "rgba(255,255,255,0.2) 0 0.5px 0 0 inset, rgba(0,0,0,0.2) 0 0 0 0.5px inset, rgba(0,0,0,0.05) 0 1px 2px 0";
+const FOCUS_SHADOW = "rgba(0,0,0,0.1) 0 4px 12px";
+
+const spring = { type: "spring" as const, stiffness: 260, damping: 30, mass: 0.9 };
+const soft = { type: "spring" as const, stiffness: 200, damping: 32, mass: 1 };
+
+/* ------------------------------------------------------------------ */
+/*  Warm atmospheric background                                        */
+/* ------------------------------------------------------------------ */
+
+function Backdrop() {
   const reduce = useReducedMotion();
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden" style={{ background: CREAM }}>
+      {/* soft warm wash */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(120% 70% at 50% -10%, #EEF2FF 0%, #F1F4FA 40%, #EDF0F6 100%)",
+            "radial-gradient(120% 80% at 20% 0%, rgba(255,214,180,0.35), transparent 55%), radial-gradient(90% 70% at 90% 15%, rgba(255,196,206,0.28), transparent 60%), radial-gradient(100% 80% at 50% 100%, rgba(180,196,230,0.32), transparent 60%)",
         }}
       />
       <motion.div
-        className="absolute -left-32 top-[10%] h-[380px] w-[380px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(closest-side, color-mix(in oklab, var(--color-primary) 26%, transparent), transparent 70%)",
-          filter: "blur(70px)",
-        }}
-        animate={reduce ? undefined : { x: [0, 22, 0], y: [0, -14, 0], opacity: [0.55, 0.85, 0.55] }}
-        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute -left-24 top-[6%] h-[320px] w-[320px] rounded-full"
+        style={{ background: "radial-gradient(closest-side, rgba(230,180,140,0.35), transparent 70%)", filter: "blur(60px)" }}
+        animate={reduce ? undefined : { x: [0, 16, 0], y: [0, -10, 0] }}
+        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
-        className="absolute -right-32 bottom-[8%] h-[440px] w-[440px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(closest-side, color-mix(in oklab, var(--color-accent) 22%, transparent), transparent 70%)",
-          filter: "blur(80px)",
-        }}
-        animate={reduce ? undefined : { x: [0, -20, 0], y: [0, 14, 0], opacity: [0.45, 0.75, 0.45] }}
-        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute -right-24 bottom-[8%] h-[380px] w-[380px] rounded-full"
+        style={{ background: "radial-gradient(closest-side, rgba(200,170,210,0.28), transparent 70%)", filter: "blur(70px)" }}
+        animate={reduce ? undefined : { x: [0, -14, 0], y: [0, 10, 0] }}
+        transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
       />
+      {/* grain */}
       <div
-        className="absolute inset-0 opacity-[0.4] mix-blend-overlay"
+        className="absolute inset-0 opacity-[0.5] mix-blend-multiply"
         style={{
-          backgroundImage: "radial-gradient(rgba(15,23,42,0.06) 1px, transparent 1px)",
+          backgroundImage: "radial-gradient(rgba(28,28,28,0.05) 1px, transparent 1px)",
           backgroundSize: "3px 3px",
         }}
       />
@@ -78,20 +76,6 @@ function AmbientBackground() {
 /* ------------------------------------------------------------------ */
 /*  Top bar                                                            */
 /* ------------------------------------------------------------------ */
-
-function ProgressBar({ current, total }: { current: number; total: number }) {
-  return (
-    <div className="relative h-[3px] w-32 overflow-hidden rounded-full bg-black/[0.08]">
-      <motion.div
-        className="absolute inset-y-0 left-0 rounded-full"
-        style={{ background: "linear-gradient(90deg, var(--color-primary), var(--color-accent))" }}
-        initial={false}
-        animate={{ width: `${((current + 1) / total) * 100}%` }}
-        transition={softSpring}
-      />
-    </div>
-  );
-}
 
 function TopBar({
   step,
@@ -107,33 +91,51 @@ function TopBar({
   canSkip: boolean;
 }) {
   return (
-    <header className="relative z-10 flex h-11 shrink-0 items-center justify-between px-4">
-      <div className="flex w-14 justify-start">
+    <header className="relative z-10 flex h-12 shrink-0 items-center justify-between px-5">
+      <div className="flex w-16 justify-start">
         <AnimatePresence initial={false}>
           {step > 0 && (
             <motion.button
               key="back"
-              initial={{ opacity: 0, x: -6 }}
+              initial={{ opacity: 0, x: -4 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -6 }}
+              exit={{ opacity: 0, x: -4 }}
               transition={spring}
-              whileTap={{ scale: 0.9 }}
+              whileTap={{ scale: 0.94 }}
               onClick={onBack}
               aria-label="Back"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-foreground/70 transition-colors hover:bg-black/[0.05] hover:text-foreground"
+              className="flex h-8 w-8 items-center justify-center rounded-full"
+              style={{ color: CHARCOAL, background: "rgba(28,28,28,0.03)" }}
             >
-              <ChevronLeft className="h-5 w-5" strokeWidth={2.2} />
+              <ChevronLeft className="h-[18px] w-[18px]" strokeWidth={1.8} />
             </motion.button>
           )}
         </AnimatePresence>
       </div>
-      <ProgressBar current={step} total={total} />
-      <div className="flex w-14 justify-end">
+
+      {/* Segmented progress dots */}
+      <div className="flex items-center gap-1.5">
+        {Array.from({ length: total }).map((_, i) => (
+          <motion.span
+            key={i}
+            initial={false}
+            animate={{
+              width: i === step ? 20 : 6,
+              backgroundColor: i <= step ? CHARCOAL : "rgba(28,28,28,0.15)",
+            }}
+            transition={soft}
+            className="h-[6px] rounded-full"
+          />
+        ))}
+      </div>
+
+      <div className="flex w-16 justify-end">
         {canSkip && (
           <motion.button
-            whileTap={{ scale: 0.94 }}
+            whileTap={{ scale: 0.95 }}
             onClick={onSkip}
-            className="rounded-full px-2 py-1 text-[12.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="rounded-full px-3 py-1 text-[13px]"
+            style={{ color: MUTED, fontWeight: 400 }}
           >
             Skip
           </motion.button>
@@ -159,33 +161,25 @@ function PrimaryButton({
   return (
     <motion.button
       onClick={onClick}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.985, opacity: 0.85 }}
       transition={spring}
-      className="group relative flex h-[50px] w-full items-center justify-center gap-2 overflow-hidden rounded-[16px] text-[16px] font-semibold tracking-[-0.01em] text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="group relative flex h-[46px] w-full items-center justify-center gap-2 rounded-[10px] text-[15px]"
       style={{
-        background: "linear-gradient(180deg, #3B82F6 0%, #2563EB 100%)",
-        boxShadow:
-          "0 1px 0 0 rgba(255,255,255,0.3) inset, 0 8px 22px -10px rgba(37,99,235,0.6), 0 3px 10px -3px rgba(37,99,235,0.35)",
+        background: CHARCOAL,
+        color: CREAM_SOFT,
+        fontWeight: 500,
+        letterSpacing: "-0.005em",
+        boxShadow: INSET_SHADOW,
       }}
+      onFocus={(e) => (e.currentTarget.style.boxShadow = `${INSET_SHADOW}, ${FOCUS_SHADOW}`)}
+      onBlur={(e) => (e.currentTarget.style.boxShadow = INSET_SHADOW)}
     >
-      <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/22 to-transparent" />
-      <motion.span
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.28) 50%, transparent 70%)",
-        }}
-        initial={{ x: "-120%" }}
-        animate={{ x: "120%" }}
-        transition={{ duration: 2.6, repeat: Infinity, repeatDelay: 2.6, ease: "easeInOut" }}
-      />
-      <span className="relative flex items-center gap-2">
+      <span className="flex items-center gap-2">
         {children}
         {icon ?? (
           <ArrowRight
-            className="h-[17px] w-[17px] transition-transform duration-300 group-hover:translate-x-0.5"
-            strokeWidth={2.4}
+            className="h-[15px] w-[15px] transition-transform duration-300 group-hover:translate-x-0.5"
+            strokeWidth={1.8}
           />
         )}
       </span>
@@ -193,949 +187,609 @@ function PrimaryButton({
   );
 }
 
-function SecondaryButton({
-  children,
-  onClick,
-}: {
-  children: ReactNode;
-  onClick?: () => void;
-}) {
+function GhostButton({ children, onClick }: { children: ReactNode; onClick?: () => void }) {
   return (
     <motion.button
       onClick={onClick}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.985, opacity: 0.85 }}
       transition={spring}
-      className="flex h-[44px] w-full items-center justify-center rounded-[16px] text-[14.5px] font-semibold tracking-[-0.01em] text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      className="flex h-[42px] w-full items-center justify-center rounded-[10px] text-[14.5px]"
+      style={{
+        background: "transparent",
+        color: CHARCOAL,
+        border: `1px solid rgba(28,28,28,0.4)`,
+        fontWeight: 500,
+      }}
     >
       {children}
     </motion.button>
   );
 }
 
+function TextLink({ children, onClick }: { children: ReactNode; onClick?: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="text-[13.5px] underline decoration-[rgba(28,28,28,0.35)] underline-offset-[3px] transition-colors hover:decoration-[rgba(28,28,28,0.7)]"
+      style={{ color: CHARCOAL }}
+    >
+      {children}
+    </button>
+  );
+}
+
 /* ------------------------------------------------------------------ */
-/*  Typography                                                         */
+/*  Typography helpers                                                 */
 /* ------------------------------------------------------------------ */
+
+function Display({ children }: { children: ReactNode }) {
+  return (
+    <h1
+      className="font-display text-[34px] leading-[1.02]"
+      style={{ color: CHARCOAL, fontWeight: 600, letterSpacing: "-0.03em" }}
+    >
+      {children}
+    </h1>
+  );
+}
+
+function Lede({ children }: { children: ReactNode }) {
+  return (
+    <p className="text-[15px] leading-[1.5]" style={{ color: MUTED, maxWidth: "34ch" }}>
+      {children}
+    </p>
+  );
+}
 
 function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <motion.span
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ ...spring, delay: 0.02 }}
-      className="inline-flex items-center gap-1.5 rounded-full bg-primary/[0.09] px-2.5 py-[3px] text-[10.5px] font-semibold uppercase tracking-[0.14em] text-primary"
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] uppercase"
+      style={{
+        color: CHARCOAL,
+        background: CREAM_SOFT,
+        border: `1px solid ${BORDER}`,
+        letterSpacing: "0.12em",
+        fontWeight: 500,
+      }}
     >
       {children}
-    </motion.span>
+    </span>
   );
 }
 
-function Headline({
-  title,
-  subtitle,
-  eyebrow,
-  compact = false,
-}: {
-  title: ReactNode;
-  subtitle?: ReactNode;
-  eyebrow?: ReactNode;
-  compact?: boolean;
-}) {
+/* ------------------------------------------------------------------ */
+/*  Shared surface primitives                                          */
+/* ------------------------------------------------------------------ */
+
+function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className="px-6 text-center">
-      {eyebrow && <div className="mb-2.5">{eyebrow}</div>}
-      <motion.h1
-        initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
-        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-        transition={{ ...spring, delay: 0.06 }}
-        className={`font-display font-bold leading-[1.05] tracking-[-0.035em] text-foreground ${
-          compact ? "text-[26px]" : "text-[30px]"
-        }`}
-      >
-        {title}
-      </motion.h1>
-      {subtitle && (
-        <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ ...spring, delay: 0.16 }}
-          className="mx-auto mt-2 max-w-[320px] text-[14px] font-normal leading-[1.4] tracking-[-0.005em] text-muted-foreground"
-        >
-          {subtitle}
-        </motion.p>
-      )}
+    <div
+      className={`rounded-[12px] ${className}`}
+      style={{ background: CREAM_SOFT, border: `1px solid ${BORDER}` }}
+    >
+      {children}
     </div>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Iconic art frame                                                   */
-/* ------------------------------------------------------------------ */
-
-function ArtFrame({ children, size = 108 }: { children: ReactNode; size?: number }) {
+function IconChip({ children, size = 40 }: { children: ReactNode; size?: number }) {
   return (
-    <motion.div
-      initial={{ scale: 0.88, opacity: 0, y: 12 }}
-      animate={{ scale: 1, opacity: 1, y: 0 }}
-      transition={{ ...spring, delay: 0.1 }}
-      className="relative flex items-center justify-center rounded-[30px]"
+    <span
+      className="inline-flex items-center justify-center rounded-full"
       style={{
         width: size,
         height: size,
-        background: "linear-gradient(180deg, #FFFFFF 0%, #F1F4FB 100%)",
-        boxShadow:
-          "0 1px 0 0 rgba(255,255,255,1) inset, 0 0 0 1px rgba(15,23,42,0.05), 0 24px 50px -20px rgba(37,99,235,0.35), 0 6px 16px -6px rgba(15,23,42,0.14)",
+        background: CREAM_SOFT,
+        border: `1px solid ${BORDER}`,
+        color: CHARCOAL,
       }}
     >
       {children}
-    </motion.div>
+    </span>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Screen 1 — Hero                                                    */
+/*  Screen shell                                                       */
 /* ------------------------------------------------------------------ */
 
-function HeroArt() {
-  const reduce = useReducedMotion();
-  const mx = useMotionValue(0);
-  const my = useMotionValue(0);
-  const rx = useTransform(my, [-30, 30], [6, -6]);
-  const ry = useTransform(mx, [-30, 30], [-6, 6]);
+function Screen({ children }: { children: ReactNode }) {
+  return <section className="flex h-full w-full flex-col px-6">{children}</section>;
+}
 
+/* ------------------------------------------------------------------ */
+/*  Illustrations                                                      */
+/* ------------------------------------------------------------------ */
+
+function HeroMark() {
+  const reduce = useReducedMotion();
   return (
-    <div
-      className="relative flex h-[220px] w-full items-center justify-center"
-      onPointerMove={(e) => {
-        const r = e.currentTarget.getBoundingClientRect();
-        mx.set(e.clientX - r.left - r.width / 2);
-        my.set(e.clientY - r.top - r.height / 2);
-      }}
-      onPointerLeave={() => {
-        mx.set(0);
-        my.set(0);
-      }}
-      style={{ perspective: 1000 }}
-    >
-      {[170, 210, 250].map((size, i) => (
+    <div className="relative flex items-center justify-center" style={{ width: 200, height: 200 }}>
+      {/* concentric rings */}
+      {[0, 1, 2].map((i) => (
         <motion.div
-          key={size}
-          aria-hidden
-          className="absolute rounded-full border"
+          key={i}
+          className="absolute rounded-full"
           style={{
-            width: size,
-            height: size,
-            borderColor: `color-mix(in oklab, var(--color-primary) ${14 - i * 3}%, transparent)`,
+            width: 120 + i * 34,
+            height: 120 + i * 34,
+            border: `1px solid ${BORDER}`,
           }}
-          animate={reduce ? undefined : { scale: [1, 1.03, 1], opacity: [0.55, 0.9, 0.55] }}
-          transition={{ duration: 5 + i, repeat: Infinity, ease: "easeInOut", delay: i * 0.3 }}
+          animate={reduce ? undefined : { scale: [1, 1.03, 1], opacity: [0.9, 0.5, 0.9] }}
+          transition={{ duration: 5 + i, repeat: Infinity, ease: "easeInOut", delay: i * 0.4 }}
         />
       ))}
-
-      {[...Array(8)].map((_, i) => {
-        const angle = (i / 8) * Math.PI * 2;
-        const radius = 108 + (i % 2) * 12;
-        const x = Math.cos(angle) * radius;
-        const y = Math.sin(angle) * radius;
-        const size = i % 3 === 0 ? 5 : 3;
-        return (
-          <motion.span
-            key={i}
-            aria-hidden
-            className="absolute rounded-full"
-            style={{
-              x,
-              y,
-              width: size,
-              height: size,
-              background: i % 2 === 0 ? "var(--color-primary)" : "var(--color-accent)",
-              boxShadow: "0 0 10px color-mix(in oklab, var(--color-primary) 70%, transparent)",
-            }}
-            animate={reduce ? undefined : { opacity: [0.25, 1, 0.25], scale: [0.7, 1.15, 0.7] }}
-            transition={{
-              duration: 2.6 + (i % 4) * 0.4,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: i * 0.2,
-            }}
-          />
-        );
-      })}
-
-      <motion.svg
-        aria-hidden
-        viewBox="0 0 260 260"
-        className="absolute h-[240px] w-[240px]"
-        animate={reduce ? undefined : { rotate: 360 }}
-        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+      {/* center medallion */}
+      <motion.div
+        className="relative flex h-[100px] w-[100px] items-center justify-center rounded-full"
+        style={{
+          background: CHARCOAL,
+          boxShadow: INSET_SHADOW,
+        }}
+        animate={reduce ? undefined : { y: [0, -4, 0] }}
+        transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
       >
-        <circle
-          cx="130"
-          cy="130"
-          r="120"
-          fill="none"
-          stroke="color-mix(in oklab, var(--color-primary) 22%, transparent)"
-          strokeWidth="1"
-          strokeDasharray="2 8"
-        />
-      </motion.svg>
-
-      <motion.div style={{ rotateX: rx, rotateY: ry, transformStyle: "preserve-3d" }} transition={gentle}>
-        <ArtFrame size={112}>
-          <motion.div
-            animate={reduce ? undefined : { rotate: [0, 4, -4, 0], y: [0, -2, 0] }}
-            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <Shield className="h-[52px] w-[52px]" strokeWidth={1.5} style={{ color: "var(--color-primary)" }} />
-          </motion.div>
-          <motion.div
-            className="absolute inset-x-0 bottom-[30px] mx-auto flex h-[22px] w-[22px] items-center justify-center rounded-full"
-            style={{ background: "var(--color-primary)" }}
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ ...spring, delay: 0.6 }}
-          >
-            <Check className="h-3 w-3 text-white" strokeWidth={3} />
-          </motion.div>
-        </ArtFrame>
+        <Shield className="h-[42px] w-[42px]" style={{ color: CREAM_SOFT }} strokeWidth={1.6} />
       </motion.div>
     </div>
   );
 }
 
-function ScreenHero({ onNext }: { onNext: () => void }) {
-  return (
-    <div className="flex h-full flex-col">
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-2">
-        <HeroArt />
-        <Headline
-          eyebrow={<Eyebrow>Welcome to Aegis</Eyebrow>}
-          title={<>Security that <br /> simply works.</>}
-          subtitle="Protect every account with secure one-time codes — quiet, elegant, private."
-        />
-      </div>
-      <div className="shrink-0 px-5 pt-2">
-        <PrimaryButton onClick={onNext}>Continue</PrimaryButton>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Screen 2 — Why                                                     */
-/* ------------------------------------------------------------------ */
-
-function FeatureCard({
-  index,
+function FeatureRow({
   icon,
   title,
-  description,
-  delay,
-  tint,
+  body,
+  delay = 0,
 }: {
-  index: string;
   icon: ReactNode;
   title: string;
-  description: string;
-  delay: number;
-  tint: string;
+  body: string;
+  delay?: number;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 18, filter: "blur(8px)" }}
-      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      transition={{ ...spring, delay }}
-      whileHover={{ y: -2 }}
-      className="relative overflow-hidden rounded-[22px] bg-white/85 p-3.5 backdrop-blur-xl"
-      style={{
-        boxShadow:
-          "0 1px 0 0 rgba(255,255,255,0.9) inset, 0 0 0 1px rgba(15,23,42,0.05), 0 10px 26px -18px rgba(15,23,42,0.22)",
-      }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...soft, delay }}
+      className="flex items-start gap-3 rounded-[12px] p-3"
+      style={{ background: CREAM_SOFT, border: `1px solid ${BORDER}` }}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-80"
-        style={{
-          background: `radial-gradient(closest-side, ${tint}, transparent 70%)`,
-          filter: "blur(16px)",
-        }}
-      />
-      <div className="relative flex items-center gap-3">
-        <div
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px]"
-          style={{
-            background: "linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.5))",
-            boxShadow: "0 0 0 1px rgba(15,23,42,0.05), 0 6px 14px -8px rgba(37,99,235,0.4)",
-          }}
-        >
-          {icon}
+      <IconChip size={36}>{icon}</IconChip>
+      <div className="min-w-0 pt-0.5">
+        <div className="text-[14.5px]" style={{ color: CHARCOAL, fontWeight: 500 }}>
+          {title}
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline justify-between gap-2">
-            <h3 className="font-display text-[15.5px] font-bold tracking-[-0.02em] text-foreground">
-              {title}
-            </h3>
-            <span className="text-[10px] font-semibold tracking-[0.12em] text-muted-foreground/60">
-              {index}
-            </span>
-          </div>
-          <p className="mt-0.5 text-[12.5px] leading-[1.35] text-muted-foreground">
-            {description}
-          </p>
+        <div className="mt-0.5 text-[12.5px] leading-[1.45]" style={{ color: MUTED }}>
+          {body}
         </div>
       </div>
     </motion.div>
   );
 }
 
-function ScreenWhy({ onNext }: { onNext: () => void }) {
-  const items = [
-    {
-      icon: <Zap className="h-[18px] w-[18px]" style={{ color: "var(--color-primary)" }} strokeWidth={2.2} />,
-      title: "Fast",
-      description: "One-time codes the instant you need them.",
-      tint: "color-mix(in oklab, var(--color-primary) 30%, transparent)",
-    },
-    {
-      icon: <Lock className="h-[18px] w-[18px]" style={{ color: "var(--color-primary)" }} strokeWidth={2.2} />,
-      title: "Private",
-      description: "Every secret is encrypted on your device.",
-      tint: "color-mix(in oklab, var(--color-accent) 30%, transparent)",
-    },
-    {
-      icon: <RefreshCw className="h-[18px] w-[18px]" style={{ color: "var(--color-primary)" }} strokeWidth={2.2} />,
-      title: "Reliable",
-      description: "Works offline. Never miss a code.",
-      tint: "color-mix(in oklab, var(--color-success) 28%, transparent)",
-    },
-  ];
-  return (
-    <div className="flex h-full flex-col">
-      <div className="shrink-0 pt-2">
-        <Headline
-          eyebrow={<Eyebrow>Why Aegis</Eyebrow>}
-          title={<>Calm, everyday <br /> security.</>}
-          compact
-        />
-      </div>
-      <div className="flex flex-1 flex-col justify-center gap-2.5 px-5 py-4">
-        {items.map((it, i) => (
-          <FeatureCard key={it.title} index={`0${i + 1}`} {...it} delay={0.12 + i * 0.09} />
-        ))}
-      </div>
-      <div className="shrink-0 px-5 pt-1">
-        <PrimaryButton onClick={onNext}>Continue</PrimaryButton>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Screen 3 — Import                                                  */
-/* ------------------------------------------------------------------ */
-
-function PhoneMockup() {
-  const reduce = useReducedMotion();
-  return (
-    <div className="relative mx-auto flex items-center justify-center">
-      <motion.div
-        aria-hidden
-        className="absolute h-[220px] w-[170px] rounded-[50px]"
-        style={{
-          background:
-            "radial-gradient(closest-side, color-mix(in oklab, var(--color-primary) 24%, transparent), transparent 70%)",
-          filter: "blur(34px)",
-        }}
-        animate={reduce ? undefined : { opacity: [0.6, 1, 0.6] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        initial={{ y: 16, opacity: 0, rotateX: -6 }}
-        animate={{ y: 0, opacity: 1, rotateX: 0 }}
-        transition={{ ...spring, delay: 0.1 }}
-        className="relative h-[200px] w-[112px] rounded-[30px] p-[3px]"
-        style={{
-          background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
-          boxShadow:
-            "0 24px 46px -18px rgba(15,23,42,0.5), 0 6px 16px -6px rgba(15,23,42,0.25), 0 0 0 1px rgba(255,255,255,0.06) inset",
-        }}
-      >
-        <div className="relative h-full w-full overflow-hidden rounded-[27px] bg-white">
-          <div className="absolute left-1/2 top-1.5 h-3 w-12 -translate-x-1/2 rounded-full bg-[#0F172A]" />
-          <div className="flex h-full flex-col items-center justify-center gap-2 px-3 pt-5">
-            <div
-              className="relative flex h-[90px] w-[90px] items-center justify-center rounded-xl"
-              style={{
-                background: "#F8F9FB",
-                boxShadow: "0 0 0 1px rgba(15,23,42,0.06) inset",
-              }}
-            >
-              <QrCode className="h-16 w-16 text-foreground/90" strokeWidth={1.4} />
-              <motion.div
-                aria-hidden
-                className="absolute inset-x-2 h-[2px] rounded-full"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent, var(--color-primary), transparent)",
-                  boxShadow: "0 0 12px color-mix(in oklab, var(--color-primary) 70%, transparent)",
-                }}
-                animate={reduce ? undefined : { top: ["10%", "88%", "10%"] }}
-                transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-              />
-              {[
-                "top-1 left-1 border-l-2 border-t-2 rounded-tl-md",
-                "top-1 right-1 border-r-2 border-t-2 rounded-tr-md",
-                "bottom-1 left-1 border-l-2 border-b-2 rounded-bl-md",
-                "bottom-1 right-1 border-r-2 border-b-2 rounded-br-md",
-              ].map((c) => (
-                <span
-                  key={c}
-                  className={`absolute h-3 w-3 ${c}`}
-                  style={{ borderColor: "var(--color-primary)" }}
-                />
-              ))}
-            </div>
-            <p className="text-[9.5px] font-semibold text-foreground">Scanning…</p>
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
-function OptionRow({
+function ImportOption({
   icon,
-  label,
-  hint,
+  title,
+  body,
   onClick,
-  delay,
+  delay = 0,
 }: {
   icon: ReactNode;
-  label: string;
-  hint: string;
+  title: string;
+  body: string;
   onClick?: () => void;
-  delay: number;
+  delay?: number;
 }) {
   return (
     <motion.button
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ ...spring, delay }}
-      whileTap={{ scale: 0.98 }}
-      whileHover={{ y: -1 }}
+      transition={{ ...soft, delay }}
+      whileTap={{ scale: 0.99, opacity: 0.9 }}
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-[18px] bg-white/85 px-3.5 py-2.5 text-left backdrop-blur-xl"
-      style={{
-        boxShadow:
-          "0 1px 0 0 rgba(255,255,255,0.9) inset, 0 0 0 1px rgba(15,23,42,0.05), 0 8px 20px -16px rgba(15,23,42,0.22)",
-      }}
+      className="flex w-full items-center gap-3 rounded-[12px] p-3 text-left"
+      style={{ background: CREAM_SOFT, border: `1px solid ${BORDER}` }}
     >
-      <div
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px]"
-        style={{
-          background:
-            "linear-gradient(180deg, color-mix(in oklab, var(--color-primary) 14%, white), color-mix(in oklab, var(--color-primary) 6%, white))",
-        }}
-      >
-        {icon}
-      </div>
+      <IconChip size={38}>{icon}</IconChip>
       <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-semibold tracking-[-0.01em] text-foreground">{label}</p>
-        <p className="truncate text-[11.5px] text-muted-foreground">{hint}</p>
+        <div className="text-[14.5px]" style={{ color: CHARCOAL, fontWeight: 500 }}>
+          {title}
+        </div>
+        <div className="mt-0.5 text-[12.5px]" style={{ color: MUTED }}>
+          {body}
+        </div>
       </div>
-      <ArrowRight className="h-[15px] w-[15px] shrink-0 text-muted-foreground/70" strokeWidth={2.2} />
+      <ArrowRight className="h-4 w-4" style={{ color: "rgba(28,28,28,0.35)" }} strokeWidth={1.8} />
     </motion.button>
   );
 }
 
-function ScreenImport({ onNext }: { onNext: () => void }) {
-  return (
-    <div className="flex h-full flex-col">
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 px-5">
-        <PhoneMockup />
-        <Headline title={<>Import in seconds.</>} subtitle="Bring existing accounts into Aegis your way." compact />
-        <div className="mt-1 flex w-full max-w-sm flex-col gap-2">
-          <OptionRow
-            icon={<QrCode className="h-[17px] w-[17px]" style={{ color: "var(--color-primary)" }} strokeWidth={2.2} />}
-            label="Scan QR"
-            hint="Point your camera at a code"
-            delay={0.18}
-            onClick={onNext}
-          />
-          <OptionRow
-            icon={<Upload className="h-[17px] w-[17px]" style={{ color: "var(--color-primary)" }} strokeWidth={2.2} />}
-            label="Import Backup"
-            hint="Restore from an encrypted file"
-            delay={0.26}
-            onClick={onNext}
-          />
-          <OptionRow
-            icon={<KeyRound className="h-[17px] w-[17px]" style={{ color: "var(--color-primary)" }} strokeWidth={2.2} />}
-            label="Manual Setup"
-            hint="Enter a setup key by hand"
-            delay={0.34}
-            onClick={onNext}
-          />
-        </div>
-      </div>
-      <div className="shrink-0 px-5 pt-2">
-        <SecondaryButton onClick={onNext}>Skip for now</SecondaryButton>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Screen 4 — Backup                                                  */
-/* ------------------------------------------------------------------ */
-
-function NativeSwitch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+function NativeSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
     <button
       role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className="relative h-[28px] w-[46px] rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+      aria-checked={on}
+      onClick={onToggle}
+      className="relative flex h-[26px] w-[44px] items-center rounded-full transition-colors"
       style={{
-        backgroundColor: checked
-          ? "var(--color-success)"
-          : "color-mix(in oklab, var(--color-foreground) 14%, transparent)",
+        background: on ? CHARCOAL : "rgba(28,28,28,0.15)",
+        boxShadow: on ? INSET_SHADOW : "inset 0 0 0 1px rgba(28,28,28,0.1)",
       }}
     >
       <motion.span
         layout
         transition={spring}
-        className="absolute top-[2px] h-[24px] w-[24px] rounded-full bg-white"
+        className="absolute h-[20px] w-[20px] rounded-full"
         style={{
-          left: checked ? 20 : 2,
-          boxShadow: "0 3px 8px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.1)",
+          left: on ? 21 : 3,
+          background: CREAM_SOFT,
+          boxShadow: "0 1px 2px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(0,0,0,0.1)",
         }}
       />
     </button>
   );
 }
 
-function CloudVaultArt() {
+function VaultIllustration() {
   const reduce = useReducedMotion();
   return (
-    <div className="relative flex h-[170px] items-center justify-center">
-      <motion.div
-        aria-hidden
-        className="absolute h-56 w-56 rounded-full"
-        style={{
-          background:
-            "radial-gradient(closest-side, color-mix(in oklab, var(--color-primary) 22%, transparent), transparent 70%)",
-          filter: "blur(28px)",
-        }}
-        animate={reduce ? undefined : { scale: [1, 1.06, 1], opacity: [0.6, 1, 0.6] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+    <div className="relative mx-auto flex h-[160px] w-[220px] items-center justify-center">
+      <div
+        className="absolute inset-0 rounded-[16px]"
+        style={{ background: CREAM_SOFT, border: `1px solid ${BORDER}` }}
       />
+      <motion.div
+        className="relative flex h-[72px] w-[72px] items-center justify-center rounded-full"
+        style={{ background: CHARCOAL, boxShadow: INSET_SHADOW }}
+        animate={reduce ? undefined : { y: [0, -3, 0] }}
+        transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <CloudUpload className="h-8 w-8" style={{ color: CREAM_SOFT }} strokeWidth={1.6} />
+      </motion.div>
+      {/* satellite chips */}
       {[
-        { x: -66, y: -42, d: 0 },
-        { x: 66, y: -34, d: 0.4 },
-        { x: -58, y: 48, d: 0.8 },
-        { x: 68, y: 46, d: 1.2 },
-      ].map((p, i) => (
-        <motion.div
+        { top: 14, left: 18, icon: <KeyRound className="h-3.5 w-3.5" strokeWidth={1.8} /> },
+        { top: 22, right: 18, icon: <Lock className="h-3.5 w-3.5" strokeWidth={1.8} /> },
+        { bottom: 16, left: 30, icon: <Shield className="h-3.5 w-3.5" strokeWidth={1.8} /> },
+        { bottom: 22, right: 26, icon: <Check className="h-3.5 w-3.5" strokeWidth={1.8} /> },
+      ].map((c, i) => (
+        <motion.span
           key={i}
-          aria-hidden
-          className="absolute flex h-7 w-7 items-center justify-center rounded-[10px] bg-white"
+          className="absolute inline-flex h-7 w-7 items-center justify-center rounded-full"
           style={{
-            x: p.x,
-            y: p.y,
-            boxShadow: "0 0 0 1px rgba(15,23,42,0.05), 0 6px 14px -8px rgba(15,23,42,0.25)",
+            top: c.top,
+            left: c.left,
+            right: c.right,
+            bottom: c.bottom,
+            background: CREAM,
+            border: `1px solid ${BORDER}`,
+            color: CHARCOAL,
           }}
-          animate={reduce ? undefined : { y: [p.y - 3, p.y + 3, p.y - 3] }}
-          transition={{ duration: 4 + i * 0.4, repeat: Infinity, ease: "easeInOut", delay: p.d }}
+          animate={reduce ? undefined : { y: [0, -4, 0] }}
+          transition={{ duration: 3 + i * 0.4, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }}
         >
-          <Lock className="h-[13px] w-[13px]" strokeWidth={2.2} style={{ color: "var(--color-primary)" }} />
-        </motion.div>
+          {c.icon}
+        </motion.span>
       ))}
-      <ArtFrame size={108}>
-        <CloudUpload className="h-[52px] w-[52px]" strokeWidth={1.5} style={{ color: "var(--color-primary)" }} />
-        <motion.div
-          aria-hidden
-          className="absolute -bottom-1.5 -right-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-white"
-          style={{
-            boxShadow: "0 0 0 1px rgba(15,23,42,0.05), 0 6px 14px -6px rgba(34,197,94,0.5)",
-          }}
-          initial={{ scale: 0, rotate: -20 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ ...spring, delay: 0.35 }}
-        >
-          <Check className="h-[14px] w-[14px]" strokeWidth={3} style={{ color: "var(--color-success)" }} />
-        </motion.div>
-      </ArtFrame>
     </div>
   );
 }
 
-function ScreenBackup({ onNext }: { onNext: () => void }) {
-  const [enabled, setEnabled] = useState(true);
+function PulseIcon({ children }: { children: ReactNode }) {
+  const reduce = useReducedMotion();
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex flex-1 flex-col items-center justify-center gap-5 px-5">
-        <CloudVaultArt />
-        <Headline
-          eyebrow={<Eyebrow>End-to-end encrypted</Eyebrow>}
-          title={<>Backup, only for you.</>}
-          subtitle="Your vault is encrypted on your device. No one else can read it."
-          compact
+    <div className="relative flex items-center justify-center" style={{ width: 140, height: 140 }}>
+      {[0, 1].map((i) => (
+        <motion.span
+          key={i}
+          className="absolute rounded-full"
+          style={{ width: 80, height: 80, border: `1px solid ${BORDER}` }}
+          animate={reduce ? undefined : { scale: [1, 1.7], opacity: [0.6, 0] }}
+          transition={{ duration: 2.6, repeat: Infinity, ease: "easeOut", delay: i * 1.3 }}
         />
+      ))}
+      <div
+        className="relative flex h-[80px] w-[80px] items-center justify-center rounded-full"
+        style={{ background: CHARCOAL, boxShadow: INSET_SHADOW, color: CREAM_SOFT }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function SuccessMark() {
+  const reduce = useReducedMotion();
+  return (
+    <div className="relative flex items-center justify-center" style={{ width: 160, height: 160 }}>
+      <motion.div
+        className="absolute rounded-full"
+        style={{ width: 140, height: 140, border: `1px solid ${BORDER}` }}
+        animate={reduce ? undefined : { scale: [1, 1.05, 1], opacity: [0.9, 0.5, 0.9] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        initial={{ scale: 0.6, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ ...spring, delay: 0.1 }}
+        className="relative flex h-[92px] w-[92px] items-center justify-center rounded-full"
+        style={{ background: CHARCOAL, boxShadow: INSET_SHADOW }}
+      >
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ ...spring, delay: 0.22 }}
-          className="flex w-full max-w-sm items-center justify-between rounded-[18px] bg-white/85 px-4 py-3 backdrop-blur-xl"
-          style={{
-            boxShadow:
-              "0 1px 0 0 rgba(255,255,255,0.9) inset, 0 0 0 1px rgba(15,23,42,0.05), 0 12px 28px -20px rgba(15,23,42,0.22)",
-          }}
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.35, ease: [0.5, 0, 0.2, 1] }}
         >
-          <div className="min-w-0 pr-3">
-            <p className="text-[14px] font-semibold tracking-[-0.01em] text-foreground">
-              Automatic Backup
-            </p>
-            <p className="text-[11.5px] leading-snug text-muted-foreground">
-              Keep your accounts safely synced.
-            </p>
+          <Check className="h-10 w-10" style={{ color: CREAM_SOFT }} strokeWidth={2} />
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Steps                                                              */
+/* ------------------------------------------------------------------ */
+
+function StepWelcome({ next }: { next: () => void }) {
+  return (
+    <Screen>
+      <div className="flex flex-1 flex-col items-center justify-center gap-8 text-center">
+        <HeroMark />
+        <div className="flex flex-col items-center gap-3">
+          <Eyebrow>
+            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: CHARCOAL }} />
+            Aegis
+          </Eyebrow>
+          <Display>Security, quietly done.</Display>
+          <Lede>A calm authenticator for your one-time codes — end-to-end encrypted and effortless.</Lede>
+        </div>
+      </div>
+      <div className="shrink-0 pb-[max(20px,env(safe-area-inset-bottom))] pt-2">
+        <PrimaryButton onClick={next}>Get started</PrimaryButton>
+        <p className="mt-3 text-center text-[12px]" style={{ color: MUTED }}>
+          By continuing you agree to our{" "}
+          <span className="underline underline-offset-[3px]" style={{ color: CHARCOAL }}>Terms</span>{" "}
+          &{" "}
+          <span className="underline underline-offset-[3px]" style={{ color: CHARCOAL }}>Privacy</span>.
+        </p>
+      </div>
+    </Screen>
+  );
+}
+
+function StepFeatures({ next }: { next: () => void }) {
+  return (
+    <Screen>
+      <div className="flex flex-1 flex-col justify-center gap-6">
+        <div className="flex flex-col gap-2">
+          <Eyebrow>Why Aegis</Eyebrow>
+          <Display>Built for trust.</Display>
+          <Lede>Three principles guide every decision — nothing more, nothing less.</Lede>
+        </div>
+        <div className="flex flex-col gap-2.5">
+          <FeatureRow
+            icon={<Zap className="h-4 w-4" strokeWidth={1.8} />}
+            title="Fast"
+            body="Codes appear instantly, always accurate to the second."
+            delay={0.05}
+          />
+          <FeatureRow
+            icon={<Lock className="h-4 w-4" strokeWidth={1.8} />}
+            title="Private"
+            body="End-to-end encrypted. Nothing ever leaves your device unencrypted."
+            delay={0.12}
+          />
+          <FeatureRow
+            icon={<RefreshCw className="h-4 w-4" strokeWidth={1.8} />}
+            title="Reliable"
+            body="Works offline. Syncs quietly when you're back online."
+            delay={0.19}
+          />
+        </div>
+      </div>
+      <div className="shrink-0 pb-[max(20px,env(safe-area-inset-bottom))] pt-2">
+        <PrimaryButton onClick={next}>Continue</PrimaryButton>
+      </div>
+    </Screen>
+  );
+}
+
+function StepImport({ next }: { next: () => void }) {
+  return (
+    <Screen>
+      <div className="flex flex-1 flex-col justify-center gap-6">
+        <div className="flex flex-col gap-2">
+          <Eyebrow>Import</Eyebrow>
+          <Display>Bring your accounts.</Display>
+          <Lede>Pick a method — Aegis will guide you through the rest.</Lede>
+        </div>
+        <div className="flex flex-col gap-2.5">
+          <ImportOption
+            icon={<QrCode className="h-4 w-4" strokeWidth={1.8} />}
+            title="Scan a QR code"
+            body="From Google, Authy, 1Password and more."
+            onClick={next}
+            delay={0.05}
+          />
+          <ImportOption
+            icon={<Upload className="h-4 w-4" strokeWidth={1.8} />}
+            title="Import a backup file"
+            body="Encrypted .aegis or JSON exports."
+            onClick={next}
+            delay={0.12}
+          />
+          <ImportOption
+            icon={<KeyRound className="h-4 w-4" strokeWidth={1.8} />}
+            title="Enter a setup key"
+            body="Add manually with a Base32 secret."
+            onClick={next}
+            delay={0.19}
+          />
+        </div>
+      </div>
+      <div className="shrink-0 pb-[max(20px,env(safe-area-inset-bottom))] pt-2 text-center">
+        <TextLink onClick={next}>I'll do this later</TextLink>
+      </div>
+    </Screen>
+  );
+}
+
+function StepBackup({ next }: { next: () => void }) {
+  const [on, setOn] = useState(true);
+  return (
+    <Screen>
+      <div className="flex flex-1 flex-col justify-center gap-6">
+        <div className="flex flex-col gap-2">
+          <Eyebrow>Backup</Eyebrow>
+          <Display>Your vault, protected.</Display>
+          <Lede>Encrypted backups keep you safe — even if your device isn't.</Lede>
+        </div>
+        <VaultIllustration />
+        <Card className="p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="text-[14.5px]" style={{ color: CHARCOAL, fontWeight: 500 }}>
+                Automatic backups
+              </div>
+              <div className="mt-0.5 text-[12.5px]" style={{ color: MUTED }}>
+                Encrypted with a key only you hold.
+              </div>
+            </div>
+            <NativeSwitch on={on} onToggle={() => setOn((v) => !v)} />
           </div>
-          <NativeSwitch checked={enabled} onChange={setEnabled} />
-        </motion.div>
+        </Card>
       </div>
-      <div className="shrink-0 px-5 pt-2">
-        <PrimaryButton onClick={onNext}>Continue</PrimaryButton>
+      <div className="shrink-0 pb-[max(20px,env(safe-area-inset-bottom))] pt-2">
+        <PrimaryButton onClick={next}>Continue</PrimaryButton>
       </div>
-    </div>
+    </Screen>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Screen 5 — Notifications                                           */
-/* ------------------------------------------------------------------ */
-
-function BellArt() {
-  const reduce = useReducedMotion();
+function StepNotifications({ next }: { next: () => void }) {
   return (
-    <div className="relative flex h-[180px] items-center justify-center">
-      <motion.div
-        aria-hidden
-        className="absolute h-56 w-56 rounded-full"
-        style={{
-          background:
-            "radial-gradient(closest-side, color-mix(in oklab, var(--color-primary) 22%, transparent), transparent 70%)",
-          filter: "blur(28px)",
-        }}
-        animate={reduce ? undefined : { scale: [1, 1.06, 1], opacity: [0.6, 1, 0.6] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-      />
-      {[0, 1, 2].map((i) => (
-        <motion.span
-          key={i}
-          aria-hidden
-          className="absolute rounded-full border"
-          style={{
-            width: 130 + i * 34,
-            height: 130 + i * 34,
-            borderColor: "color-mix(in oklab, var(--color-primary) 20%, transparent)",
-          }}
-          animate={reduce ? undefined : { scale: [0.9, 1.06, 0.9], opacity: [0.1, 0.55, 0.1] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.4 }}
-        />
-      ))}
-      <ArtFrame size={108}>
-        <motion.div
-          animate={reduce ? undefined : { rotate: [0, -14, 14, -8, 8, 0] }}
-          transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 1.6, ease: "easeInOut" }}
-          style={{ transformOrigin: "50% 22%" }}
-        >
-          <Bell className="h-[52px] w-[52px]" strokeWidth={1.5} style={{ color: "var(--color-primary)" }} />
-        </motion.div>
-        <motion.span
-          aria-hidden
-          className="absolute right-6 top-6 flex h-3 w-3 items-center justify-center rounded-full"
-          style={{ background: "var(--color-destructive)" }}
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ ...spring, delay: 0.5 }}
-        />
-      </ArtFrame>
-    </div>
-  );
-}
-
-function ScreenNotifications({ onNext }: { onNext: () => void }) {
-  return (
-    <div className="flex h-full flex-col">
-      <div className="flex flex-1 flex-col items-center justify-center gap-5 px-5">
-        <BellArt />
-        <Headline
-          title={<>Stay in the loop.</>}
-          subtitle="Gentle reminders for backups and important security updates. Nothing noisy."
-          compact
-        />
+    <Screen>
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
+        <PulseIcon>
+          <Bell className="h-7 w-7" strokeWidth={1.6} />
+        </PulseIcon>
+        <div className="flex flex-col items-center gap-2">
+          <Eyebrow>Notifications</Eyebrow>
+          <Display>Only when it matters.</Display>
+          <Lede>Get a quiet nudge for sign-in requests and security alerts. Nothing else.</Lede>
+        </div>
       </div>
-      <div className="shrink-0 space-y-0.5 px-5 pt-2">
-        <PrimaryButton onClick={onNext}>Allow Notifications</PrimaryButton>
-        <SecondaryButton onClick={onNext}>Maybe Later</SecondaryButton>
+      <div className="shrink-0 space-y-3 pb-[max(20px,env(safe-area-inset-bottom))] pt-2">
+        <PrimaryButton onClick={next}>Allow notifications</PrimaryButton>
+        <div className="text-center">
+          <TextLink onClick={next}>Not now</TextLink>
+        </div>
       </div>
-    </div>
+    </Screen>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Screen 6 — Biometrics                                              */
-/* ------------------------------------------------------------------ */
-
-function FingerprintArt() {
-  const reduce = useReducedMotion();
+function StepBiometrics({ next }: { next: () => void }) {
   return (
-    <div className="relative flex h-[200px] items-center justify-center">
-      {[0, 1, 2, 3].map((i) => (
-        <motion.span
-          key={i}
-          aria-hidden
-          className="absolute rounded-full border"
-          style={{
-            width: 130 + i * 34,
-            height: 130 + i * 34,
-            borderColor: `color-mix(in oklab, var(--color-primary) ${18 - i * 3}%, transparent)`,
-          }}
-          animate={reduce ? undefined : { scale: [0.92, 1.06, 0.92], opacity: [0.15, 0.7, 0.15] }}
-          transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut", delay: i * 0.35 }}
-        />
-      ))}
-      <ArtFrame size={112}>
-        <motion.div
-          animate={reduce ? undefined : { scale: [1, 1.06, 1] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <Fingerprint className="h-[58px] w-[58px]" strokeWidth={1.3} style={{ color: "var(--color-primary)" }} />
-        </motion.div>
-      </ArtFrame>
-    </div>
-  );
-}
-
-function ScreenBiometrics({ onNext }: { onNext: () => void }) {
-  return (
-    <div className="flex h-full flex-col">
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-5">
-        <FingerprintArt />
-        <Headline
-          title={<>Unlock with a touch.</>}
-          subtitle="Use Face ID or your fingerprint to open Aegis instantly."
-          compact
-        />
+    <Screen>
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
+        <PulseIcon>
+          <Fingerprint className="h-8 w-8" strokeWidth={1.6} />
+        </PulseIcon>
+        <div className="flex flex-col items-center gap-2">
+          <Eyebrow>Unlock</Eyebrow>
+          <Display>Just a glance.</Display>
+          <Lede>Use Face ID or your fingerprint so only you can open Aegis.</Lede>
+        </div>
       </div>
-      <div className="shrink-0 space-y-0.5 px-5 pt-2">
-        <PrimaryButton onClick={onNext}>Enable Biometrics</PrimaryButton>
-        <SecondaryButton onClick={onNext}>Not now</SecondaryButton>
+      <div className="shrink-0 space-y-3 pb-[max(20px,env(safe-area-inset-bottom))] pt-2">
+        <PrimaryButton onClick={next}>Enable biometrics</PrimaryButton>
+        <div className="text-center">
+          <TextLink onClick={next}>Use passcode instead</TextLink>
+        </div>
       </div>
-    </div>
+    </Screen>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Final                                                              */
-/* ------------------------------------------------------------------ */
-
-function Confetti() {
-  const reduce = useReducedMotion();
-  const pieces = useMemo(
-    () =>
-      Array.from({ length: 22 }).map((_, i) => ({
-        id: i,
-        x: (Math.random() - 0.5) * 300,
-        delay: Math.random() * 0.5,
-        rot: Math.random() * 200,
-        color:
-          i % 3 === 0
-            ? "var(--color-primary)"
-            : i % 3 === 1
-              ? "var(--color-success)"
-              : "color-mix(in oklab, var(--color-accent) 80%, white)",
-      })),
-    [],
-  );
-  if (reduce) return null;
+function StepDone({ next }: { next: () => void }) {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      {pieces.map((p) => (
-        <motion.span
-          key={p.id}
-          className="absolute left-1/2 top-[40%] h-1.5 w-1.5 rounded-full"
-          style={{ backgroundColor: p.color }}
-          initial={{ opacity: 0, x: 0, y: 0, scale: 0 }}
-          animate={{
-            opacity: [0, 1, 0],
-            x: p.x,
-            y: 240 + Math.random() * 120,
-            scale: [0, 1, 0.6],
-            rotate: p.rot,
-          }}
-          transition={{ duration: 1.9, delay: p.delay, ease: "easeOut" }}
-        />
-      ))}
-    </div>
-  );
-}
-
-function BigShield() {
-  const reduce = useReducedMotion();
-  return (
-    <div className="relative flex h-[200px] items-center justify-center">
-      <motion.div
-        aria-hidden
-        className="absolute h-64 w-64 rounded-full"
-        style={{
-          background:
-            "radial-gradient(closest-side, color-mix(in oklab, var(--color-success) 24%, transparent), transparent 70%)",
-          filter: "blur(32px)",
-        }}
-        animate={reduce ? undefined : { scale: [1, 1.06, 1], opacity: [0.6, 1, 0.6] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <ArtFrame size={124}>
-        <Shield className="h-[64px] w-[64px]" strokeWidth={1.4} style={{ color: "var(--color-primary)" }} />
-        <motion.div
-          aria-hidden
-          className="absolute -bottom-1.5 -right-1.5 flex h-9 w-9 items-center justify-center rounded-full bg-white"
-          style={{
-            boxShadow: "0 0 0 1px rgba(15,23,42,0.05), 0 8px 20px -6px rgba(34,197,94,0.5)",
-          }}
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ ...spring, delay: 0.4 }}
-        >
-          <Check className="h-[18px] w-[18px]" strokeWidth={3} style={{ color: "var(--color-success)" }} />
-        </motion.div>
-      </ArtFrame>
-    </div>
-  );
-}
-
-function ScreenFinal({ onRestart }: { onRestart: () => void }) {
-  return (
-    <div className="relative flex h-full flex-col">
-      <Confetti />
-      <div className="flex flex-1 flex-col items-center justify-center gap-5 px-5">
-        <BigShield />
-        <Headline
-          eyebrow={<Eyebrow>All set</Eyebrow>}
-          title={<>You're protected.</>}
-          subtitle="Your authenticator is ready. Welcome to a quieter kind of security."
-          compact
-        />
+    <Screen>
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
+        <SuccessMark />
+        <div className="flex flex-col items-center gap-2">
+          <Eyebrow>
+            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: CHARCOAL }} />
+            Ready
+          </Eyebrow>
+          <Display>You're all set.</Display>
+          <Lede>Aegis is guarding your accounts. Add your first code whenever you're ready.</Lede>
+        </div>
       </div>
-      <div className="shrink-0 space-y-0.5 px-5 pt-2">
-        <PrimaryButton onClick={onRestart} icon={<Sparkles className="h-[17px] w-[17px]" />}>
-          Get Started
+      <div className="shrink-0 pb-[max(20px,env(safe-area-inset-bottom))] pt-2">
+        <PrimaryButton onClick={next} icon={<ArrowRight className="h-[15px] w-[15px]" strokeWidth={1.8} />}>
+          Open Aegis
         </PrimaryButton>
-        <SecondaryButton onClick={onRestart}>Explore Settings</SecondaryButton>
       </div>
-    </div>
+    </Screen>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Root                                                               */
+/*  Main flow                                                          */
 /* ------------------------------------------------------------------ */
 
-const screens = [
-  "hero",
-  "why",
-  "import",
-  "backup",
-  "notifications",
-  "biometrics",
-  "final",
-] as const;
-
-const skippable = new Set(["import", "backup", "notifications", "biometrics"]);
-
-const pageVariants = {
-  enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 30 : -30, filter: "blur(10px)" }),
-  center: { opacity: 1, x: 0, filter: "blur(0px)" },
-  exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -30 : 30, filter: "blur(10px)" }),
-};
+const TOTAL = 7;
 
 export default function Onboarding() {
-  const [[step, dir], setStep] = useState<[number, number]>([0, 1]);
-  const total = screens.length;
+  const [step, setStep] = useState(0);
 
-  const goTo = (target: number) => {
-    const bounded = Math.max(0, Math.min(target, total - 1));
-    setStep(([current]) => [bounded, bounded > current ? 1 : -1]);
-  };
-  const next = () => goTo(step + 1);
-  const back = () => goTo(step - 1);
-  const restart = () => setStep([0, -1]);
+  const next = () => setStep((s) => Math.min(s + 1, TOTAL - 1));
+  const back = () => setStep((s) => Math.max(s - 1, 0));
+  const skip = () => setStep(TOTAL - 1);
+  const restart = () => setStep(0);
 
-  const current = screens[step];
-
-  const onDragEnd = (_: unknown, info: PanInfo) => {
-    const threshold = 60;
-    if (info.offset.x < -threshold && step < total - 1) next();
-    else if (info.offset.x > threshold && step > 0) back();
-  };
-
-  const screenNode = (() => {
-    switch (current) {
-      case "hero":
-        return <ScreenHero onNext={next} />;
-      case "why":
-        return <ScreenWhy onNext={next} />;
-      case "import":
-        return <ScreenImport onNext={next} />;
-      case "backup":
-        return <ScreenBackup onNext={next} />;
-      case "notifications":
-        return <ScreenNotifications onNext={next} />;
-      case "biometrics":
-        return <ScreenBiometrics onNext={next} />;
-      case "final":
-        return <ScreenFinal onRestart={restart} />;
-    }
-  })();
+  const canSkip = step > 0 && step < TOTAL - 1;
 
   return (
-    <main
-      className="fixed inset-0 overflow-hidden font-sans text-foreground antialiased"
-      style={{
-        paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: "env(safe-area-inset-bottom)",
-      }}
+    <div
+      className="fixed inset-0 flex flex-col overflow-hidden"
+      style={{ background: CREAM, color: CHARCOAL }}
     >
-      <AmbientBackground />
-      <div className="relative z-10 mx-auto flex h-full w-full max-w-[440px] flex-col px-2 pb-3">
-        <TopBar
-          step={step}
-          total={total}
-          onBack={back}
-          onSkip={next}
-          canSkip={skippable.has(current)}
-        />
-        <div className="relative flex flex-1 flex-col overflow-hidden">
-          <AnimatePresence mode="wait" custom={dir} initial={false}>
+      <Backdrop />
+
+      <div
+        className="relative z-10 mx-auto flex h-full w-full max-w-[440px] flex-col"
+        style={{ paddingTop: "max(8px, env(safe-area-inset-top))" }}
+      >
+        <TopBar step={step} total={TOTAL} onBack={back} onSkip={skip} canSkip={canSkip} />
+
+        <div className="relative flex-1 overflow-hidden">
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={step}
-              custom={dir}
-              variants={pageVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ ...softSpring, filter: { duration: 0.35 } }}
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.18}
-              onDragEnd={onDragEnd}
-              className="flex flex-1 flex-col"
+              initial={{ opacity: 0, y: 12, filter: "blur(6px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -8, filter: "blur(6px)" }}
+              transition={{ duration: 0.4, ease: [0.22, 0.9, 0.3, 1] }}
+              className="absolute inset-0"
             >
-              {screenNode}
+              {step === 0 && <StepWelcome next={next} />}
+              {step === 1 && <StepFeatures next={next} />}
+              {step === 2 && <StepImport next={next} />}
+              {step === 3 && <StepBackup next={next} />}
+              {step === 4 && <StepNotifications next={next} />}
+              {step === 5 && <StepBiometrics next={next} />}
+              {step === 6 && <StepDone next={restart} />}
             </motion.div>
           </AnimatePresence>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
+
+/* Silence unused warnings for helpers reserved for later expansion */
+void GhostButton;
