@@ -106,12 +106,14 @@ export async function addAccount(
     digits?: number;
     period?: number;
     icon_slug?: string | null;
+    tags?: string[];
   },
 ): Promise<void> {
   const clean = normalizeBase32(input.secret);
   if (!isValidBase32Secret(clean)) throw new Error("Invalid secret. Must be base32.");
 
   const { ciphertext, iv } = await encryptSecret(dek, clean);
+  const tags = normalizeTagList(input.tags ?? []);
 
   const { data, error } = await supabase
     .from("vault_accounts")
@@ -123,12 +125,11 @@ export async function addAccount(
       algorithm: input.algorithm ?? "SHA1",
       digits: input.digits ?? 6,
       period: input.period ?? 30,
+      tags,
       secret_ciphertext: toByteaHex(ciphertext),
       secret_iv: toByteaHex(iv),
     })
-    .select(
-      "id, issuer, label, icon_slug, algorithm, digits, period, sort_order, is_favorite, secret_ciphertext, secret_iv",
-    )
+    .select(ACCOUNT_SELECT)
     .single();
   if (error) throw error;
   if (data) void upsertVaultCache(data as VaultAccountRecord);
@@ -145,12 +146,24 @@ export async function setAccountFavorite(id: string, isFavorite: boolean): Promi
     .from("vault_accounts")
     .update({ is_favorite: isFavorite })
     .eq("id", id)
-    .select(
-      "id, issuer, label, icon_slug, algorithm, digits, period, sort_order, is_favorite, secret_ciphertext, secret_iv",
-    )
+    .select(ACCOUNT_SELECT)
     .single();
   if (error) throw error;
   if (data) void upsertVaultCache(data as VaultAccountRecord);
+}
+
+/** Overwrite an account's tag list. Client normalises + caps at 20. */
+export async function setAccountTags(id: string, tags: string[]): Promise<string[]> {
+  const normalized = normalizeTagList(tags);
+  const { data, error } = await supabase
+    .from("vault_accounts")
+    .update({ tags: normalized })
+    .eq("id", id)
+    .select(ACCOUNT_SELECT)
+    .single();
+  if (error) throw error;
+  if (data) void upsertVaultCache(data as VaultAccountRecord);
+  return normalized;
 }
 
 async function decryptRows(
@@ -169,6 +182,7 @@ async function decryptRows(
         period: r.period,
         sort_order: r.sort_order,
         is_favorite: r.is_favorite,
+        tags: Array.isArray(r.tags) ? r.tags : [],
         secret,
       } satisfies DecryptedAccount;
     }),
@@ -178,9 +192,7 @@ async function decryptRows(
 export async function listAccounts(dek: CryptoKey): Promise<DecryptedAccount[]> {
   const { data, error } = await supabase
     .from("vault_accounts")
-    .select(
-      "id, issuer, label, icon_slug, algorithm, digits, period, sort_order, is_favorite, secret_ciphertext, secret_iv",
-    )
+    .select(ACCOUNT_SELECT)
     .order("is_favorite", { ascending: false })
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
@@ -207,9 +219,7 @@ export async function listAccountsWithCache(
     try {
       const { data, error } = await supabase
         .from("vault_accounts")
-        .select(
-          "id, issuer, label, icon_slug, algorithm, digits, period, sort_order, is_favorite, secret_ciphertext, secret_iv",
-        )
+        .select(ACCOUNT_SELECT)
         .order("is_favorite", { ascending: false })
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: true });
@@ -228,4 +238,5 @@ export async function listAccountsWithCache(
   const accounts = await decryptRows(dek, cached);
   return { accounts, source: "cache" };
 }
+
 
