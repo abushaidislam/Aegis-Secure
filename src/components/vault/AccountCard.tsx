@@ -94,6 +94,14 @@ export function AccountCard({ account, now, isFavorite, onToggleFavorite }: Prop
   const logoUrl = useMemo(() => logoUrlFor(account.issuer, 80), [account.issuer]);
   const showLogo = !!logoUrl && !logoFailed;
 
+  useEffect(() => {
+    if (!account.issuer) return;
+    if (logoUrl) return;
+    if (!domainFromIssuer(account.issuer)) {
+      notifyLogoIssue(account.issuer, "unmapped");
+    }
+  }, [account.issuer, logoUrl]);
+
   return (
     <motion.button
       onClick={copy}
