@@ -172,6 +172,90 @@ function VaultPage() {
   );
 }
 
+function UnifiedAccountList({
+  favoriteList,
+  otherList,
+  now,
+  favorites,
+  onToggleFavorite,
+  onDelete,
+}: {
+  favoriteList: DecryptedAccount[];
+  otherList: DecryptedAccount[];
+  now: number;
+  favorites: Set<string>;
+  onToggleFavorite: (id: string) => void;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const showBothLabels = favoriteList.length > 0 && otherList.length > 0;
+  return (
+    <div className="flex flex-col gap-4">
+      {favoriteList.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <SectionLabel>Favorites</SectionLabel>
+          <div
+            className="overflow-hidden rounded-[16px]"
+            style={{
+              background: CREAM_SOFT,
+              border: `1px solid ${BORDER}`,
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+            }}
+          >
+            <div className="divide-y" style={{ borderColor: BORDER }}>
+              {favoriteList.map((a) => (
+                <motion.div
+                  key={a.id}
+                  layout="position"
+                  transition={soft}
+                >
+                  <AccountCard
+                    account={a}
+                    now={now}
+                    isFavorite={favorites.has(a.id)}
+                    onToggleFavorite={onToggleFavorite}
+                    onDelete={onDelete}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {otherList.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          {showBothLabels && <SectionLabel>All accounts</SectionLabel>}
+          <div
+            className="overflow-hidden rounded-[16px]"
+            style={{
+              background: CREAM_SOFT,
+              border: `1px solid ${BORDER}`,
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+            }}
+          >
+            <div className="divide-y" style={{ borderColor: BORDER }}>
+              {otherList.map((a) => (
+                <motion.div
+                  key={a.id}
+                  layout="position"
+                  transition={soft}
+                >
+                  <AccountCard
+                    account={a}
+                    now={now}
+                    isFavorite={favorites.has(a.id)}
+                    onToggleFavorite={onToggleFavorite}
+                    onDelete={onDelete}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AccountGroup({
   items,
   now,
