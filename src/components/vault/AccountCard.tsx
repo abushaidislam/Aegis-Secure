@@ -155,6 +155,7 @@ interface Props {
   onToggleFavorite?: (id: string) => void;
   onDelete?: (id: string) => Promise<void> | void;
   onTagsChanged?: (id: string, tags: string[]) => void;
+  onDetailsChanged?: (id: string, patch: { issuer: string; label: string }) => void;
   allTagSuggestions?: string[];
 }
 
