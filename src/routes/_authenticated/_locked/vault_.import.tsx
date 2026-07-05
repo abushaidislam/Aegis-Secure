@@ -500,10 +500,10 @@ function FileTab({
         <FileUp className="h-4 w-4" strokeWidth={1.8} />
         <div className="flex flex-1 flex-col">
           <span className="text-[13.5px]" style={{ fontWeight: 600 }}>
-            Aegis or 2FAS JSON
+            Aegis, 2FAS, or .avf backup
           </span>
           <span className="text-[11.5px]" style={{ color: MUTED }}>
-            Export as plain (not encrypted) from the source app.
+            Plain JSON from other apps, or a passphrase-encrypted .avf you exported here.
           </span>
         </div>
       </button>
