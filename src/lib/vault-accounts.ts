@@ -293,6 +293,9 @@ export async function listAccountsWithCache(
   const online = !isOffline();
   if (online) {
     try {
+      // Flush any tag edits queued while offline BEFORE reading, so the
+      // fetched rows already reflect them.
+      await flushPendingTagUpdates().catch(() => 0);
       const { data, error } = await supabase
         .from("vault_accounts")
         .select(ACCOUNT_SELECT)
