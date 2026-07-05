@@ -375,6 +375,18 @@ function SecurityPage() {
             }}
           />
         )}
+        {exportOpen && (
+          <ExportSheet
+            onClose={() => setExportOpen(false)}
+            onDone={(count) => {
+              setExportOpen(false);
+              setNotice({
+                kind: "info",
+                text: `Encrypted export downloaded (${count} ${count === 1 ? "account" : "accounts"}).`,
+              });
+            }}
+          />
+        )}
       </AnimatePresence>
     </>
   );
