@@ -11,11 +11,14 @@ import {
   deleteAccount,
   listAccountsWithCache,
   setAccountFavorite,
+  setAccountTags,
   type DecryptedAccount,
 } from "@/lib/vault-accounts";
 import { useOnlineStatus } from "@/lib/use-online";
 import { AccountCard } from "@/components/vault/AccountCard";
-import { Shield, Plus, Loader2, Search, X, WifiOff, RefreshCw } from "lucide-react";
+import { TagChip } from "@/components/vault/tags";
+import { Shield, Plus, Loader2, Search, X, WifiOff, RefreshCw, Tags } from "lucide-react";
+import { toast } from "sonner";
 import {
   BORDER,
   CHARCOAL,
