@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_authenticated/_tabs/vault")({
 function VaultPage() {
   const navigate = useNavigate();
   const unlocked = useVaultUnlocked();
-  
+  const { user } = Route.useRouteContext();
 
   useActivityKeepAlive();
 
@@ -51,6 +51,10 @@ function VaultPage() {
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [query, setQuery] = useState("");
+  const [source, setSource] = useState<"network" | "cache" | "empty" | null>(null);
+  const [online, setOnline] = useState(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
 
   const favorites = useMemo(() => {
     const s = new Set<string>();
@@ -86,21 +90,35 @@ function VaultPage() {
   }, []);
 
   useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     const key = getVaultKey();
     if (!key) return;
     setError(null);
-    listAccounts(key)
-      .then((list) => {
-        if (!cancelled) setAccounts(list);
+    listAccountsWithCache(key, user.id)
+      .then(({ accounts: list, source: src }) => {
+        if (cancelled) return;
+        setAccounts(list);
+        setSource(src);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load vault.");
       });
     return () => {
       cancelled = true;
     };
-  }, [unlocked]);
+  }, [unlocked, user.id, online]);
+
 
   const filtered = useMemo(() => {
     if (!accounts) return null;
