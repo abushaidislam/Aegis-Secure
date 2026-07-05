@@ -5,6 +5,13 @@
 import * as OTPAuth from "otpauth";
 import { supabase } from "@/integrations/supabase/client";
 import { decryptSecret, encryptSecret, toBytes, toByteaHex } from "@/lib/vault-crypto";
+import {
+  isOffline,
+  readVaultCache,
+  removeFromVaultCache,
+  upsertVaultCache,
+  writeVaultCache,
+} from "@/lib/vault-cache";
 
 export type Algorithm = "SHA1" | "SHA256" | "SHA512";
 
