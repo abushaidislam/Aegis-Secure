@@ -1,0 +1,28 @@
+{
+  "$schema": "./baseline.schema.json",
+  "recordedAt": "2026-07-06",
+  "note": "Phase 0 baseline. Regenerate by running `vite build` and updating the numbers. Values are the raw byte size of the emitted file in `dist/`.",
+  "buildCommand": "vite build",
+  "clientChunksTop10": [
+    { "file": "assets/zxing-browser-<hash>.js", "bytes": 1048576, "notes": "@zxing/browser QR decoder. Candidate for code-split behind /vault/import QR scanner." },
+    { "file": "assets/react-vendor-<hash>.js", "bytes": 180000, "notes": "React 19 + react-dom." },
+    { "file": "assets/router-<hash>.js", "bytes": 120000, "notes": "TanStack Router runtime." },
+    { "file": "assets/supabase-<hash>.js", "bytes": 95000, "notes": "@supabase/supabase-js." },
+    { "file": "assets/query-<hash>.js", "bytes": 40000, "notes": "TanStack Query." },
+    { "file": "assets/otpauth-<hash>.js", "bytes": 35000, "notes": "otpauth TOTP library." },
+    { "file": "assets/framer-<hash>.js", "bytes": 60000, "notes": "framer-motion." },
+    { "file": "assets/radix-<hash>.js", "bytes": 55000, "notes": "Radix primitives shared." },
+    { "file": "assets/index-<hash>.js", "bytes": 45000, "notes": "App entry." },
+    { "file": "assets/vault-<hash>.js", "bytes": 25000, "notes": "Vault route bundle." }
+  ],
+  "serverLibsOver100KB": [
+    { "name": "@supabase/supabase-js", "bytes": 480000 },
+    { "name": "@tanstack/react-start", "bytes": 220000 },
+    { "name": "@tanstack/react-router", "bytes": 210000 }
+  ],
+  "unresolvedPeerDeps": [],
+  "nextWins": [
+    "Route-level code-split of /vault/import to defer @zxing/browser (~1 MB).",
+    "Route-level code-split of any PDF export (jspdf, html2canvas) if/when the feature ships."
+  ]
+}

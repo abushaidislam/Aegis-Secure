@@ -12,6 +12,24 @@
 // PBKDF2 is a pragmatic default (native, no WASM). Argon2id can drop in
 // later by swapping deriveKekFromPassphrase without changing storage shape.
 
+// -----------------------------------------------------------------------------
+// VERSIONING CONTRACT
+// -----------------------------------------------------------------------------
+// VAULT_CRYPTO_VERSION pins the stored-form primitives of the vault:
+//   - KDF (algorithm + parameters + salt length)
+//   - DEK wrap shape (AES-GCM, iv length, tag length)
+//   - Secret encryption shape (AES-GCM, iv length, AAD binding)
+//
+// ANY change to any of the above (e.g. Argon2id migration, adding AAD binding,
+// changing iv length) MUST bump this constant AND ship a migrator that
+// re-derives / re-wraps / re-encrypts existing rows. Never mutate a primitive
+// silently — clients on the old version would irretrievably lose access.
+//
+// v1 (current): PBKDF2-SHA256, 600k iterations, 16-byte salt, AES-GCM 12-byte
+//               iv, no AAD. OWASP baseline as of 2024.
+// v2 (planned): Argon2id (m=64MiB, t=3, p=1) + AAD binding = user_id||account_id.
+export const VAULT_CRYPTO_VERSION = 1 as const;
+
 const PBKDF2_ITERATIONS = 600_000;
 const KDF_ALGO = "PBKDF2-SHA256-600k";
 
