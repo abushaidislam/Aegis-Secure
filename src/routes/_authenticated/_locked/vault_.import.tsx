@@ -328,6 +328,13 @@ function SegmentedTabs({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) 
       }}
     >
       <SegButton
+        active={tab === "scan"}
+        onClick={() => setTab("scan")}
+        icon={<ScanLine className="h-3.5 w-3.5" strokeWidth={1.8} />}
+      >
+        Scan
+      </SegButton>
+      <SegButton
         active={tab === "paste"}
         onClick={() => setTab("paste")}
         icon={<ClipboardPaste className="h-3.5 w-3.5" strokeWidth={1.8} />}
@@ -339,7 +346,7 @@ function SegmentedTabs({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) 
         onClick={() => setTab("file")}
         icon={<FileUp className="h-3.5 w-3.5" strokeWidth={1.8} />}
       >
-        File or image
+        File
       </SegButton>
     </div>
   );
