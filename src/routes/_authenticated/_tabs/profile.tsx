@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { lockVault } from "@/lib/vault-session";
-import { User, Mail, Loader2, LogOut, Check, Pencil } from "lucide-react";
+import { deleteMyAccount } from "@/lib/account.functions";
+import { User, Mail, Loader2, LogOut, Check, Pencil, Trash2 } from "lucide-react";
 import {
   BORDER,
   CHARCOAL,
@@ -41,12 +43,14 @@ function ProfilePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = Route.useRouteContext();
+  const deleteAccount = useServerFn(deleteMyAccount);
 
   const [displayName, setDisplayName] = useState("");
   const [initialName, setInitialName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [notice, setNotice] = useState<{ kind: "error" | "info"; text: string } | null>(null);
 
   useEffect(() => {
@@ -102,6 +106,32 @@ function ProfilePage() {
     lockVault();
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
+  };
+
+  const handleDelete = async () => {
+    const email = user.email ?? "your account";
+    const ok = window.confirm(
+      `Permanently delete ${email}?\n\nThis erases every stored code, your passphrase, and your account itself. It cannot be undone.`,
+    );
+    if (!ok) return;
+    const confirmText = window.prompt('Type "delete" to confirm.');
+    if (confirmText?.trim().toLowerCase() !== "delete") return;
+    setDeleting(true);
+    setNotice(null);
+    try {
+      await deleteAccount();
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      lockVault();
+      await supabase.auth.signOut();
+      navigate({ to: "/auth", replace: true });
+    } catch (err) {
+      setNotice({
+        kind: "error",
+        text: err instanceof Error ? err.message : "Could not delete account.",
+      });
+      setDeleting(false);
+    }
   };
 
   const seed = displayName || user.email || "?";
@@ -228,6 +258,18 @@ function ProfilePage() {
             title="Sign out"
             description="You'll need to sign in and unlock again"
             onClick={signOut}
+            chevron
+          />
+        </SettingsGroup>
+
+        <SectionLabel>Danger zone</SectionLabel>
+        <SettingsGroup>
+          <SettingsRow
+            icon={<Trash2 className="h-4 w-4" strokeWidth={1.8} />}
+            title={deleting ? "Deleting account…" : "Delete account"}
+            description="Erase your account, codes, and passphrase forever."
+            onClick={handleDelete}
+            disabled={deleting}
             danger
             chevron
           />
