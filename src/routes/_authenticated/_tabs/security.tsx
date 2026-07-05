@@ -75,6 +75,7 @@ function SecurityPage() {
   const navigate = useNavigate();
   const { user } = Route.useRouteContext();
   const autoLockMs = useAutoLockMs();
+  const hideCodes = useHideCodes();
   const [hint, setHint] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: "error" | "info"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
