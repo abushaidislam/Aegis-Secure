@@ -3,12 +3,39 @@
 // the array at 20 entries; we enforce the same limit here to keep the
 // insert trigger from ever surfacing a raw Postgres error to the user.
 
-import { useState, type KeyboardEvent } from "react";
-import { X, Plus } from "lucide-react";
+import { type KeyboardEvent } from "react";
+import { X, Check } from "lucide-react";
 import { BORDER, CHARCOAL, MUTED } from "@/components/aegis/chrome";
 
 export const MAX_TAGS_PER_ACCOUNT = 20;
 export const MAX_TAG_LENGTH = 24;
+
+/**
+ * Curated preset of tag values users can attach to accounts.
+ *
+ * We intentionally do NOT allow free-form tag creation: an open text field
+ * quickly fragments the tag space ("work", "Work", "wrk", "office") and
+ * makes filters useless. Presets keep the vocabulary shared across accounts
+ * and turn the picker into a one-tap toggle.
+ *
+ * To add a category, extend this list — no schema or UI change needed.
+ */
+export const PRESET_TAGS = [
+  "work",
+  "personal",
+  "finance",
+  "social",
+  "developer",
+  "shopping",
+  "gaming",
+  "entertainment",
+  "education",
+  "travel",
+  "health",
+  "other",
+] as const;
+
+export type PresetTag = (typeof PRESET_TAGS)[number];
 
 /** Canonicalise a raw tag string: lowercase, trim, collapse spaces to `-`. */
 export function normalizeTag(input: string): string {
@@ -130,113 +157,95 @@ export function TagChip({ tag, size = "sm", onRemove, onClick, active, as }: Tag
 interface TagInputProps {
   value: string[];
   onChange: (next: string[]) => void;
+  /** Optional extra tags to render alongside the preset list (e.g. legacy
+   *  free-form tags that were saved before the preset switch). */
+  extras?: string[];
+  /** Kept for API compatibility with prior free-form input. Ignored. */
   placeholder?: string;
   suggestions?: string[];
 }
 
-/** Chip-list input. Enter / comma commits, backspace on empty removes last. */
-export function TagInput({ value, onChange, placeholder, suggestions }: TagInputProps) {
-  const [draft, setDraft] = useState("");
-  const [focused, setFocused] = useState(false);
-
-  const commit = (raw: string) => {
-    const t = normalizeTag(raw);
-    if (!t) {
-      setDraft("");
-      return;
-    }
-    if (value.includes(t)) {
-      setDraft("");
-      return;
-    }
-    if (value.length >= MAX_TAGS_PER_ACCOUNT) {
-      setDraft("");
-      return;
-    }
-    onChange([...value, t]);
-    setDraft("");
-  };
-
-  const handleKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === "," || e.key === "Tab") {
-      if (draft.trim().length === 0) return;
-      e.preventDefault();
-      commit(draft);
-    } else if (e.key === "Backspace" && draft.length === 0 && value.length > 0) {
-      e.preventDefault();
-      onChange(value.slice(0, -1));
-    }
-  };
-
-  const remove = (tag: string) => onChange(value.filter((t) => t !== tag));
-
-  const suggestionPool = (suggestions ?? [])
-    .filter((s) => !value.includes(s))
-    .filter((s) => (draft ? s.includes(normalizeTag(draft)) : true))
-    .slice(0, 6);
-
+/**
+ * Preset tag picker. Renders every {@link PRESET_TAGS} value plus any
+ * "extra" tags the account already has (so pre-existing custom tags stay
+ * removable) as toggleable chips. There is no free-form input — this
+ * enforces the shared tag vocabulary.
+ */
+export function TagInput({ value, onChange, extras }: TagInputProps) {
+  const selected = new Set(value);
+  // Show presets first, then any extras (legacy or from other accounts)
+  // that are not in the preset list, so the user can still de-select them.
+  const extraTags = [
+    ...new Set([
+      ...value.filter((t) => !(PRESET_TAGS as readonly string[]).includes(t)),
+      ...(extras ?? []).filter((t) => !(PRESET_TAGS as readonly string[]).includes(t)),
+    ]),
+  ];
+  const options: string[] = [...PRESET_TAGS, ...extraTags];
   const atLimit = value.length >= MAX_TAGS_PER_ACCOUNT;
+
+  const toggle = (tag: string) => {
+    if (selected.has(tag)) {
+      onChange(value.filter((t) => t !== tag));
+    } else {
+      if (atLimit) return;
+      onChange([...value, tag]);
+    }
+  };
+
+  const handleKey = (e: KeyboardEvent<HTMLButtonElement>, tag: string) => {
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      toggle(tag);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-1.5">
       <div
-        className="flex min-h-[44px] flex-wrap items-center gap-1.5 rounded-[12px] px-2.5 py-2"
+        className="flex flex-wrap gap-1.5 rounded-[12px] px-2.5 py-2.5"
         style={{
           background: "#fff",
-          border: `1px solid ${focused ? "rgba(28,28,28,0.35)" : BORDER}`,
+          border: `1px solid ${BORDER}`,
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
-          transition: "border-color 0.15s ease",
         }}
+        role="group"
+        aria-label="Select tags"
       >
-        {value.map((t) => (
-          <TagChip key={t} tag={t} onRemove={() => remove(t)} size="sm" />
-        ))}
-        {!atLimit && (
-          <input
-            type="text"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={handleKey}
-            onFocus={() => setFocused(true)}
-            onBlur={() => {
-              setFocused(false);
-              if (draft.trim()) commit(draft);
-            }}
-            placeholder={value.length === 0 ? (placeholder ?? "Add tags…") : ""}
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            className="min-w-[80px] flex-1 bg-transparent text-[13px] outline-none placeholder:text-[color:rgba(95,95,93,0.6)]"
-            style={{ color: CHARCOAL }}
-          />
-        )}
-      </div>
-      {atLimit && (
-        <span className="px-1 text-[11px]" style={{ color: MUTED }}>
-          {MAX_TAGS_PER_ACCOUNT} tag limit reached.
-        </span>
-      )}
-      {suggestionPool.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 px-0.5">
-          {suggestionPool.map((s) => (
+        {options.map((tag) => {
+          const isSelected = selected.has(tag);
+          const isExtra = !(PRESET_TAGS as readonly string[]).includes(tag);
+          const disabled = !isSelected && atLimit;
+          return (
             <button
-              key={s}
+              key={tag}
               type="button"
-              onClick={() => commit(s)}
-              className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10.5px]"
+              aria-pressed={isSelected}
+              disabled={disabled}
+              onClick={() => toggle(tag)}
+              onKeyDown={(e) => handleKey(e, tag)}
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px] transition-all disabled:cursor-not-allowed disabled:opacity-40"
               style={{
-                background: "rgba(28,28,28,0.05)",
-                color: MUTED,
-                border: `1px dashed ${BORDER}`,
-                fontWeight: 500,
+                background: isSelected ? CHARCOAL : "rgba(28,28,28,0.04)",
+                color: isSelected ? "#fff" : MUTED,
+                border: `1px ${isExtra ? "dashed" : "solid"} ${
+                  isSelected ? CHARCOAL : BORDER
+                }`,
+                fontWeight: isSelected ? 600 : 500,
               }}
             >
-              <Plus className="h-2.5 w-2.5" strokeWidth={2.4} />
-              {s}
+              {isSelected && <Check className="h-2.5 w-2.5" strokeWidth={3} />}
+              {tag}
             </button>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
+      <span className="px-1 text-[11px]" style={{ color: MUTED }}>
+        {atLimit
+          ? `${MAX_TAGS_PER_ACCOUNT} tag limit reached.`
+          : "Tap a tag to add or remove it. Custom tags are disabled."}
+      </span>
     </div>
   );
 }
+
