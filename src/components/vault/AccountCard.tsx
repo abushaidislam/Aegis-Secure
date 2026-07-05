@@ -491,11 +491,16 @@ export function AccountCard({ account, now, isFavorite, onToggleFavorite, onDele
             style={{ background: "rgba(28,28,28,0.35)", backdropFilter: "blur(4px)" }}
           />
           <motion.div
+            ref={detailsPanelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={detailsTitleId}
+            tabIndex={-1}
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}
             transition={soft}
-            className="relative z-10 mx-auto w-full max-w-[440px] rounded-t-[22px] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:rounded-[22px]"
+            className="relative z-10 mx-auto w-full max-w-[440px] rounded-t-[22px] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:rounded-[22px] focus:outline-none"
             style={{
               background: CREAM_SOFT,
               border: `1px solid ${BORDER}`,
