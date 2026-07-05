@@ -9,6 +9,24 @@ import { logoUrlFor, domainFromIssuer } from "@/lib/issuer-domain";
 const DANGER = "#b23a2a";
 const FAV = "#c99a2b";
 
+// Dedupe toast per issuer so the same failing logo doesn't spam notifications.
+const notifiedIssuers = new Set<string>();
+function notifyLogoIssue(issuer: string, reason: "unmapped" | "error") {
+  const key = `${reason}:${issuer.toLowerCase()}`;
+  if (notifiedIssuers.has(key)) return;
+  notifiedIssuers.add(key);
+  const label = issuer || "this account";
+  if (reason === "unmapped") {
+    toast.message(`No logo found for "${label}"`, {
+      description: "Showing initials instead — we couldn't match a website domain.",
+    });
+  } else {
+    toast.error(`Couldn't load logo for "${label}"`, {
+      description: "The image failed to load. Showing initials instead.",
+    });
+  }
+}
+
 interface Props {
   account: DecryptedAccount;
   now: number;
@@ -101,7 +119,10 @@ export function AccountCard({ account, now, isFavorite, onToggleFavorite }: Prop
               alt=""
               className="h-full w-full object-contain"
               loading="lazy"
-              onError={() => setLogoFailed(true)}
+              onError={() => {
+                setLogoFailed(true);
+                notifyLogoIssue(account.issuer || seed, "error");
+              }}
             />
           ) : (
             initials(seed)
