@@ -150,10 +150,46 @@ the Vault screen, not a tab.
 
 ## Next feature candidates
 
-1. **Encrypted export** — download a passphrase-wrapped `.avf` file
-   mirroring the DB shape so users hold their own backup. (Phase 3.2.)
-2. **RLS CI test** — `tests/rls/anonymous-cannot-read.spec.ts` walking
-   the map in `docs/routing.md`.
+## Phase 3 — Vault UX depth ✅ CLOSED (this session)
+
+### 3.1 Favorites sync to DB (landed)
+- Removed the client-only `src/lib/favorites.ts` localStorage cache.
+- `DecryptedAccount.is_favorite` now flows from `vault_accounts.is_favorite`;
+  `setAccountFavorite(id, next)` in `vault-accounts.ts` writes through
+  Supabase with an optimistic-UI rollback on error.
+- `vault.tsx` derives the favorites `Set` from the loaded rows and re-orders
+  server-side (`.order("is_favorite", { ascending: false })`) so favorites
+  now roam across devices instead of being per-browser.
+
+### 3.2 Encrypted `.avf` export (landed)
+- `src/lib/vault-export.ts` — passphrase-wrapped JSON envelope
+  (`format: "aegis-vault-file"`, `version` pinned to `VAULT_CRYPTO_VERSION`).
+  KDF matches the live vault (PBKDF2-SHA256, 600k iterations, 16-byte salt);
+  payload sealed with AES-256-GCM under a KEK derived from a user-picked
+  export passphrase — never the vault passphrase, never the DEK on disk.
+- New Security-tab row "Encrypted export" → passphrase sheet with strength
+  meter, downloads `aegis-vault-<iso>.avf` as `application/json`.
+- `tests/crypto/vault-export.roundtrip.spec.mjs` — 4 green assertions:
+  round-trip, wrong-passphrase rejection, JSON stability, weak-passphrase
+  rejection. Run with
+  `node --import tsx --test tests/crypto/vault-export.roundtrip.spec.mjs`.
+
+### Bulk import (already shipped)
+- Paste + File-or-image importer already supports `otpauth://`,
+  `otpauth-migration://` (Google Authenticator protobuf), Aegis plain JSON,
+  and 2FAS JSON with a preview + per-row checkbox stage. Restoring an
+  `.avf` file inside the same importer is the natural Phase 5 follow-up.
+
+**Exit criterion met:** favorites persist server-side, export/restore-your-own-backup
+loop is possible end-to-end without trusting Lovable Cloud. Phase 3 is closed.
+
+## Next feature candidates
+
+1. **`.avf` restore in the importer** — the export exists; teach
+   `vault-import.ts` to accept `format: "aegis-vault-file"` + passphrase
+   prompt.
+2. **RLS CI test** — extend `tests/rls/` to walk every route in
+   `docs/routing.md`.
 3. **`VAULT_CRYPTO_VERSION = 2`** — Argon2id KDF + AAD binding
    (`user_id || account_id`) with a background re-encrypt migrator.
-4. **CSP + security headers middleware** on the TanStack Start server.
+4. **CSP + security headers middleware** — landed in Phase 1.3.

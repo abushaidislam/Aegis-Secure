@@ -17,6 +17,7 @@ export interface VaultAccountRecord {
   digits: number;
   period: number;
   sort_order: number;
+  is_favorite: boolean;
   secret_ciphertext: unknown;
   secret_iv: unknown;
 }
@@ -29,6 +30,7 @@ export interface DecryptedAccount {
   digits: number;
   period: number;
   sort_order: number;
+  is_favorite: boolean;
   secret: string; // base32
 }
 
@@ -117,12 +119,21 @@ export async function deleteAccount(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function setAccountFavorite(id: string, isFavorite: boolean): Promise<void> {
+  const { error } = await supabase
+    .from("vault_accounts")
+    .update({ is_favorite: isFavorite })
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function listAccounts(dek: CryptoKey): Promise<DecryptedAccount[]> {
   const { data, error } = await supabase
     .from("vault_accounts")
     .select(
-      "id, issuer, label, icon_slug, algorithm, digits, period, sort_order, secret_ciphertext, secret_iv",
+      "id, issuer, label, icon_slug, algorithm, digits, period, sort_order, is_favorite, secret_ciphertext, secret_iv",
     )
+    .order("is_favorite", { ascending: false })
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
   if (error) throw error;
@@ -139,6 +150,7 @@ export async function listAccounts(dek: CryptoKey): Promise<DecryptedAccount[]> 
         digits: r.digits,
         period: r.period,
         sort_order: r.sort_order,
+        is_favorite: r.is_favorite,
         secret,
       } satisfies DecryptedAccount;
     }),

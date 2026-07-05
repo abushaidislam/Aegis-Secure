@@ -7,8 +7,12 @@ import {
   useActivityKeepAlive,
   useVaultUnlocked,
 } from "@/lib/vault-session";
-import { deleteAccount, listAccounts, type DecryptedAccount } from "@/lib/vault-accounts";
-import { loadFavorites, saveFavorites } from "@/lib/favorites";
+import {
+  deleteAccount,
+  listAccounts,
+  setAccountFavorite,
+  type DecryptedAccount,
+} from "@/lib/vault-accounts";
 import { AccountCard } from "@/components/vault/AccountCard";
 import { Shield, Plus, Loader2, Search, X } from "lucide-react";
 import {
@@ -39,7 +43,7 @@ export const Route = createFileRoute("/_authenticated/_tabs/vault")({
 function VaultPage() {
   const navigate = useNavigate();
   const unlocked = useVaultUnlocked();
-  const { user } = Route.useRouteContext();
+  
 
   useActivityKeepAlive();
 
@@ -47,32 +51,33 @@ function VaultPage() {
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [query, setQuery] = useState("");
-  const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
 
-  useEffect(() => {
-    setFavorites(loadFavorites(user.id));
-  }, [user.id]);
+  const favorites = useMemo(() => {
+    const s = new Set<string>();
+    if (accounts) for (const a of accounts) if (a.is_favorite) s.add(a.id);
+    return s;
+  }, [accounts]);
 
   const toggleFavorite = (id: string) => {
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      saveFavorites(user.id, next);
-      return next;
+    const target = accounts?.find((a) => a.id === id);
+    if (!target) return;
+    const nextVal = !target.is_favorite;
+    // Optimistic update.
+    setAccounts((prev) =>
+      prev ? prev.map((a) => (a.id === id ? { ...a, is_favorite: nextVal } : a)) : prev,
+    );
+    setAccountFavorite(id, nextVal).catch((err) => {
+      // Rollback on failure.
+      setAccounts((prev) =>
+        prev ? prev.map((a) => (a.id === id ? { ...a, is_favorite: !nextVal } : a)) : prev,
+      );
+      setError(err instanceof Error ? err.message : "Could not update favorite.");
     });
   };
 
   const handleDelete = async (id: string) => {
     await deleteAccount(id);
     setAccounts((prev) => (prev ? prev.filter((a) => a.id !== id) : prev));
-    setFavorites((prev) => {
-      if (!prev.has(id)) return prev;
-      const next = new Set(prev);
-      next.delete(id);
-      saveFavorites(user.id, next);
-      return next;
-    });
   };
 
   useEffect(() => {
@@ -111,11 +116,11 @@ function VaultPage() {
     const favs: DecryptedAccount[] = [];
     const rest: DecryptedAccount[] = [];
     for (const a of filtered) {
-      if (favorites.has(a.id)) favs.push(a);
+      if (a.is_favorite) favs.push(a);
       else rest.push(a);
     }
     return { favoriteList: favs, otherList: rest };
-  }, [filtered, favorites]);
+  }, [filtered]);
 
   return (
     <>
