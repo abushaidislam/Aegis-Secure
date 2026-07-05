@@ -3,12 +3,39 @@
 // the array at 20 entries; we enforce the same limit here to keep the
 // insert trigger from ever surfacing a raw Postgres error to the user.
 
-import { useState, type KeyboardEvent } from "react";
-import { X, Plus } from "lucide-react";
+import { type KeyboardEvent } from "react";
+import { X, Check } from "lucide-react";
 import { BORDER, CHARCOAL, MUTED } from "@/components/aegis/chrome";
 
 export const MAX_TAGS_PER_ACCOUNT = 20;
 export const MAX_TAG_LENGTH = 24;
+
+/**
+ * Curated preset of tag values users can attach to accounts.
+ *
+ * We intentionally do NOT allow free-form tag creation: an open text field
+ * quickly fragments the tag space ("work", "Work", "wrk", "office") and
+ * makes filters useless. Presets keep the vocabulary shared across accounts
+ * and turn the picker into a one-tap toggle.
+ *
+ * To add a category, extend this list — no schema or UI change needed.
+ */
+export const PRESET_TAGS = [
+  "work",
+  "personal",
+  "finance",
+  "social",
+  "developer",
+  "shopping",
+  "gaming",
+  "entertainment",
+  "education",
+  "travel",
+  "health",
+  "other",
+] as const;
+
+export type PresetTag = (typeof PRESET_TAGS)[number];
 
 /** Canonicalise a raw tag string: lowercase, trim, collapse spaces to `-`. */
 export function normalizeTag(input: string): string {
