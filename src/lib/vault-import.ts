@@ -2,8 +2,19 @@
 // no Supabase calls — so the actual commit stays on the caller's DEK path.
 import * as OTPAuth from "otpauth";
 import { parseOtpauthUri, type ParsedOtpauth, type Algorithm } from "@/lib/vault-accounts";
+import {
+  AVF_FORMAT,
+  decryptExportedFile,
+  type EncryptedExportFile,
+} from "@/lib/vault-export";
 
-export type ImportSource = "otpauth" | "otpauth-migration" | "aegis" | "2fas" | "unknown";
+export type ImportSource =
+  | "otpauth"
+  | "otpauth-migration"
+  | "aegis"
+  | "2fas"
+  | "avf"
+  | "unknown";
 
 export interface ImportResult {
   source: ImportSource;
