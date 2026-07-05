@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /vault
+Disallow: /security
+Disallow: /profile
+Disallow: /onboarding
+Disallow: /lock
+Disallow: /auth/callback
+Disallow: /auth/reset-password
+
+Sitemap: https://hug-machine-maker.lovable.app/sitemap.xml

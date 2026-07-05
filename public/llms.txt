@@ -1,0 +1,10 @@
+# Aegis
+
+> A zero-knowledge, end-to-end encrypted TOTP authenticator in your browser. Your master passphrase never leaves your device — the server stores opaque ciphertext only.
+
+Aegis generates secure one-time codes (RFC 6238 TOTP) for your online accounts. Vault data is encrypted client-side with AES-GCM 256 using a key derived from your passphrase via PBKDF2-HMAC-SHA256 (600 000 iterations). Cross-device sync ships ciphertext through Lovable Cloud, but the server can never read your codes.
+
+## Pages
+
+- [Home](/): Product overview and sign-in entry point.
+- [Sign in](/auth): Create an Aegis account or sign in with email or Google.
