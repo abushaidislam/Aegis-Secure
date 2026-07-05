@@ -74,12 +74,17 @@ Ordered by user value on top of the current vault:
    copied code (defensively overwrites when read permission is denied).
    A subtle "next XXX XXX" preview replaces the copy icon during the
    last 5 s of the current window so users can wait for a fresh code.
-4. **Bulk import** — parse `otpauth-migration://` QR (Google
-   Authenticator export), Aegis JSON, 2FAS JSON. New route
-   `_authenticated/_locked/vault_.import.tsx`; reuse existing add flow
-   to commit each parsed account.
+4. ~~**Bulk import**~~ — DONE. `_authenticated/_locked/vault_.import.tsx`
+   with Paste / File-or-image tabs. Parsers in `src/lib/vault-import.ts`
+   auto-detect `otpauth://` lists, `otpauth-migration://` (Google
+   Authenticator, manual protobuf decode), Aegis plain JSON, and 2FAS
+   JSON. Preview stage shows every parsed entry with per-row checkboxes
+   (Select/Deselect all), commits selected ones through the existing
+   `addAccount` path so each secret is encrypted with the in-memory DEK,
+   then toasts the count and returns to `/vault`. Entry point: "Or
+   import from another app" link on `/vault/new`.
 5. **Encrypted export** — download a passphrase-wrapped `.aegis` file
    that mirrors the DB shape, so users hold their own backup.
 
-Bulk import is the next pickup.
+Encrypted export is the next pickup.
 
