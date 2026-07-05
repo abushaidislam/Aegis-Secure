@@ -157,6 +157,25 @@ export async function setAccountFavorite(id: string, isFavorite: boolean): Promi
   if (data) void upsertVaultCache(data as VaultAccountRecord);
 }
 
+/** Update the editable account metadata (issuer + label). */
+export async function updateAccountDetails(
+  id: string,
+  input: { issuer: string; label: string },
+): Promise<{ issuer: string; label: string }> {
+  const issuer = input.issuer.trim();
+  const label = input.label.trim();
+  if (!issuer) throw new Error("Service name can't be empty.");
+  const { data, error } = await supabase
+    .from("vault_accounts")
+    .update({ issuer, label })
+    .eq("id", id)
+    .select(ACCOUNT_SELECT)
+    .single();
+  if (error) throw error;
+  if (data) void upsertVaultCache(data as VaultAccountRecord);
+  return { issuer, label };
+}
+
 /**
  * Overwrite an account's tag list. Client normalises + caps at 20.
  *
