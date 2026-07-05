@@ -148,7 +148,8 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    font-feature-settings: "cv11", "ss01", "ss03";
+    font-feature-settings: "ss01", "ss02", "cv11";
+    letter-spacing: -0.005em;
     background-color: var(--color-background);
     color: var(--color-foreground);
     overscroll-behavior: none;
