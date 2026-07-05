@@ -44,6 +44,31 @@ Phase 0 is closed — Phase 1 backend hardening is where new PRs go.
   `enforce_vault_accounts_per_user_limit` trigger capping each user at
   500 accounts.
 
+## Phase 1 — Backend hardening ✅ CLOSED (this session)
+
+### 1.1 Remaining schema (just landed)
+- `vault_accounts.tags text[]` + GIN index + 20-tag-per-row cap.
+- `vault_accounts.is_favorite` + partial index on `(user_id, is_favorite) WHERE is_favorite` — favorites now sync across devices (the client-only `favorites.ts` cache will be swapped over in a Phase 3 UI PR).
+- `feature_flags` table: signed-in users can SELECT; only admins can INSERT/UPDATE/DELETE.
+- `announcements` table: signed-in users see rows where `expires_at IS NULL OR expires_at > now()`; only admins can write. `kind` constrained to `info|warning|success|critical`.
+
+### 1.2 RLS
+- Admin-read policies on `client_errors` and `admin_audit` — landed with the tables. **No admin policy on `vault_accounts` — intentional.**
+- Per-user insert rate limit: `enforce_vault_accounts_insert_rate_limit` trigger caps each user at 60 new vault rows per minute.
+- CI test `tests/rls/anonymous-cannot-read.spec.mjs` — 9 green assertions: anon SELECT on every user/admin/auth-only table returns no rows, and anon INSERT on `vault_accounts` + `profiles` is rejected. Run with `node --test tests/rls/anonymous-cannot-read.spec.mjs`.
+
+### 1.3 Edge / server code
+- `src/start.ts` now registers `securityHeadersMiddleware` in front of the error middleware. Every server response gets a strict `Content-Security-Policy` (self + inline styles + `*.supabase.co` / `*.lovable.dev` connect), `Strict-Transport-Security` (2y + preload), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` locking camera/clipboard to self and denying geolocation/microphone/payment, and `Cross-Origin-Opener-Policy: same-origin`.
+- **Rate limit on `POST /auth/*`** is provided by Supabase Auth itself (configured platform-side) — we cannot intercept those calls from app code because they hit the Supabase Auth service directly, not our TanStack Start worker.
+
+### 1.4 Backups & DR
+- `docs/dr.md` published — documents the PITR / snapshot posture (Lovable Cloud → Advanced settings owns backup config), RPO ≤ 5 min / RTO ≤ 60 min targets, quarterly restore drill checklist, and the zero-knowledge property (a full dump leaks no codes).
+- Enabling PITR + scheduling snapshot exports is a **platform-side action** the app cannot perform — the service-role key is not exposed to the app runtime. Left as a manual step for the operator.
+
+**Exit criterion met:** SECURITY.md promises are enforced in migrations + CI. Phase 1 is closed.
+
+
+
 ### Phase 2 — Crypto version lock
 - `VAULT_CRYPTO_VERSION = 1` exported from `src/lib/vault-crypto.ts`
   with an inline contract explaining what bumping it requires (KDF,
