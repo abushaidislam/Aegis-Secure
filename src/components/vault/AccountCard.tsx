@@ -147,6 +147,8 @@ interface Props {
   isFavorite?: boolean;
   onToggleFavorite?: (id: string) => void;
   onDelete?: (id: string) => Promise<void> | void;
+  onTagsChanged?: (id: string, tags: string[]) => void;
+  allTagSuggestions?: string[];
 }
 
 function formatCode(code: string): string {
