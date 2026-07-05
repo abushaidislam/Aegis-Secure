@@ -12,6 +12,10 @@ import {
   upsertVaultCache,
   writeVaultCache,
 } from "@/lib/vault-cache";
+import { normalizeTagList } from "@/components/vault/tags";
+
+const ACCOUNT_SELECT =
+  "id, issuer, label, icon_slug, algorithm, digits, period, sort_order, is_favorite, tags, secret_ciphertext, secret_iv";
 
 export type Algorithm = "SHA1" | "SHA256" | "SHA512";
 
