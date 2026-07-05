@@ -252,8 +252,13 @@ function ProfilePage() {
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
           }}
         >
-          <div
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-[16px]"
+          <motion.button
+            type="button"
+            onClick={handleAvatarPick}
+            whileTap={{ scale: 0.96 }}
+            disabled={avatarBusy}
+            aria-label={hasAvatar ? "Change profile photo" : "Add profile photo"}
+            className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full text-[16px]"
             style={{
               background: CHARCOAL,
               color: CREAM_SOFT,
@@ -262,8 +267,42 @@ function ProfilePage() {
               letterSpacing: "0.02em",
             }}
           >
-            {initials(seed)}
-          </div>
+            {hasAvatar && avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt=""
+                className="h-full w-full object-cover"
+                draggable={false}
+              />
+            ) : (
+              initials(seed)
+            )}
+            <span
+              className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
+              style={{ background: "rgba(28,28,28,0.55)" }}
+            >
+              {avatarBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" style={{ color: CREAM_SOFT }} />
+              ) : (
+                <Camera className="h-4 w-4" strokeWidth={1.8} style={{ color: CREAM_SOFT }} />
+              )}
+            </span>
+            {avatarBusy && !("no-hover" in {}) && (
+              <span
+                className="absolute inset-0 flex items-center justify-center"
+                style={{ background: "rgba(28,28,28,0.55)" }}
+              >
+                <Loader2 className="h-4 w-4 animate-spin" style={{ color: CREAM_SOFT }} />
+              </span>
+            )}
+          </motion.button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarFile}
+          />
           <div className="min-w-0 flex-1">
             <div
               className="truncate text-[15px]"
