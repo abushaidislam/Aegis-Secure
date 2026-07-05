@@ -125,10 +125,27 @@ function SecurityPage() {
         setBioEnrolled(true);
         setNotice({ kind: "info", text: "Biometric unlock enabled on this device." });
       } else {
-        disableBiometric(user.id);
-        setBioEnrolled(false);
-        setNotice({ kind: "info", text: "Biometric unlock disabled on this device." });
+        const result = disableBiometric(user.id);
+        // Re-read from storage as an independent second check.
+        const stillEnrolled = isBiometricEnabled(user.id);
+        if (result.removed && !stillEnrolled) {
+          setBioEnrolled(false);
+          setNotice({
+            kind: "info",
+            text: "Biometric unlock removed from this device. Passphrase will be required next time.",
+          });
+        } else {
+          setBioEnrolled(stillEnrolled);
+          setNotice({
+            kind: "error",
+            text:
+              "Couldn't remove biometric unlock from this device" +
+              (result.error ? ` — ${result.error}` : ".") +
+              " Try again, or clear site data for this app.",
+          });
+        }
       }
+
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Could not update biometric setting.";
       setNotice({ kind: "error", text: msg });
