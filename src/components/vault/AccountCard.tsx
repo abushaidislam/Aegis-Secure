@@ -945,7 +945,8 @@ export function AccountCard({ account, now, isFavorite, onToggleFavorite, onDele
                   )}
                 </div>
                 <div className="min-w-0">
-                  <div
+                <div
+                    id={confirmTitleId}
                     className="truncate text-[16px]"
                     style={{
                       fontFamily: "'Playfair Display', serif",
