@@ -63,6 +63,18 @@ function VaultPage() {
     });
   };
 
+  const handleDelete = async (id: string) => {
+    await deleteAccount(id);
+    setAccounts((prev) => (prev ? prev.filter((a) => a.id !== id) : prev));
+    setFavorites((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      saveFavorites(user.id, next);
+      return next;
+    });
+  };
+
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 250);
     return () => window.clearInterval(id);
