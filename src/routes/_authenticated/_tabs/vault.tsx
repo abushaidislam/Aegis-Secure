@@ -469,16 +469,19 @@ function TagManagerSheet({
 
   const applyTransform = async (transform: (tags: string[]) => string[]) => {
     const next = [...accounts];
+    let anyQueued = false;
     for (let i = 0; i < next.length; i++) {
       const current = next[i].tags ?? [];
       const proposed = transform(current);
       const same =
         current.length === proposed.length && current.every((t, idx) => t === proposed[idx]);
       if (same) continue;
-      const saved = await setAccountTags(next[i].id, proposed);
+      const { tags: saved, queued } = await setAccountTags(next[i].id, proposed);
+      if (queued) anyQueued = true;
       next[i] = { ...next[i], tags: saved };
     }
     onLocalChange(next);
+    return { anyQueued };
   };
 
   const doDelete = async (tag: string) => {
