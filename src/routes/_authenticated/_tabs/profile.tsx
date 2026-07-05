@@ -65,6 +65,7 @@ function ProfilePage() {
   const [avatarPath, setAvatarPath] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarSheet, setAvatarSheet] = useState(false);
   const [notice, setNotice] = useState<{ kind: "error" | "info"; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
