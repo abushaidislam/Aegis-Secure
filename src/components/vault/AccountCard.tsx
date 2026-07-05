@@ -12,9 +12,16 @@ import {
   EyeOff,
   ShieldCheck,
   Clock3,
+  Pencil,
+  MousePointerClick,
 } from "lucide-react";
 import { toast } from "sonner";
-import { generateCode, setAccountTags, type DecryptedAccount } from "@/lib/vault-accounts";
+import {
+  generateCode,
+  setAccountTags,
+  updateAccountDetails,
+  type DecryptedAccount,
+} from "@/lib/vault-accounts";
 import { BORDER, CHARCOAL, CREAM_SOFT, MUTED, soft } from "@/components/aegis/chrome";
 import { logoUrlFor, domainFromIssuer } from "@/lib/issuer-domain";
 import { useHideCodes } from "@/lib/vault-privacy";
