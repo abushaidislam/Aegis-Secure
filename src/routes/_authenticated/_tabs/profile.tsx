@@ -384,30 +384,6 @@ function ProfilePage() {
             />
           )}
           <SettingsRow
-            icon={<Camera className="h-4 w-4" strokeWidth={1.8} />}
-            title={hasAvatar ? "Change photo" : "Add profile photo"}
-            description={hasAvatar ? "Tap to replace your current picture" : "JPG or PNG, cropped to a square"}
-            onClick={handleAvatarPick}
-            disabled={avatarBusy}
-            trailing={
-              avatarBusy ? (
-                <Loader2 className="h-4 w-4 animate-spin" style={{ color: MUTED }} />
-              ) : undefined
-            }
-            chevron={!avatarBusy}
-          />
-          {hasAvatar && (
-            <SettingsRow
-              icon={<X className="h-4 w-4" strokeWidth={1.8} />}
-              title="Remove photo"
-              description="Fall back to your initials"
-              onClick={handleAvatarRemove}
-              disabled={avatarBusy}
-              danger
-              chevron
-            />
-          )}
-          <SettingsRow
             icon={<Mail className="h-4 w-4" strokeWidth={1.8} />}
             title="Email"
             value={user.email ?? ""}
