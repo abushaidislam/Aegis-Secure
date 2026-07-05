@@ -327,6 +327,14 @@ function ImportPage() {
               onChange={handleImageFile}
             />
           </>
+        ) : stage === "avf" ? (
+          <AvfPassStage
+            passphrase={avfPass}
+            onChange={setAvfPass}
+            busy={avfBusy}
+            notice={notice}
+            onSubmit={submitAvf}
+          />
         ) : preview ? (
           <PreviewStage
             preview={preview}
@@ -343,6 +351,7 @@ function ImportPage() {
     </AegisScreen>
   );
 }
+
 
 function SegmentedTabs({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
   return (
