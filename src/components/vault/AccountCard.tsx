@@ -69,6 +69,76 @@ function scheduleClipboardClear(plain: string) {
   }, CLIPBOARD_CLEAR_MS);
 }
 
+// Modal a11y: Escape to close, focus trap within panel, restore focus on close,
+// and lock background scroll while open.
+function useModalA11y(
+  open: boolean,
+  panelRef: React.RefObject<HTMLElement | null>,
+  onClose: () => void,
+) {
+  useEffect(() => {
+    if (!open) return;
+    if (typeof document === "undefined") return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    // Move focus into the panel after mount.
+    const focusFirst = () => {
+      const panel = panelRef.current;
+      if (!panel) return;
+      const focusables = panel.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      (focusables[0] ?? panel).focus();
+    };
+    const raf = window.requestAnimationFrame(focusFirst);
+
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const focusables = Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((el) => el.offsetParent !== null || el === panel);
+      if (focusables.length === 0) {
+        e.preventDefault();
+        panel.focus();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && (active === first || !panel.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+
+    return () => {
+      window.cancelAnimationFrame(raf);
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = prevOverflow;
+      // Restore focus to the element that opened the modal.
+      if (previouslyFocused && typeof previouslyFocused.focus === "function") {
+        previouslyFocused.focus();
+      }
+    };
+  }, [open, onClose, panelRef]);
+}
+
 interface Props {
   account: DecryptedAccount;
   now: number;
@@ -105,6 +175,16 @@ export function AccountCard({ account, now, isFavorite, onToggleFavorite, onDele
   const [deleting, setDeleting] = useState(false);
   const pressTimer = useRef<number | null>(null);
   const longPressedRef = useRef(false);
+  const detailsPanelRef = useRef<HTMLDivElement | null>(null);
+  const confirmPanelRef = useRef<HTMLDivElement | null>(null);
+  const detailsTitleId = `acc-details-${account.id}`;
+  const confirmTitleId = `acc-confirm-${account.id}`;
+  const confirmDescId = `acc-confirm-desc-${account.id}`;
+
+  useModalA11y(detailsOpen, detailsPanelRef, () => setDetailsOpen(false));
+  useModalA11y(confirmOpen, confirmPanelRef, () => {
+    if (!deleting) setConfirmOpen(false);
+  });
 
   const period = account.period;
   const elapsed = Math.floor(now / 1000) % period;
@@ -411,11 +491,16 @@ export function AccountCard({ account, now, isFavorite, onToggleFavorite, onDele
             style={{ background: "rgba(28,28,28,0.35)", backdropFilter: "blur(4px)" }}
           />
           <motion.div
+            ref={detailsPanelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={detailsTitleId}
+            tabIndex={-1}
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}
             transition={soft}
-            className="relative z-10 mx-auto w-full max-w-[440px] rounded-t-[22px] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:rounded-[22px]"
+            className="relative z-10 mx-auto w-full max-w-[440px] rounded-t-[22px] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:rounded-[22px] focus:outline-none"
             style={{
               background: CREAM_SOFT,
               border: `1px solid ${BORDER}`,
@@ -459,6 +544,7 @@ export function AccountCard({ account, now, isFavorite, onToggleFavorite, onDele
                   Current code
                 </div>
                 <div
+                  id={detailsTitleId}
                   className="truncate text-[17px]"
                   style={{
                     fontFamily: "'Playfair Display', serif",
@@ -817,11 +903,17 @@ export function AccountCard({ account, now, isFavorite, onToggleFavorite, onDele
             style={{ background: "rgba(28,28,28,0.35)", backdropFilter: "blur(4px)" }}
           />
           <motion.div
+            ref={confirmPanelRef}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby={confirmTitleId}
+            aria-describedby={confirmDescId}
+            tabIndex={-1}
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}
             transition={soft}
-            className="relative z-10 mx-auto w-full max-w-[440px] rounded-t-[22px] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:rounded-[22px]"
+            className="relative z-10 mx-auto w-full max-w-[440px] rounded-t-[22px] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:rounded-[22px] focus:outline-none"
             style={{
               background: CREAM_SOFT,
               border: `1px solid ${BORDER}`,
@@ -853,7 +945,8 @@ export function AccountCard({ account, now, isFavorite, onToggleFavorite, onDele
                   )}
                 </div>
                 <div className="min-w-0">
-                  <div
+                <div
+                    id={confirmTitleId}
                     className="truncate text-[16px]"
                     style={{
                       fontFamily: "'Playfair Display', serif",
@@ -884,6 +977,7 @@ export function AccountCard({ account, now, isFavorite, onToggleFavorite, onDele
             </div>
 
             <p
+              id={confirmDescId}
               className="mb-4 text-[13px]"
               style={{ color: MUTED, lineHeight: 1.55 }}
             >
