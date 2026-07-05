@@ -277,26 +277,30 @@ extra work is a [P1] follow-up rather than a Phase 6 blocker.
   `precache 89 entries (2937.98 KiB)` — first-run install grabs
   everything needed for offline unlock.
 
-### Deferred to next PR
-- **6.3 code splitting** — `@zxing/browser` (1.07 MB) still ships
-  in the two scan chunks; `jspdf` (477 KB) still ships in
-  `vault_.recovery`. Both are already off the main entry via
-  route splitting, so this is a bundle-size win rather than a
-  correctness fix. Do it before Phase 7 lands more UI.
+### 6.3 Dynamic-import heavy libraries ✅ CLOSED (this session)
+- `jspdf` moved to `await import("jspdf")` inside `downloadPdf` in
+  `vault_.recovery.tsx`. Recovery-route chunk shrank **419 KB → 30 KB**;
+  the 399 KB `jspdf` chunk only loads when the user clicks Download.
+- `@zxing/browser` moved to `await import("@zxing/browser")` inside
+  every `BrowserQRCodeReader` call site in `vault_.import.tsx` and
+  `vault_.new.tsx` (image decode + live camera scan paths). Type-only
+  `IScannerControls` import kept for `useEffect` cleanup typing.
+  `vault_.import` chunk: **22 KB**; `vault_.new` chunk: **13 KB**.
+  The zxing bundle now only loads when a user opens the scanner or
+  picks an image file.
+- Verified `bunx tsgo --noEmit` clean and `bun run build` clean.
 
-**Exit criterion met:** Aegis is installable, opens with no
-network, shows cached codes after unlock, and reconciles on
-reconnect. Phase 6 is closed.
+**Exit criterion met:** heavy libs no longer sit in the initial vault
+paint. Phase 6 is fully closed.
 
 ## Next feature candidates
 
-1. **6.3 dynamic-import zxing + jspdf** — the leftover Phase 6
-   bundle-size win.
-2. **Phase 7 — Vault UX II** — Tags UI, drag-and-drop reorder
+1. **Phase 7 — Vault UX II** — Tags UI, drag-and-drop reorder
    (schema already present), bulk edit/delete, HOTP, Steam Guard.
-3. **RLS CI test** — extend `tests/rls/` to walk every route in
+2. **RLS CI test** — extend `tests/rls/` to walk every route in
    `docs/routing.md`.
-4. **`VAULT_CRYPTO_VERSION = 2`** — Argon2id KDF + AAD binding
+3. **`VAULT_CRYPTO_VERSION = 2`** — Argon2id KDF + AAD binding
    (`user_id || account_id`) with a background re-encrypt migrator.
+
 
 
