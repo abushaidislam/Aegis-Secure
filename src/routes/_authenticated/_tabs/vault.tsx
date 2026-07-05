@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_authenticated/_tabs/vault")({
 function VaultPage() {
   const navigate = useNavigate();
   const unlocked = useVaultUnlocked();
-  const { user } = Route.useRouteContext();
+  Route.useRouteContext();
 
   useActivityKeepAlive();
 
