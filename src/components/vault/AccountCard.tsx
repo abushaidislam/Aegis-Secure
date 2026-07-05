@@ -319,7 +319,7 @@ export function AccountCard({ account, now, isFavorite, onToggleFavorite, onDele
       onContextMenu={(e) => {
         e.preventDefault();
         longPressedRef.current = true;
-        setRevealed(false);
+        setRevealed(!hideCodes);
         setDetailsOpen(true);
       }}
       whileTap={{ scale: 0.99, backgroundColor: "rgba(28,28,28,0.03)" }}
