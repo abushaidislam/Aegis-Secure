@@ -42,6 +42,7 @@ interface Props {
   now: number;
   isFavorite?: boolean;
   onToggleFavorite?: (id: string) => void;
+  onDelete?: (id: string) => Promise<void> | void;
 }
 
 function formatCode(code: string): string {
