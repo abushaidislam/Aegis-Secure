@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { IScannerControls } from "@zxing/browser";
 import { getVaultKey } from "@/lib/vault-session";
+import { useOnlineStatus } from "@/lib/use-online";
 import {
   addAccount,
   isValidBase32Secret,
@@ -18,6 +19,7 @@ import {
   ChevronDown,
   KeyRound,
   ImageUp,
+  WifiOff,
 } from "lucide-react";
 import {
   AegisScreen,
@@ -48,6 +50,7 @@ function NewAccountPage() {
   const [tab, setTab] = useState<Tab>("scan");
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{ kind: "error" | "info"; text: string } | null>(null);
+  const online = useOnlineStatus();
 
   const save = async (input: {
     issuer: string;
@@ -57,6 +60,13 @@ function NewAccountPage() {
     digits?: number;
     period?: number;
   }) => {
+    if (!online) {
+      setNotice({
+        kind: "error",
+        text: "You're offline. Reconnect to add a new account — the encrypted vault has to reach the server.",
+      });
+      return;
+    }
     const key = getVaultKey();
     if (!key) {
       navigate({ to: "/lock", search: { redirect: "/vault/new" } });
@@ -131,11 +141,27 @@ function NewAccountPage() {
           </button>
         </div>
 
+        {!online && (
+          <div
+            className="mt-3 flex items-center gap-2 rounded-full px-3.5 py-2 text-[12px]"
+            style={{
+              background: CREAM_SOFT,
+              border: `1px solid ${BORDER}`,
+              color: MUTED,
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+            }}
+          >
+            <WifiOff className="h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
+            <span>You're offline — adding an account is disabled until you reconnect.</span>
+          </div>
+        )}
+
         {notice && (
           <div className="pt-3">
             <Notice kind={notice.kind}>{notice.text}</Notice>
           </div>
         )}
+
 
         <div className="pt-4">
           <AnimatePresence mode="wait" initial={false}>

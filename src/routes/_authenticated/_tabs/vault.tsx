@@ -1,5 +1,5 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   getVaultKey,
@@ -13,8 +13,9 @@ import {
   setAccountFavorite,
   type DecryptedAccount,
 } from "@/lib/vault-accounts";
+import { useOnlineStatus } from "@/lib/use-online";
 import { AccountCard } from "@/components/vault/AccountCard";
-import { Shield, Plus, Loader2, Search, X, WifiOff } from "lucide-react";
+import { Shield, Plus, Loader2, Search, X, WifiOff, RefreshCw } from "lucide-react";
 import {
   BORDER,
   CHARCOAL,
@@ -52,9 +53,9 @@ function VaultPage() {
   const [now, setNow] = useState(() => Date.now());
   const [query, setQuery] = useState("");
   const [source, setSource] = useState<"network" | "cache" | "empty" | null>(null);
-  const [online, setOnline] = useState(() =>
-    typeof navigator === "undefined" ? true : navigator.onLine,
-  );
+  const [reloadKey, setReloadKey] = useState(0);
+  const [retrying, setRetrying] = useState(false);
+  const online = useOnlineStatus();
 
   const favorites = useMemo(() => {
     const s = new Set<string>();
@@ -90,17 +91,6 @@ function VaultPage() {
   }, []);
 
   useEffect(() => {
-    const on = () => setOnline(true);
-    const off = () => setOnline(false);
-    window.addEventListener("online", on);
-    window.addEventListener("offline", off);
-    return () => {
-      window.removeEventListener("online", on);
-      window.removeEventListener("offline", off);
-    };
-  }, []);
-
-  useEffect(() => {
     let cancelled = false;
     const key = getVaultKey();
     if (!key) return;
@@ -110,14 +100,22 @@ function VaultPage() {
         if (cancelled) return;
         setAccounts(list);
         setSource(src);
+        setRetrying(false);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load vault.");
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Failed to load vault.");
+        setRetrying(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [unlocked, user.id, online]);
+  }, [unlocked, user.id, online, reloadKey]);
+
+  const retry = useCallback(() => {
+    setRetrying(true);
+    setReloadKey((k) => k + 1);
+  }, []);
 
 
   const filtered = useMemo(() => {
@@ -161,14 +159,34 @@ function VaultPage() {
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
           }}
         >
-          <WifiOff className="h-3.5 w-3.5" strokeWidth={1.8} />
-          <span>
+          <WifiOff className="h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
+          <span className="flex-1 truncate">
             {online
               ? "Reconnecting — showing cached codes."
               : "You're offline — showing cached codes. Add or edit is disabled."}
           </span>
+          <button
+            type="button"
+            onClick={retry}
+            disabled={retrying}
+            className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] transition-colors disabled:opacity-60"
+            style={{
+              background: "rgba(28,28,28,0.06)",
+              color: CHARCOAL,
+              fontWeight: 600,
+            }}
+            aria-label="Retry loading vault"
+          >
+            {retrying ? (
+              <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />
+            ) : (
+              <RefreshCw className="h-3 w-3" strokeWidth={2} />
+            )}
+            Retry
+          </button>
         </div>
       )}
+
 
       {accounts && accounts.length > 0 && <SearchField value={query} onChange={setQuery} />}
 
