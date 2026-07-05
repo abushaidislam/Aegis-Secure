@@ -151,6 +151,25 @@ function VaultPage() {
         }
       />
 
+      {(!online || source === "cache") && accounts && (
+        <div
+          className="mb-2 mt-1 flex items-center gap-2 rounded-full px-3.5 py-2 text-[12px]"
+          style={{
+            background: CREAM_SOFT,
+            border: `1px solid ${BORDER}`,
+            color: MUTED,
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+          }}
+        >
+          <WifiOff className="h-3.5 w-3.5" strokeWidth={1.8} />
+          <span>
+            {online
+              ? "Reconnecting — showing cached codes."
+              : "You're offline — showing cached codes. Add or edit is disabled."}
+          </span>
+        </div>
+      )}
+
       {accounts && accounts.length > 0 && <SearchField value={query} onChange={setQuery} />}
 
       <div className="pt-2">
