@@ -21,6 +21,7 @@ function AuthenticatedShell() {
   useActivityKeepAlive();
   useEffect(() => {
     initAutoLockForUser(user.id);
+    initHideCodesForUser(user.id);
   }, [user.id]);
   return <Outlet />;
 }
