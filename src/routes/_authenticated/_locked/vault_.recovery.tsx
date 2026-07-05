@@ -8,6 +8,7 @@ import { ArrowLeft, Download, Loader2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getVaultKey } from "@/lib/vault-session";
 import { listAccounts, type DecryptedAccount } from "@/lib/vault-accounts";
+import { toBytes } from "@/lib/vault-crypto";
 import {
   BORDER,
   CHARCOAL,
@@ -38,12 +39,18 @@ interface BackupPayload {
   issued: string; // ISO
 }
 
-function toHex(input: unknown): string {
-  if (typeof input === "string") {
-    // bytea from Supabase comes back as `\x...`
-    return input.startsWith("\\x") ? input.slice(2) : input;
+function bytesToHex(bytes: Uint8Array): string {
+  let out = "";
+  for (let i = 0; i < bytes.length; i++) out += bytes[i].toString(16).padStart(2, "0");
+  return out;
+}
+
+function byteaToHex(input: unknown): string {
+  try {
+    return bytesToHex(toBytes(input));
+  } catch {
+    return "";
   }
-  return "";
 }
 
 function RecoverySheetPage() {
@@ -76,9 +83,9 @@ function RecoverySheetPage() {
         const p: BackupPayload = {
           v: 1,
           kdf: meta.kdf_algorithm,
-          salt: toHex(meta.kdf_salt),
-          wk: toHex(meta.recovery_wrapped_key),
-          iv: toHex(meta.recovery_wrapped_key_iv),
+          salt: byteaToHex(meta.kdf_salt),
+          wk: byteaToHex(meta.recovery_wrapped_key),
+          iv: byteaToHex(meta.recovery_wrapped_key_iv),
           issued: new Date().toISOString(),
         };
         setPayload(p);
