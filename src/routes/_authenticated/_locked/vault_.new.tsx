@@ -243,8 +243,33 @@ function ScanTab({
   switchToManual: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [starting, setStarting] = useState(true);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [decoding, setDecoding] = useState(false);
+
+  const handleImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setDecoding(true);
+    const url = URL.createObjectURL(file);
+    try {
+      const reader = new BrowserQRCodeReader();
+      const result = await reader.decodeFromImageUrl(url);
+      const text = result.getText();
+      if (!text.startsWith("otpauth://")) {
+        onError("That image doesn't contain a valid otpauth QR code.");
+        return;
+      }
+      onDetected(text);
+    } catch {
+      onError("Couldn't read a QR code from that image. Try a clearer screenshot.");
+    } finally {
+      URL.revokeObjectURL(url);
+      setDecoding(false);
+    }
+  };
 
   useEffect(() => {
     let controls: IScannerControls | null = null;
