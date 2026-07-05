@@ -14,10 +14,11 @@ import {
   Clock3,
 } from "lucide-react";
 import { toast } from "sonner";
-import { generateCode, type DecryptedAccount } from "@/lib/vault-accounts";
+import { generateCode, setAccountTags, type DecryptedAccount } from "@/lib/vault-accounts";
 import { BORDER, CHARCOAL, CREAM_SOFT, MUTED, soft } from "@/components/aegis/chrome";
 import { logoUrlFor, domainFromIssuer } from "@/lib/issuer-domain";
 import { useHideCodes } from "@/lib/vault-privacy";
+import { TagChip, TagInput } from "@/components/vault/tags";
 
 const DANGER = "#b23a2a";
 const FAV = "#c99a2b";
@@ -146,6 +147,8 @@ interface Props {
   isFavorite?: boolean;
   onToggleFavorite?: (id: string) => void;
   onDelete?: (id: string) => Promise<void> | void;
+  onTagsChanged?: (id: string, tags: string[]) => void;
+  allTagSuggestions?: string[];
 }
 
 function formatCode(code: string): string {
@@ -167,7 +170,15 @@ function hueFor(seed: string): number {
   return h % 360;
 }
 
-export function AccountCard({ account, now, isFavorite, onToggleFavorite, onDelete }: Props) {
+export function AccountCard({
+  account,
+  now,
+  isFavorite,
+  onToggleFavorite,
+  onDelete,
+  onTagsChanged,
+  allTagSuggestions,
+}: Props) {
   const hideCodes = useHideCodes();
   const [copied, setCopied] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
@@ -175,6 +186,36 @@ export function AccountCard({ account, now, isFavorite, onToggleFavorite, onDele
   const [revealed, setRevealed] = useState(!hideCodes);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [tagsDraft, setTagsDraft] = useState<string[]>(account.tags ?? []);
+  const [tagSaving, setTagSaving] = useState(false);
+  const [tagError, setTagError] = useState<string | null>(null);
+  useEffect(() => {
+    setTagsDraft(account.tags ?? []);
+  }, [account.tags]);
+
+  const dirtyTags = useMemo(() => {
+    const a = [...(account.tags ?? [])].sort();
+    const b = [...tagsDraft].sort();
+    if (a.length !== b.length) return true;
+    return a.some((v, i) => v !== b[i]);
+  }, [account.tags, tagsDraft]);
+
+  const saveTags = async () => {
+    if (!dirtyTags) return;
+    setTagSaving(true);
+    setTagError(null);
+    try {
+      const saved = await setAccountTags(account.id, tagsDraft);
+      onTagsChanged?.(account.id, saved);
+      setTagsDraft(saved);
+      toast.success("Tags updated");
+    } catch (e) {
+      setTagError(e instanceof Error ? e.message : "Could not update tags.");
+    } finally {
+      setTagSaving(false);
+    }
+  };
+
   const pressTimer = useRef<number | null>(null);
   const longPressedRef = useRef(false);
   const detailsPanelRef = useRef<HTMLDivElement | null>(null);
@@ -366,7 +407,23 @@ export function AccountCard({ account, now, isFavorite, onToggleFavorite, onDele
                 {account.label}
               </div>
             )}
+            {account.tags && account.tags.length > 0 && (
+              <div className="mt-1 flex flex-wrap items-center gap-1 overflow-hidden">
+                {account.tags.slice(0, 3).map((t) => (
+                  <TagChip key={t} tag={t} size="sm" />
+                ))}
+                {account.tags.length > 3 && (
+                  <span
+                    className="inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[10px]"
+                    style={{ color: MUTED, background: "rgba(28,28,28,0.06)", fontWeight: 600 }}
+                  >
+                    +{account.tags.length - 3}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
+
 
           {onToggleFavorite && (
             <motion.span
@@ -838,6 +895,55 @@ export function AccountCard({ account, now, isFavorite, onToggleFavorite, onDele
                       >
                         {revealed && nextCode ? formatCode(nextCode) : "• • •  • • •"}
                       </span>
+                    </div>
+
+                    {/* Tags editor */}
+                    <div
+                      className="mb-3 rounded-[14px] px-4 py-3"
+                      style={{
+                        background: "#fff",
+                        border: `1px solid ${BORDER}`,
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+                      }}
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <span
+                          className="text-[9.5px] uppercase"
+                          style={{
+                            color: MUTED,
+                            fontFamily: "'JetBrains Mono', monospace",
+                            letterSpacing: "0.22em",
+                          }}
+                        >
+                          Tags
+                        </span>
+                        {dirtyTags && (
+                          <button
+                            type="button"
+                            onClick={saveTags}
+                            disabled={tagSaving}
+                            className="rounded-full px-2.5 py-1 text-[11px] disabled:opacity-60"
+                            style={{
+                              background: CHARCOAL,
+                              color: CREAM_SOFT,
+                              fontWeight: 600,
+                            }}
+                          >
+                            {tagSaving ? "Saving…" : "Save"}
+                          </button>
+                        )}
+                      </div>
+                      <TagInput
+                        value={tagsDraft}
+                        onChange={setTagsDraft}
+                        placeholder="Add tag, press Enter"
+                        suggestions={allTagSuggestions}
+                      />
+                      {tagError && (
+                        <p className="mt-1.5 text-[11px]" style={{ color: DANGER }}>
+                          {tagError}
+                        </p>
+                      )}
                     </div>
 
                     {/* Meta trio */}

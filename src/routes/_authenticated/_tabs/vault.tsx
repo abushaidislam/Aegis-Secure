@@ -11,11 +11,14 @@ import {
   deleteAccount,
   listAccountsWithCache,
   setAccountFavorite,
+  setAccountTags,
   type DecryptedAccount,
 } from "@/lib/vault-accounts";
 import { useOnlineStatus } from "@/lib/use-online";
 import { AccountCard } from "@/components/vault/AccountCard";
-import { Shield, Plus, Loader2, Search, X, WifiOff, RefreshCw } from "lucide-react";
+import { TagChip } from "@/components/vault/tags";
+import { Shield, Plus, Loader2, Search, X, WifiOff, RefreshCw, Tags } from "lucide-react";
+import { toast } from "sonner";
 import {
   BORDER,
   CHARCOAL,
@@ -55,7 +58,38 @@ function VaultPage() {
   const [source, setSource] = useState<"network" | "cache" | "empty" | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [retrying, setRetrying] = useState(false);
+  const [activeTags, setActiveTags] = useState<Set<string>>(() => new Set());
+  const [tagManagerOpen, setTagManagerOpen] = useState(false);
   const online = useOnlineStatus();
+
+  const allTags = useMemo(() => {
+    if (!accounts) return [] as { tag: string; count: number }[];
+    const counts = new Map<string, number>();
+    for (const a of accounts) for (const t of a.tags ?? []) counts.set(t, (counts.get(t) ?? 0) + 1);
+    return [...counts.entries()]
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+  }, [accounts]);
+
+  const tagNames = useMemo(() => allTags.map((t) => t.tag), [allTags]);
+
+  const toggleTagFilter = (tag: string) => {
+    setActiveTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
+  };
+
+  const handleTagsChanged = useCallback((id: string, tags: string[]) => {
+    setAccounts((prev) => (prev ? prev.map((a) => (a.id === id ? { ...a, tags } : a)) : prev));
+    setActiveTags((prev) => {
+      // Drop filters that no longer match any account after the edit.
+      return prev;
+    });
+  }, []);
+
 
   const favorites = useMemo(() => {
     const s = new Set<string>();
@@ -121,11 +155,20 @@ function VaultPage() {
   const filtered = useMemo(() => {
     if (!accounts) return null;
     const q = query.trim().toLowerCase();
-    if (!q) return accounts;
-    return accounts.filter(
-      (a) => a.issuer.toLowerCase().includes(q) || a.label.toLowerCase().includes(q),
-    );
-  }, [accounts, query]);
+    const tagFilter = activeTags;
+    return accounts.filter((a) => {
+      if (tagFilter.size > 0) {
+        const has = (a.tags ?? []).some((t) => tagFilter.has(t));
+        if (!has) return false;
+      }
+      if (!q) return true;
+      return (
+        a.issuer.toLowerCase().includes(q) ||
+        a.label.toLowerCase().includes(q) ||
+        (a.tags ?? []).some((t) => t.toLowerCase().includes(q))
+      );
+    });
+  }, [accounts, query, activeTags]);
 
   const { favoriteList, otherList } = useMemo(() => {
     if (!filtered) return { favoriteList: [], otherList: [] };
@@ -190,6 +233,16 @@ function VaultPage() {
 
       {accounts && accounts.length > 0 && <SearchField value={query} onChange={setQuery} />}
 
+      {accounts && allTags.length > 0 && (
+        <TagFilterRow
+          tags={allTags}
+          active={activeTags}
+          onToggle={toggleTagFilter}
+          onClear={() => setActiveTags(new Set())}
+          onManage={() => setTagManagerOpen(true)}
+        />
+      )}
+
       <div className="pt-2">
         {error && <Notice kind="error">{error}</Notice>}
 
@@ -211,6 +264,8 @@ function VaultPage() {
             favorites={favorites}
             onToggleFavorite={toggleFavorite}
             onDelete={handleDelete}
+            onTagsChanged={handleTagsChanged}
+            tagSuggestions={tagNames}
           />
         )}
 
@@ -219,10 +274,29 @@ function VaultPage() {
             className="mt-4 rounded-[14px] px-4 py-6 text-center text-[13px]"
             style={{ background: CREAM_SOFT, border: `1px solid ${BORDER}`, color: MUTED }}
           >
-            No account matches "{query}".
+            {activeTags.size > 0
+              ? "No account matches the current filters."
+              : `No account matches "${query}".`}
           </div>
         )}
       </div>
+
+      {tagManagerOpen && accounts && (
+        <TagManagerSheet
+          accounts={accounts}
+          onClose={() => setTagManagerOpen(false)}
+          onLocalChange={(next) => {
+            setAccounts(next);
+            setActiveTags((prev) => {
+              const remaining = new Set<string>();
+              const stillExists = new Set<string>();
+              for (const a of next) for (const t of a.tags ?? []) stillExists.add(t);
+              for (const t of prev) if (stillExists.has(t)) remaining.add(t);
+              return remaining;
+            });
+          }}
+        />
+      )}
     </>
   );
 }
@@ -234,6 +308,8 @@ function UnifiedAccountList({
   favorites,
   onToggleFavorite,
   onDelete,
+  onTagsChanged,
+  tagSuggestions,
 }: {
   favoriteList: DecryptedAccount[];
   otherList: DecryptedAccount[];
@@ -241,6 +317,8 @@ function UnifiedAccountList({
   favorites: Set<string>;
   onToggleFavorite: (id: string) => void;
   onDelete: (id: string) => Promise<void>;
+  onTagsChanged: (id: string, tags: string[]) => void;
+  tagSuggestions: string[];
 }) {
   const showBothLabels = favoriteList.length > 0 && otherList.length > 0;
   const combined = [...favoriteList, ...otherList];
@@ -282,6 +360,8 @@ function UnifiedAccountList({
                   isFavorite={favorites.has(a.id)}
                   onToggleFavorite={onToggleFavorite}
                   onDelete={onDelete}
+                  onTagsChanged={onTagsChanged}
+                  allTagSuggestions={tagSuggestions}
                 />
                 {isLastFav && showBothLabels && (
                   <div style={{ height: 4, background: "transparent" }} />
@@ -290,6 +370,291 @@ function UnifiedAccountList({
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TagFilterRow({
+  tags,
+  active,
+  onToggle,
+  onClear,
+  onManage,
+}: {
+  tags: { tag: string; count: number }[];
+  active: Set<string>;
+  onToggle: (tag: string) => void;
+  onClear: () => void;
+  onManage: () => void;
+}) {
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <div
+        className="aegis-scroll -mx-1 flex flex-1 items-center gap-1.5 overflow-x-auto px-1 py-0.5"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {active.size > 0 && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px]"
+            style={{
+              background: "rgba(28,28,28,0.06)",
+              color: CHARCOAL,
+              fontWeight: 600,
+              border: `1px solid ${BORDER}`,
+            }}
+            aria-label="Clear tag filters"
+          >
+            <X className="h-3 w-3" strokeWidth={2.2} />
+            Clear
+          </button>
+        )}
+        {tags.map(({ tag, count }) => (
+          <TagChip
+            key={tag}
+            tag={`${tag} · ${count}`}
+            as="button"
+            onClick={() => onToggle(tag)}
+            active={active.has(tag)}
+            size="sm"
+          />
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={onManage}
+        className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] transition-colors"
+        style={{
+          background: CREAM_SOFT,
+          border: `1px solid ${BORDER}`,
+          color: CHARCOAL,
+          fontWeight: 600,
+        }}
+        aria-label="Manage tags"
+      >
+        <Tags className="h-3 w-3" strokeWidth={2} />
+        Manage
+      </button>
+    </div>
+  );
+}
+
+function TagManagerSheet({
+  accounts,
+  onClose,
+  onLocalChange,
+}: {
+  accounts: DecryptedAccount[];
+  onClose: () => void;
+  onLocalChange: (next: DecryptedAccount[]) => void;
+}) {
+  const [busyTag, setBusyTag] = useState<string | null>(null);
+  const [renameFor, setRenameFor] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+
+  const tagIndex = useMemo(() => {
+    const m = new Map<string, DecryptedAccount[]>();
+    for (const a of accounts)
+      for (const t of a.tags ?? []) {
+        const arr = m.get(t) ?? [];
+        arr.push(a);
+        m.set(t, arr);
+      }
+    return [...m.entries()]
+      .map(([tag, list]) => ({ tag, count: list.length }))
+      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+  }, [accounts]);
+
+  const applyTransform = async (transform: (tags: string[]) => string[]) => {
+    const next = [...accounts];
+    for (let i = 0; i < next.length; i++) {
+      const current = next[i].tags ?? [];
+      const proposed = transform(current);
+      const same =
+        current.length === proposed.length && current.every((t, idx) => t === proposed[idx]);
+      if (same) continue;
+      const saved = await setAccountTags(next[i].id, proposed);
+      next[i] = { ...next[i], tags: saved };
+    }
+    onLocalChange(next);
+  };
+
+  const doDelete = async (tag: string) => {
+    setBusyTag(tag);
+    try {
+      await applyTransform((tags) => tags.filter((t) => t !== tag));
+      toast.success(`Removed tag "${tag}"`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not remove tag.");
+    } finally {
+      setBusyTag(null);
+    }
+  };
+
+  const doRename = async (tag: string, next: string) => {
+    const target = next.trim();
+    if (!target || target === tag) {
+      setRenameFor(null);
+      return;
+    }
+    setBusyTag(tag);
+    try {
+      await applyTransform((tags) =>
+        tags.includes(tag) ? [...tags.filter((t) => t !== tag), target] : tags,
+      );
+      toast.success(`Renamed "${tag}" → "${target}"`);
+      setRenameFor(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not rename tag.");
+    } finally {
+      setBusyTag(null);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+      <button
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute inset-0"
+        style={{ background: "rgba(28,28,28,0.35)", backdropFilter: "blur(4px)" }}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Manage tags"
+        className="relative z-10 mx-auto flex max-h-[80vh] w-full max-w-[440px] flex-col rounded-t-[22px] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:rounded-[22px]"
+        style={{
+          background: CREAM_SOFT,
+          border: `1px solid ${BORDER}`,
+          boxShadow: "0 -12px 40px -12px rgba(0,0,0,0.25)",
+        }}
+      >
+        <div
+          aria-hidden
+          className="mx-auto mb-3 h-[4px] w-10 rounded-full"
+          style={{ background: "rgba(28,28,28,0.15)" }}
+        />
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h3
+              className="text-[17px]"
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontWeight: 600,
+                letterSpacing: "-0.01em",
+                color: CHARCOAL,
+              }}
+            >
+              Manage tags
+            </h3>
+            <p className="text-[11.5px]" style={{ color: MUTED }}>
+              Rename or delete tags across every account.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-full"
+            style={{ background: "rgba(28,28,28,0.06)", color: CHARCOAL }}
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" strokeWidth={1.8} />
+          </button>
+        </div>
+
+        {tagIndex.length === 0 ? (
+          <div
+            className="rounded-[14px] px-4 py-8 text-center text-[13px]"
+            style={{ background: "#fff", border: `1px solid ${BORDER}`, color: MUTED }}
+          >
+            No tags yet. Add one from any account's details sheet.
+          </div>
+        ) : (
+          <div
+            className="aegis-scroll flex-1 overflow-y-auto rounded-[14px]"
+            style={{ background: "#fff", border: `1px solid ${BORDER}` }}
+          >
+            <ul className="divide-y" style={{ borderColor: BORDER }}>
+              {tagIndex.map(({ tag, count }) => {
+                const isBusy = busyTag === tag;
+                const isRenaming = renameFor === tag;
+                return (
+                  <li key={tag} className="flex items-center gap-2 px-3 py-2.5">
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                      <TagChip tag={tag} size="md" />
+                      <span className="text-[11.5px]" style={{ color: MUTED }}>
+                        {count} account{count === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                    {isRenaming ? (
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          autoFocus
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") doRename(tag, renameValue);
+                            if (e.key === "Escape") setRenameFor(null);
+                          }}
+                          className="h-7 w-28 rounded-full border px-2.5 text-[12px] outline-none"
+                          style={{ borderColor: BORDER, color: CHARCOAL, background: "#fff" }}
+                        />
+                        <button
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => doRename(tag, renameValue)}
+                          className="rounded-full px-2.5 py-1 text-[11px] disabled:opacity-60"
+                          style={{ background: CHARCOAL, color: CREAM_SOFT, fontWeight: 600 }}
+                        >
+                          Save
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => {
+                            setRenameFor(tag);
+                            setRenameValue(tag);
+                          }}
+                          className="rounded-full px-2.5 py-1 text-[11px] disabled:opacity-60"
+                          style={{
+                            background: "rgba(28,28,28,0.06)",
+                            color: CHARCOAL,
+                            fontWeight: 600,
+                          }}
+                        >
+                          Rename
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => doDelete(tag)}
+                          className="rounded-full px-2.5 py-1 text-[11px] disabled:opacity-60"
+                          style={{
+                            background: "rgba(178,58,42,0.08)",
+                            color: "#b23a2a",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {isBusy ? "…" : "Delete"}
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        <p className="mt-3 px-1 text-[11px]" style={{ color: MUTED }}>
+          Renaming to an existing tag merges the two. Deleting removes the tag from every account —
+          the accounts themselves stay.
+        </p>
       </div>
     </div>
   );
