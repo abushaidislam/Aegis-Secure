@@ -1,12 +1,23 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { lockVault } from "@/lib/vault-session";
 import { deleteMyAccount } from "@/lib/account.functions";
-import { User, Mail, Loader2, LogOut, Check, Pencil, Trash2 } from "lucide-react";
+import { avatarPathFor, fileToSquareJpeg } from "@/lib/avatar";
+import {
+  User,
+  Mail,
+  Loader2,
+  LogOut,
+  Check,
+  Pencil,
+  Trash2,
+  Camera,
+  X,
+} from "lucide-react";
 import {
   BORDER,
   CHARCOAL,
@@ -51,14 +62,18 @@ function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [avatarPath, setAvatarPath] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: "error" | "info"; text: string } | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("display_name")
+        .select("display_name, avatar_url")
         .eq("id", user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -67,6 +82,7 @@ function ProfilePage() {
         const v = data?.display_name ?? "";
         setDisplayName(v);
         setInitialName(v);
+        setAvatarPath(data?.avatar_url ?? null);
       }
       setLoading(false);
     })();
@@ -74,6 +90,27 @@ function ProfilePage() {
       cancelled = true;
     };
   }, [user.id]);
+
+  // Refresh the signed URL whenever the stored path changes. Signed URLs
+  // are the read path because the avatars bucket is private.
+  useEffect(() => {
+    let cancelled = false;
+    if (!avatarPath) {
+      setAvatarUrl(null);
+      return;
+    }
+    (async () => {
+      const { data, error } = await supabase.storage
+        .from("avatars")
+        .createSignedUrl(avatarPath, 60 * 60);
+      if (cancelled) return;
+      if (error) setAvatarUrl(null);
+      else setAvatarUrl(data.signedUrl);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [avatarPath]);
 
   const save = async () => {
     setSaving(true);
@@ -134,8 +171,69 @@ function ProfilePage() {
     }
   };
 
+  const handleAvatarPick = () => {
+    if (avatarBusy) return;
+    fileRef.current?.click();
+  };
+
+  const handleAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setAvatarBusy(true);
+    setNotice(null);
+    try {
+      const blob = await fileToSquareJpeg(file);
+      const path = avatarPathFor(user.id);
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
+      if (upErr) throw upErr;
+      const { error: profErr } = await supabase
+        .from("profiles")
+        .upsert({ id: user.id, avatar_url: path }, { onConflict: "id" });
+      if (profErr) throw profErr;
+      // Force signed-URL refresh by re-setting the path (cache-bust via query).
+      setAvatarPath(`${path}?v=${Date.now()}`);
+      // Then normalize back to the real path so future updates work.
+      setTimeout(() => setAvatarPath(path), 50);
+      setNotice({ kind: "info", text: "Photo updated." });
+    } catch (err) {
+      setNotice({
+        kind: "error",
+        text: err instanceof Error ? err.message : "Could not upload photo.",
+      });
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    if (!avatarPath || avatarBusy) return;
+    if (!window.confirm("Remove your profile photo?")) return;
+    setAvatarBusy(true);
+    setNotice(null);
+    try {
+      const cleanPath = avatarPath.split("?")[0];
+      await supabase.storage.from("avatars").remove([cleanPath]);
+      const { error } = await supabase
+        .from("profiles")
+        .upsert({ id: user.id, avatar_url: null }, { onConflict: "id" });
+      if (error) throw error;
+      setAvatarPath(null);
+    } catch (err) {
+      setNotice({
+        kind: "error",
+        text: err instanceof Error ? err.message : "Could not remove photo.",
+      });
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
   const seed = displayName || user.email || "?";
   const displayShown = initialName || "Unnamed";
+  const hasAvatar = !!avatarPath;
 
   return (
     <>
@@ -154,8 +252,13 @@ function ProfilePage() {
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
           }}
         >
-          <div
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-[16px]"
+          <motion.button
+            type="button"
+            onClick={handleAvatarPick}
+            whileTap={{ scale: 0.96 }}
+            disabled={avatarBusy}
+            aria-label={hasAvatar ? "Change profile photo" : "Add profile photo"}
+            className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full text-[16px]"
             style={{
               background: CHARCOAL,
               color: CREAM_SOFT,
@@ -164,8 +267,37 @@ function ProfilePage() {
               letterSpacing: "0.02em",
             }}
           >
-            {initials(seed)}
-          </div>
+            {hasAvatar && avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt=""
+                className="h-full w-full object-cover"
+                draggable={false}
+              />
+            ) : (
+              initials(seed)
+            )}
+            <span
+              className={
+                "absolute inset-0 flex items-center justify-center transition-opacity " +
+                (avatarBusy ? "opacity-100" : "opacity-0 group-hover:opacity-100")
+              }
+              style={{ background: "rgba(28,28,28,0.55)" }}
+            >
+              {avatarBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" style={{ color: CREAM_SOFT }} />
+              ) : (
+                <Camera className="h-4 w-4" strokeWidth={1.8} style={{ color: CREAM_SOFT }} />
+              )}
+            </span>
+          </motion.button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarFile}
+          />
           <div className="min-w-0 flex-1">
             <div
               className="truncate text-[15px]"
@@ -236,6 +368,30 @@ function ProfilePage() {
               value={initialName || "Not set"}
               onClick={() => setEditing(true)}
               trailing={<Pencil className="h-3.5 w-3.5" strokeWidth={1.8} style={{ color: MUTED }} />}
+            />
+          )}
+          <SettingsRow
+            icon={<Camera className="h-4 w-4" strokeWidth={1.8} />}
+            title={hasAvatar ? "Change photo" : "Add profile photo"}
+            description={hasAvatar ? "Tap to replace your current picture" : "JPG or PNG, cropped to a square"}
+            onClick={handleAvatarPick}
+            disabled={avatarBusy}
+            trailing={
+              avatarBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" style={{ color: MUTED }} />
+              ) : undefined
+            }
+            chevron={!avatarBusy}
+          />
+          {hasAvatar && (
+            <SettingsRow
+              icon={<X className="h-4 w-4" strokeWidth={1.8} />}
+              title="Remove photo"
+              description="Fall back to your initials"
+              onClick={handleAvatarRemove}
+              disabled={avatarBusy}
+              danger
+              chevron
             />
           )}
           <SettingsRow
