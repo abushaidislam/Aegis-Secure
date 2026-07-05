@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Star } from "lucide-react";
 import { generateCode, type DecryptedAccount } from "@/lib/vault-accounts";
 import { BORDER, CHARCOAL, CREAM_SOFT, MUTED } from "@/components/aegis/chrome";
 
 const DANGER = "#b23a2a";
+const FAV = "#c99a2b";
 
 interface Props {
   account: DecryptedAccount;
   now: number;
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: string) => void;
 }
 
 function formatCode(code: string): string {
