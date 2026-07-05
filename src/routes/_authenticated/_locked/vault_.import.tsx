@@ -127,16 +127,19 @@ function ImportPage() {
     setNotice(null);
     try {
       const text = await file.text();
-      // Auto-route: JSON goes through importFromJson, everything else through
-      // importFromText so users can drop a plain otpauth:// list too.
       const trimmed = text.trim();
-      let result: Preview;
       if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-        result = importFromJson(JSON.parse(trimmed));
+        const json = JSON.parse(trimmed);
+        if (isAvfJson(json)) {
+          setAvfPending(json);
+          setAvfPass("");
+          setStage("avf");
+          return;
+        }
+        showPreview(importFromJson(json));
       } else {
-        result = importFromText(trimmed);
+        showPreview(importFromText(trimmed));
       }
-      showPreview(result);
     } catch (err) {
       setNotice({
         kind: "error",
@@ -144,6 +147,26 @@ function ImportPage() {
       });
     }
   };
+
+  const submitAvf = async () => {
+    if (!avfPending) return;
+    setNotice(null);
+    setAvfBusy(true);
+    try {
+      const result = await importFromAvf(avfPending, avfPass);
+      setAvfPending(null);
+      setAvfPass("");
+      showPreview(result);
+    } catch (err) {
+      setNotice({
+        kind: "error",
+        text: err instanceof Error ? err.message : "Couldn't decrypt that backup.",
+      });
+    } finally {
+      setAvfBusy(false);
+    }
+  };
+
 
   const handleImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
