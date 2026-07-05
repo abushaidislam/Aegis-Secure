@@ -112,10 +112,13 @@ export function setAutoLockMs(value: number | null) {
 
   // Persist to the user's profile so it follows them across devices.
   if (userId) {
-    void supabase
+    supabase
       .from("profiles")
       .update({ auto_lock_pref: encodePref(value) })
-      .eq("id", userId);
+      .eq("id", userId)
+      .then(({ error }) => {
+        if (error) console.error("[vault-session] persist failed", error);
+      });
   }
 }
 
