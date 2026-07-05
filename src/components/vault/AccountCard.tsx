@@ -185,6 +185,7 @@ export function AccountCard({
   onToggleFavorite,
   onDelete,
   onTagsChanged,
+  onDetailsChanged,
   allTagSuggestions,
 }: Props) {
   const hideCodes = useHideCodes();
@@ -194,12 +195,21 @@ export function AccountCard({
   const [revealed, setRevealed] = useState(!hideCodes);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [issuerDraft, setIssuerDraft] = useState(account.issuer ?? "");
+  const [labelDraft, setLabelDraft] = useState(account.label ?? "");
+  const [detailsSaving, setDetailsSaving] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
   const [tagsDraft, setTagsDraft] = useState<string[]>(account.tags ?? []);
   const [tagSaving, setTagSaving] = useState(false);
   const [tagError, setTagError] = useState<string | null>(null);
   useEffect(() => {
     setTagsDraft(account.tags ?? []);
   }, [account.tags]);
+  useEffect(() => {
+    setIssuerDraft(account.issuer ?? "");
+    setLabelDraft(account.label ?? "");
+  }, [account.issuer, account.label]);
 
   const dirtyTags = useMemo(() => {
     const a = [...(account.tags ?? [])].sort();
@@ -207,6 +217,15 @@ export function AccountCard({
     if (a.length !== b.length) return true;
     return a.some((v, i) => v !== b[i]);
   }, [account.tags, tagsDraft]);
+
+  const dirtyDetails = useMemo(() => {
+    return (
+      issuerDraft.trim() !== (account.issuer ?? "").trim() ||
+      labelDraft.trim() !== (account.label ?? "").trim()
+    );
+  }, [account.issuer, account.label, issuerDraft, labelDraft]);
+
+  const canSaveEdits = (dirtyTags || dirtyDetails) && issuerDraft.trim().length > 0;
 
   const saveTags = async () => {
     if (!dirtyTags) return;
@@ -226,6 +245,50 @@ export function AccountCard({
     } finally {
       setTagSaving(false);
     }
+  };
+
+  const saveEdits = async () => {
+    if (!canSaveEdits || detailsSaving) return;
+    setDetailsSaving(true);
+    setDetailsError(null);
+    setTagError(null);
+    try {
+      if (dirtyDetails) {
+        const saved = await updateAccountDetails(account.id, {
+          issuer: issuerDraft,
+          label: labelDraft,
+        });
+        onDetailsChanged?.(account.id, saved);
+        setIssuerDraft(saved.issuer);
+        setLabelDraft(saved.label);
+      }
+      if (dirtyTags) {
+        const { tags: saved, queued } = await setAccountTags(account.id, tagsDraft);
+        onTagsChanged?.(account.id, saved);
+        setTagsDraft(saved);
+        if (queued) {
+          toast.success("Changes saved · tags will sync when back online");
+        } else {
+          toast.success("Changes saved");
+        }
+      } else {
+        toast.success("Changes saved");
+      }
+      setEditing(false);
+    } catch (e) {
+      setDetailsError(e instanceof Error ? e.message : "Could not save changes.");
+    } finally {
+      setDetailsSaving(false);
+    }
+  };
+
+  const cancelEdit = () => {
+    setIssuerDraft(account.issuer ?? "");
+    setLabelDraft(account.label ?? "");
+    setTagsDraft(account.tags ?? []);
+    setDetailsError(null);
+    setTagError(null);
+    setEditing(false);
   };
 
   const pressTimer = useRef<number | null>(null);
