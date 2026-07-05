@@ -167,44 +167,10 @@ function SecurityPage() {
             icon={<Timer className="h-4 w-4" strokeWidth={1.8} />}
             title="Auto-lock"
             value={currentAutoLockLabel}
-            onClick={() => setAutoLockOpen((v) => !v)}
+            onClick={() => setAutoLockOpen(true)}
             chevron
           />
-          <AnimatePresence initial={false}>
-            {autoLockOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={soft}
-                className="overflow-hidden"
-              >
-                <div className="flex flex-col gap-0.5 px-2 py-1.5">
-                  {AUTO_LOCK_OPTIONS.map((opt) => {
-                    const active = opt.value === autoLockMs;
-                    return (
-                      <motion.button
-                        key={opt.label}
-                        whileTap={{ scale: 0.99, backgroundColor: "rgba(28,28,28,0.05)" }}
-                        onClick={() => {
-                          setAutoLockMs(opt.value);
-                          setAutoLockOpen(false);
-                          setNotice({ kind: "info", text: `Auto-lock set to “${opt.label.toLowerCase()}”.` });
-                        }}
-                        className="flex items-center justify-between rounded-[10px] px-3 py-2.5 text-left"
-                        style={{ color: CHARCOAL }}
-                      >
-                        <span className="text-[13.5px]" style={{ fontWeight: active ? 600 : 500 }}>
-                          {opt.label}
-                        </span>
-                        {active && <Check className="h-4 w-4" strokeWidth={2} />}
-                      </motion.button>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+
           <SettingsRow
             icon={<Sparkles className="h-4 w-4" strokeWidth={1.8} />}
             title="Change passphrase"
