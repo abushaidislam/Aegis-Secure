@@ -186,6 +186,36 @@ export function AccountCard({
   const [revealed, setRevealed] = useState(!hideCodes);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [tagsDraft, setTagsDraft] = useState<string[]>(account.tags ?? []);
+  const [tagSaving, setTagSaving] = useState(false);
+  const [tagError, setTagError] = useState<string | null>(null);
+  useEffect(() => {
+    setTagsDraft(account.tags ?? []);
+  }, [account.tags]);
+
+  const dirtyTags = useMemo(() => {
+    const a = [...(account.tags ?? [])].sort();
+    const b = [...tagsDraft].sort();
+    if (a.length !== b.length) return true;
+    return a.some((v, i) => v !== b[i]);
+  }, [account.tags, tagsDraft]);
+
+  const saveTags = async () => {
+    if (!dirtyTags) return;
+    setTagSaving(true);
+    setTagError(null);
+    try {
+      const saved = await setAccountTags(account.id, tagsDraft);
+      onTagsChanged?.(account.id, saved);
+      setTagsDraft(saved);
+      toast.success("Tags updated");
+    } catch (e) {
+      setTagError(e instanceof Error ? e.message : "Could not update tags.");
+    } finally {
+      setTagSaving(false);
+    }
+  };
+
   const pressTimer = useRef<number | null>(null);
   const longPressedRef = useRef(false);
   const detailsPanelRef = useRef<HTMLDivElement | null>(null);
