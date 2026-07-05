@@ -23,6 +23,7 @@ import { Route as AuthenticatedTabsSecurityRouteImport } from './routes/_authent
 import { Route as AuthenticatedTabsProfileRouteImport } from './routes/_authenticated/_tabs/profile'
 import { Route as AuthenticatedLockedVaultRecoveryRouteImport } from './routes/_authenticated/_locked/vault_.recovery'
 import { Route as AuthenticatedLockedVaultNewRouteImport } from './routes/_authenticated/_locked/vault_.new'
+import { Route as AuthenticatedLockedVaultImportRouteImport } from './routes/_authenticated/_locked/vault_.import'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -96,6 +97,12 @@ const AuthenticatedLockedVaultNewRoute =
     path: '/vault/new',
     getParentRoute: () => AuthenticatedLockedRouteRoute,
   } as any)
+const AuthenticatedLockedVaultImportRoute =
+  AuthenticatedLockedVaultImportRouteImport.update({
+    id: '/vault_/import',
+    path: '/vault/import',
+    getParentRoute: () => AuthenticatedLockedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedTabsProfileRoute
   '/security': typeof AuthenticatedTabsSecurityRoute
   '/vault': typeof AuthenticatedTabsVaultRoute
+  '/vault/import': typeof AuthenticatedLockedVaultImportRoute
   '/vault/new': typeof AuthenticatedLockedVaultNewRoute
   '/vault/recovery': typeof AuthenticatedLockedVaultRecoveryRoute
 }
@@ -120,6 +128,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedTabsProfileRoute
   '/security': typeof AuthenticatedTabsSecurityRoute
   '/vault': typeof AuthenticatedTabsVaultRoute
+  '/vault/import': typeof AuthenticatedLockedVaultImportRoute
   '/vault/new': typeof AuthenticatedLockedVaultNewRoute
   '/vault/recovery': typeof AuthenticatedLockedVaultRecoveryRoute
 }
@@ -137,6 +146,7 @@ export interface FileRoutesById {
   '/_authenticated/_tabs/profile': typeof AuthenticatedTabsProfileRoute
   '/_authenticated/_tabs/security': typeof AuthenticatedTabsSecurityRoute
   '/_authenticated/_tabs/vault': typeof AuthenticatedTabsVaultRoute
+  '/_authenticated/_locked/vault_/import': typeof AuthenticatedLockedVaultImportRoute
   '/_authenticated/_locked/vault_/new': typeof AuthenticatedLockedVaultNewRoute
   '/_authenticated/_locked/vault_/recovery': typeof AuthenticatedLockedVaultRecoveryRoute
 }
@@ -152,6 +162,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/security'
     | '/vault'
+    | '/vault/import'
     | '/vault/new'
     | '/vault/recovery'
   fileRoutesByTo: FileRoutesByTo
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/security'
     | '/vault'
+    | '/vault/import'
     | '/vault/new'
     | '/vault/recovery'
   id:
@@ -181,6 +193,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_tabs/profile'
     | '/_authenticated/_tabs/security'
     | '/_authenticated/_tabs/vault'
+    | '/_authenticated/_locked/vault_/import'
     | '/_authenticated/_locked/vault_/new'
     | '/_authenticated/_locked/vault_/recovery'
   fileRoutesById: FileRoutesById
@@ -291,16 +304,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLockedVaultNewRouteImport
       parentRoute: typeof AuthenticatedLockedRouteRoute
     }
+    '/_authenticated/_locked/vault_/import': {
+      id: '/_authenticated/_locked/vault_/import'
+      path: '/vault/import'
+      fullPath: '/vault/import'
+      preLoaderRoute: typeof AuthenticatedLockedVaultImportRouteImport
+      parentRoute: typeof AuthenticatedLockedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedLockedRouteRouteChildren {
+  AuthenticatedLockedVaultImportRoute: typeof AuthenticatedLockedVaultImportRoute
   AuthenticatedLockedVaultNewRoute: typeof AuthenticatedLockedVaultNewRoute
   AuthenticatedLockedVaultRecoveryRoute: typeof AuthenticatedLockedVaultRecoveryRoute
 }
 
 const AuthenticatedLockedRouteRouteChildren: AuthenticatedLockedRouteRouteChildren =
   {
+    AuthenticatedLockedVaultImportRoute: AuthenticatedLockedVaultImportRoute,
     AuthenticatedLockedVaultNewRoute: AuthenticatedLockedVaultNewRoute,
     AuthenticatedLockedVaultRecoveryRoute:
       AuthenticatedLockedVaultRecoveryRoute,
@@ -363,13 +385,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
