@@ -39,11 +39,10 @@ async function deriveKek(passphrase, salt) {
 async function createVault(passphrase) {
   const salt = randomBytes(16);
   const kek = await deriveKek(passphrase, salt);
-  const dek = await crypto.subtle.generateKey(
-    { name: "AES-GCM", length: 256 },
-    true,
-    ["encrypt", "decrypt"],
-  );
+  const dek = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, [
+    "encrypt",
+    "decrypt",
+  ]);
   const iv = randomBytes(12);
   const wrapped = new Uint8Array(
     await crypto.subtle.wrapKey("raw", dek, kek, { name: "AES-GCM", iv }),
@@ -83,8 +82,12 @@ test("KDF is deterministic for same salt + passphrase", async () => {
   const k2 = await deriveKek("correct horse battery staple", salt);
   // Both derived keys should encrypt to the same bytes given same iv/plaintext.
   const iv = randomBytes(12);
-  const a = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, k1, enc.encode("hi")));
-  const b = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, k2, enc.encode("hi")));
+  const a = new Uint8Array(
+    await crypto.subtle.encrypt({ name: "AES-GCM", iv }, k1, enc.encode("hi")),
+  );
+  const b = new Uint8Array(
+    await crypto.subtle.encrypt({ name: "AES-GCM", iv }, k2, enc.encode("hi")),
+  );
   assert.deepEqual(a, b);
 });
 

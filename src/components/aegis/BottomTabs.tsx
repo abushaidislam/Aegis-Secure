@@ -110,10 +110,7 @@ export function BottomTabs() {
                 className="relative flex h-6 items-center justify-center"
                 style={{ color: active ? CHARCOAL : MUTED }}
               >
-                <Icon
-                  className="h-[18px] w-[18px]"
-                  strokeWidth={active ? 2 : 1.7}
-                />
+                <Icon className="h-[18px] w-[18px]" strokeWidth={active ? 2 : 1.7} />
               </motion.span>
               <span
                 className="relative text-[10.5px]"

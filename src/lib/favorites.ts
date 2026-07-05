@@ -20,10 +20,7 @@ export function loadFavorites(userId: string): Set<string> {
 export function saveFavorites(userId: string, favorites: Set<string>): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(
-      keyFor(userId),
-      JSON.stringify(Array.from(favorites)),
-    );
+    window.localStorage.setItem(keyFor(userId), JSON.stringify(Array.from(favorites)));
   } catch {
     /* quota — ignore */
   }

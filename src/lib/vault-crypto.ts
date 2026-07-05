@@ -44,10 +44,7 @@ export function randomBytes(length: number): Uint8Array {
   return out;
 }
 
-async function deriveKekFromPassphrase(
-  passphrase: string,
-  salt: Uint8Array,
-): Promise<CryptoKey> {
+async function deriveKekFromPassphrase(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
   const baseKey = await crypto.subtle.importKey(
     "raw",
     enc.encode(passphrase.normalize("NFKC")),
@@ -216,7 +213,12 @@ export function toBytes(input: unknown): Uint8Array {
     for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
     return out;
   }
-  if (input && typeof input === "object" && "type" in (input as object) && (input as { type?: string }).type === "Buffer") {
+  if (
+    input &&
+    typeof input === "object" &&
+    "type" in (input as object) &&
+    (input as { type?: string }).type === "Buffer"
+  ) {
     return new Uint8Array((input as { data: number[] }).data);
   }
   throw new Error("Unsupported bytea payload");
@@ -232,4 +234,3 @@ export function toByteaHex(bytes: Uint8Array): string {
   }
   return "\\x" + hex;
 }
-

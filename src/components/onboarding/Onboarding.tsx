@@ -42,7 +42,11 @@ const soft = { type: "spring" as const, stiffness: 200, damping: 32, mass: 1 };
 function Backdrop() {
   const reduce = useReducedMotion();
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden" style={{ background: CREAM }}>
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+      style={{ background: CREAM }}
+    >
       {/* soft warm wash */}
       <div
         className="absolute inset-0"
@@ -53,13 +57,19 @@ function Backdrop() {
       />
       <motion.div
         className="absolute -left-24 top-[6%] h-[320px] w-[320px] rounded-full"
-        style={{ background: "radial-gradient(closest-side, rgba(230,180,140,0.35), transparent 70%)", filter: "blur(60px)" }}
+        style={{
+          background: "radial-gradient(closest-side, rgba(230,180,140,0.35), transparent 70%)",
+          filter: "blur(60px)",
+        }}
         animate={reduce ? undefined : { x: [0, 16, 0], y: [0, -10, 0] }}
         transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
         className="absolute -right-24 bottom-[8%] h-[380px] w-[380px] rounded-full"
-        style={{ background: "radial-gradient(closest-side, rgba(200,170,210,0.28), transparent 70%)", filter: "blur(70px)" }}
+        style={{
+          background: "radial-gradient(closest-side, rgba(200,170,210,0.28), transparent 70%)",
+          filter: "blur(70px)",
+        }}
         animate={reduce ? undefined : { x: [0, -14, 0], y: [0, 10, 0] }}
         transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
       />
@@ -236,7 +246,6 @@ function PrimaryButton({
     </motion.button>
   );
 }
-
 
 function GhostButton({ children, onClick }: { children: ReactNode; onClick?: () => void }) {
   return (
@@ -461,12 +470,15 @@ function ImportOption({
       {active ? (
         <Check className="h-4 w-4" style={{ color: CHARCOAL }} strokeWidth={2} />
       ) : (
-        <ArrowRight className="h-4 w-4" style={{ color: "rgba(28,28,28,0.35)" }} strokeWidth={1.8} />
+        <ArrowRight
+          className="h-4 w-4"
+          style={{ color: "rgba(28,28,28,0.35)" }}
+          strokeWidth={1.8}
+        />
       )}
     </motion.button>
   );
 }
-
 
 function NativeSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
@@ -530,7 +542,12 @@ function VaultIllustration() {
             color: CHARCOAL,
           }}
           animate={reduce ? undefined : { y: [0, -4, 0] }}
-          transition={{ duration: 3 + i * 0.4, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }}
+          transition={{
+            duration: 3 + i * 0.4,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: i * 0.2,
+          }}
         >
           {c.icon}
         </motion.span>
@@ -602,20 +619,30 @@ function StepWelcome({ next }: { next: () => void }) {
         <HeroMark />
         <div className="flex flex-col items-center gap-3">
           <Eyebrow>
-            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: CHARCOAL }} />
+            <span
+              className="inline-block h-1.5 w-1.5 rounded-full"
+              style={{ background: CHARCOAL }}
+            />
             Aegis
           </Eyebrow>
           <Display>Security, quietly done.</Display>
-          <Lede>A calm authenticator for your one-time codes — end-to-end encrypted and effortless.</Lede>
+          <Lede>
+            A calm authenticator for your one-time codes — end-to-end encrypted and effortless.
+          </Lede>
         </div>
       </div>
       <div className="shrink-0 pb-[max(20px,env(safe-area-inset-bottom))] pt-2">
         <PrimaryButton onClick={next}>Get started</PrimaryButton>
         <p className="mt-3 text-center text-[12px]" style={{ color: MUTED }}>
           By continuing you agree to our{" "}
-          <span className="underline underline-offset-[3px]" style={{ color: CHARCOAL }}>Terms</span>{" "}
+          <span className="underline underline-offset-[3px]" style={{ color: CHARCOAL }}>
+            Terms
+          </span>{" "}
           &{" "}
-          <span className="underline underline-offset-[3px]" style={{ color: CHARCOAL }}>Privacy</span>.
+          <span className="underline underline-offset-[3px]" style={{ color: CHARCOAL }}>
+            Privacy
+          </span>
+          .
         </p>
       </div>
     </Screen>
@@ -728,7 +755,6 @@ function StepImport({ next }: { next: () => void }) {
   );
 }
 
-
 function StepBackup({ next }: { next: () => void }) {
   const [on, setOn] = useState(true);
   return (
@@ -831,11 +857,7 @@ function StepNotifications({ next }: { next: () => void }) {
         </div>
       </div>
       <div className="shrink-0 space-y-3 pb-[max(20px,env(safe-area-inset-bottom))] pt-2">
-        <PrimaryButton
-          onClick={request}
-          loading={busy}
-          disabled={permission === "denied"}
-        >
+        <PrimaryButton onClick={request} loading={busy} disabled={permission === "denied"}>
           {label}
         </PrimaryButton>
         <div className="text-center">
@@ -845,7 +867,6 @@ function StepNotifications({ next }: { next: () => void }) {
     </Screen>
   );
 }
-
 
 function StepBiometrics({ next }: { next: () => void }) {
   const [supported, setSupported] = useState<boolean | null>(null);
@@ -909,8 +930,8 @@ function StepBiometrics({ next }: { next: () => void }) {
           <Lede>Use Face ID or your fingerprint so only you can open Aegis.</Lede>
           {supported === false && (
             <p className="pt-1 text-[12px]" style={{ color: MUTED, maxWidth: "32ch" }}>
-              This browser doesn't expose a platform biometric. You'll use your master
-              passphrase instead — that's fine, it's the source of truth anyway.
+              This browser doesn't expose a platform biometric. You'll use your master passphrase
+              instead — that's fine, it's the source of truth anyway.
             </p>
           )}
           {status === "queued" && (
@@ -934,7 +955,6 @@ function StepBiometrics({ next }: { next: () => void }) {
   );
 }
 
-
 function StepDone({ next }: { next: () => void }) {
   return (
     <Screen>
@@ -942,7 +962,10 @@ function StepDone({ next }: { next: () => void }) {
         <SuccessMark />
         <div className="flex flex-col items-center gap-2">
           <Eyebrow>
-            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: CHARCOAL }} />
+            <span
+              className="inline-block h-1.5 w-1.5 rounded-full"
+              style={{ background: CHARCOAL }}
+            />
             Ready
           </Eyebrow>
           <Display>You're all set.</Display>
@@ -950,7 +973,10 @@ function StepDone({ next }: { next: () => void }) {
         </div>
       </div>
       <div className="shrink-0 pb-[max(20px,env(safe-area-inset-bottom))] pt-2">
-        <PrimaryButton onClick={next} icon={<ArrowRight className="h-[15px] w-[15px]" strokeWidth={1.8} />}>
+        <PrimaryButton
+          onClick={next}
+          icon={<ArrowRight className="h-[15px] w-[15px]" strokeWidth={1.8} />}
+        >
           Open Aegis
         </PrimaryButton>
       </div>
@@ -1072,7 +1098,6 @@ export default function Onboarding({ onComplete }: { onComplete?: () => void } =
           onToggleHaptics={toggleHaptics}
         />
 
-
         <div className="relative flex-1 overflow-hidden" style={{ touchAction: "pan-y" }}>
           <AnimatePresence mode="wait" initial={false} custom={dir}>
             <motion.div
@@ -1127,8 +1152,6 @@ export default function Onboarding({ onComplete }: { onComplete?: () => void } =
     </div>
   );
 }
-
-
 
 /* Silence unused warnings for helpers reserved for later expansion */
 void GhostButton;

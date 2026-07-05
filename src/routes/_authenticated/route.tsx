@@ -25,4 +25,3 @@ function AuthenticatedShell() {
   }, [user.id]);
   return <Outlet />;
 }
-

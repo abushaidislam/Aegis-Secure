@@ -24,7 +24,11 @@ export const soft = { type: "spring" as const, stiffness: 200, damping: 32, mass
 export function Backdrop() {
   const reduce = useReducedMotion();
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden" style={{ background: CREAM }}>
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+      style={{ background: CREAM }}
+    >
       <div
         className="absolute inset-0"
         style={{
@@ -34,13 +38,19 @@ export function Backdrop() {
       />
       <motion.div
         className="absolute -left-24 top-[6%] h-[320px] w-[320px] rounded-full"
-        style={{ background: "radial-gradient(closest-side, rgba(230,180,140,0.35), transparent 70%)", filter: "blur(60px)" }}
+        style={{
+          background: "radial-gradient(closest-side, rgba(230,180,140,0.35), transparent 70%)",
+          filter: "blur(60px)",
+        }}
         animate={reduce ? undefined : { x: [0, 16, 0], y: [0, -10, 0] }}
         transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
         className="absolute -right-24 bottom-[8%] h-[380px] w-[380px] rounded-full"
-        style={{ background: "radial-gradient(closest-side, rgba(200,170,210,0.28), transparent 70%)", filter: "blur(70px)" }}
+        style={{
+          background: "radial-gradient(closest-side, rgba(200,170,210,0.28), transparent 70%)",
+          filter: "blur(70px)",
+        }}
         animate={reduce ? undefined : { x: [0, -14, 0], y: [0, 10, 0] }}
         transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
       />
@@ -127,7 +137,12 @@ export function Lede({ children, delay = 0.05 }: { children: ReactNode; delay?: 
 
 export function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={soft} className="flex">
+    <motion.div
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={soft}
+      className="flex"
+    >
       <span
         className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] uppercase"
         style={{
@@ -152,7 +167,13 @@ export function IconChip({ children, size = 40 }: { children: ReactNode; size?: 
   return (
     <span
       className="inline-flex items-center justify-center rounded-full"
-      style={{ width: size, height: size, background: CREAM_SOFT, border: `1px solid ${BORDER}`, color: CHARCOAL }}
+      style={{
+        width: size,
+        height: size,
+        background: CREAM_SOFT,
+        border: `1px solid ${BORDER}`,
+        color: CHARCOAL,
+      }}
     >
       {children}
     </span>
@@ -212,7 +233,11 @@ export function Field({
       animate={{ opacity: 1, y: 0 }}
       transition={{ ...soft, delay }}
       className="flex h-[48px] items-center gap-2.5 rounded-[12px] px-3.5"
-      style={{ background: CREAM_SOFT, border: `1px solid ${BORDER}`, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)" }}
+      style={{
+        background: CREAM_SOFT,
+        border: `1px solid ${BORDER}`,
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+      }}
     >
       {icon && <span style={{ color: MUTED }}>{icon}</span>}
       {children}
@@ -247,7 +272,14 @@ interface PrimaryProps extends Omit<MotionProps, "children"> {
   icon?: ReactNode;
 }
 
-export function PrimaryButton({ children, onClick, type = "button", disabled, loading, icon }: PrimaryProps) {
+export function PrimaryButton({
+  children,
+  onClick,
+  type = "button",
+  disabled,
+  loading,
+  icon,
+}: PrimaryProps) {
   return (
     <motion.button
       type={type}
@@ -269,7 +301,12 @@ export function PrimaryButton({ children, onClick, type = "button", disabled, lo
       ) : (
         <span className="flex items-center gap-2">
           {children}
-          {icon ?? <ArrowRight className="h-[15px] w-[15px] transition-transform duration-300 group-hover:translate-x-0.5" strokeWidth={1.8} />}
+          {icon ?? (
+            <ArrowRight
+              className="h-[15px] w-[15px] transition-transform duration-300 group-hover:translate-x-0.5"
+              strokeWidth={1.8}
+            />
+          )}
         </span>
       )}
     </motion.button>
@@ -310,7 +347,15 @@ export function GhostButton({
   );
 }
 
-export function TextLink({ children, onClick, type = "button" }: { children: ReactNode; onClick?: () => void; type?: "button" | "submit" }) {
+export function TextLink({
+  children,
+  onClick,
+  type = "button",
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  type?: "button" | "submit";
+}) {
   return (
     <button
       type={type}
@@ -326,10 +371,22 @@ export function TextLink({ children, onClick, type = "button" }: { children: Rea
 export function GoogleIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden>
-      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+      />
+      <path
+        fill="#4285F4"
+        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+      />
+      <path
+        fill="#34A853"
+        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+      />
     </svg>
   );
 }
@@ -338,4 +395,7 @@ export function GoogleIcon({ size = 16 }: { size?: number }) {
 
 export const inputClass =
   "w-full bg-transparent text-[15px] outline-none placeholder:text-[color:var(--aegis-muted)]";
-export const inputStyle = { color: CHARCOAL, ["--aegis-muted" as string]: MUTED } as React.CSSProperties;
+export const inputStyle = {
+  color: CHARCOAL,
+  ["--aegis-muted" as string]: MUTED,
+} as React.CSSProperties;

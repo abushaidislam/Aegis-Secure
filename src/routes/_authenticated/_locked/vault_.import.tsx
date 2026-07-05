@@ -17,12 +17,7 @@ import {
 import { toast } from "sonner";
 import { getVaultKey } from "@/lib/vault-session";
 import { addAccount, type ParsedOtpauth } from "@/lib/vault-accounts";
-import {
-  importFromJson,
-  importFromText,
-  sourceLabel,
-  type ImportSource,
-} from "@/lib/vault-import";
+import { importFromJson, importFromText, sourceLabel, type ImportSource } from "@/lib/vault-import";
 import {
   AegisScreen,
   BORDER,
@@ -33,20 +28,13 @@ import {
   PrimaryButton,
   soft,
 } from "@/components/aegis/chrome";
-import {
-  AppBar,
-  AppBarButton,
-  SectionLabel,
-  SettingsGroup,
-} from "@/components/aegis/settings";
+import { AppBar, AppBarButton, SectionLabel, SettingsGroup } from "@/components/aegis/settings";
 import { BottomTabs } from "@/components/aegis/BottomTabs";
 
 export const Route = createFileRoute("/_authenticated/_locked/vault_/import")({
   component: ImportPage,
   errorComponent: ({ error }) => (
-    <div className="flex min-h-screen items-center justify-center p-6 text-sm">
-      {error.message}
-    </div>
+    <div className="flex min-h-screen items-center justify-center p-6 text-sm">{error.message}</div>
   ),
   notFoundComponent: () => <div className="p-6 text-sm">Not found</div>,
 });
@@ -87,7 +75,10 @@ function ImportPage() {
     setStage("preview");
     setNotice(
       p.skipped > 0
-        ? { kind: "info", text: `${p.skipped} entry ${p.skipped === 1 ? "was" : "were"} skipped (not a TOTP link).` }
+        ? {
+            kind: "info",
+            text: `${p.skipped} entry ${p.skipped === 1 ? "was" : "were"} skipped (not a TOTP link).`,
+          }
         : null,
     );
   };
@@ -158,10 +149,7 @@ function ImportPage() {
     } catch (err) {
       setNotice({
         kind: "error",
-        text:
-          err instanceof Error
-            ? err.message
-            : "Couldn't read a migration QR from that image.",
+        text: err instanceof Error ? err.message : "Couldn't read a migration QR from that image.",
       });
     } finally {
       URL.revokeObjectURL(url);
@@ -198,8 +186,7 @@ function ImportPage() {
     }
     setBusy(false);
     if (ok > 0) toast.success(`Imported ${ok} account${ok === 1 ? "" : "s"}.`);
-    if (failed > 0)
-      toast.error(`${failed} account${failed === 1 ? "" : "s"} couldn't be saved.`);
+    if (failed > 0) toast.error(`${failed} account${failed === 1 ? "" : "s"} couldn't be saved.`);
     navigate({ to: "/vault", replace: true });
   };
 
@@ -269,11 +256,7 @@ function ImportPage() {
                       switchToPaste={() => setTab("paste")}
                     />
                   ) : tab === "paste" ? (
-                    <PasteTab
-                      value={pasteText}
-                      onChange={setPasteText}
-                      onSubmit={handlePaste}
-                    />
+                    <PasteTab value={pasteText} onChange={setPasteText} onSubmit={handlePaste} />
                   ) : (
                     <FileTab
                       decoding={decoding}
@@ -380,8 +363,7 @@ function SegButton({
           style={{
             background: "#ffffff",
             border: `1px solid ${BORDER}`,
-            boxShadow:
-              "0 1px 2px rgba(28,28,28,0.06), 0 4px 12px -6px rgba(28,28,28,0.12)",
+            boxShadow: "0 1px 2px rgba(28,28,28,0.06), 0 4px 12px -6px rgba(28,28,28,0.12)",
           }}
           transition={{ type: "spring", stiffness: 400, damping: 34 }}
         />
@@ -411,7 +393,9 @@ function PasteTab({
         onChange={(e) => onChange(e.target.value)}
         rows={8}
         spellCheck={false}
-        placeholder={"otpauth-migration://offline?data=…\n\nor otpauth://totp/…\n\nor paste a JSON export"}
+        placeholder={
+          "otpauth-migration://offline?data=…\n\nor otpauth://totp/…\n\nor paste a JSON export"
+        }
         className="w-full resize-y rounded-[14px] p-3 text-[12.5px] outline-none"
         style={{
           background: CREAM_SOFT,
@@ -430,8 +414,8 @@ function PasteTab({
         Read paste
       </PrimaryButton>
       <p className="px-1 pt-1 text-[11.5px]" style={{ color: MUTED, lineHeight: 1.5 }}>
-        Google Authenticator: Settings → Transfer accounts → Export → copy the URL from the
-        QR (use a scanner app if needed).
+        Google Authenticator: Settings → Transfer accounts → Export → copy the URL from the QR (use
+        a scanner app if needed).
       </p>
     </div>
   );
@@ -568,8 +552,7 @@ function PreviewStage({
               className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors"
               style={{
                 background: "transparent",
-                borderBottom:
-                  i < preview.entries.length - 1 ? `1px solid ${BORDER}` : "none",
+                borderBottom: i < preview.entries.length - 1 ? `1px solid ${BORDER}` : "none",
               }}
             >
               <span
@@ -621,9 +604,7 @@ function PreviewStage({
           )
         }
       >
-        {busy
-          ? "Importing…"
-          : `Import ${selected.size} account${selected.size === 1 ? "" : "s"}`}
+        {busy ? "Importing…" : `Import ${selected.size} account${selected.size === 1 ? "" : "s"}`}
       </PrimaryButton>
     </div>
   );
@@ -650,22 +631,15 @@ function ScanTab({
     (async () => {
       const reader = new BrowserQRCodeReader();
       try {
-        controls = await reader.decodeFromVideoDevice(
-          undefined,
-          videoRef.current!,
-          (result) => {
-            if (!result || cancelled || firedRef.current) return;
-            const text = result.getText();
-            if (
-              text.startsWith("otpauth://") ||
-              text.startsWith("otpauth-migration://")
-            ) {
-              firedRef.current = true;
-              controls?.stop();
-              onDetected(text);
-            }
-          },
-        );
+        controls = await reader.decodeFromVideoDevice(undefined, videoRef.current!, (result) => {
+          if (!result || cancelled || firedRef.current) return;
+          const text = result.getText();
+          if (text.startsWith("otpauth://") || text.startsWith("otpauth-migration://")) {
+            firedRef.current = true;
+            controls?.stop();
+            onDetected(text);
+          }
+        });
         if (!cancelled) setStarting(false);
       } catch (err) {
         if (cancelled) return;
@@ -692,22 +666,15 @@ function ScanTab({
         style={{
           border: `1px solid ${BORDER}`,
           background: "#0a0a0a",
-          boxShadow:
-            "inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 32px -18px rgba(28,28,28,0.35)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 32px -18px rgba(28,28,28,0.35)",
         }}
       >
-        <video
-          ref={videoRef}
-          className="h-full w-full object-cover"
-          playsInline
-          muted
-        />
+        <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
           style={{
-            background:
-              "radial-gradient(closest-side, transparent 55%, rgba(0,0,0,0.55) 100%)",
+            background: "radial-gradient(closest-side, transparent 55%, rgba(0,0,0,0.55) 100%)",
           }}
         />
         <div className="pointer-events-none absolute inset-8">

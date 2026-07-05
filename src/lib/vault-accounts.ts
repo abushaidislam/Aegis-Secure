@@ -120,7 +120,9 @@ export async function deleteAccount(id: string): Promise<void> {
 export async function listAccounts(dek: CryptoKey): Promise<DecryptedAccount[]> {
   const { data, error } = await supabase
     .from("vault_accounts")
-    .select("id, issuer, label, icon_slug, algorithm, digits, period, sort_order, secret_ciphertext, secret_iv")
+    .select(
+      "id, issuer, label, icon_slug, algorithm, digits, period, sort_order, secret_ciphertext, secret_iv",
+    )
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
   if (error) throw error;

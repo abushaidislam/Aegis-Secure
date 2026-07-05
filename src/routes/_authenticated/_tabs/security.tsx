@@ -27,17 +27,8 @@ import {
   PrimaryButton,
   soft,
 } from "@/components/aegis/chrome";
-import {
-  LargeTitle,
-  SectionLabel,
-  SettingsGroup,
-  SettingsRow,
-} from "@/components/aegis/settings";
-import {
-  PasswordField,
-  StrengthMeter,
-  scoreStrength,
-} from "@/components/aegis/password-field";
+import { LargeTitle, SectionLabel, SettingsGroup, SettingsRow } from "@/components/aegis/settings";
+import { PasswordField, StrengthMeter, scoreStrength } from "@/components/aegis/password-field";
 import {
   AUTO_LOCK_OPTIONS,
   getAutoLockMs,
@@ -61,7 +52,6 @@ import {
   isBiometricEnabled,
   isBiometricSupported,
 } from "@/lib/biometric";
-
 
 export const Route = createFileRoute("/_authenticated/_tabs/security")({
   beforeLoad: ({ location }) => {
@@ -145,7 +135,6 @@ function SecurityPage() {
           });
         }
       }
-
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Could not update biometric setting.";
       setNotice({ kind: "error", text: msg });
@@ -154,7 +143,6 @@ function SecurityPage() {
       setBioBusy(false);
     }
   };
-
 
   const lockNow = () => {
     lockVault();
@@ -279,8 +267,6 @@ function SecurityPage() {
           />
         </SettingsGroup>
 
-
-
         <SectionLabel>Privacy</SectionLabel>
         <SettingsGroup>
           <SettingsRow
@@ -379,7 +365,6 @@ function SecurityPage() {
           />
         )}
       </AnimatePresence>
-
     </>
   );
 }
@@ -685,4 +670,3 @@ function AutoLockSheet({
     </motion.div>
   );
 }
-

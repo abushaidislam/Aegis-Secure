@@ -3,7 +3,16 @@ import { useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { AegisScreen, BrandBar, Display, Lede, INSET_SHADOW, CREAM_SOFT, CHARCOAL, BORDER } from "@/components/aegis/chrome";
+import {
+  AegisScreen,
+  BrandBar,
+  Display,
+  Lede,
+  INSET_SHADOW,
+  CREAM_SOFT,
+  CHARCOAL,
+  BORDER,
+} from "@/components/aegis/chrome";
 
 export const Route = createFileRoute("/auth/callback")({
   ssr: false,
@@ -44,7 +53,10 @@ function CallbackPage() {
     <AegisScreen>
       <BrandBar />
       <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
-        <div className="relative flex items-center justify-center" style={{ width: 140, height: 140 }}>
+        <div
+          className="relative flex items-center justify-center"
+          style={{ width: 140, height: 140 }}
+        >
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}

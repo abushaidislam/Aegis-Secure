@@ -59,7 +59,6 @@ function AuthPage() {
     });
   }, [navigate]);
 
-
   const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setNotice(null);
@@ -105,7 +104,6 @@ function AuthPage() {
     }
   };
 
-
   const handleGoogle = async () => {
     setNotice(null);
     setLoading(true);
@@ -117,14 +115,22 @@ function AuthPage() {
       if (result.redirected) return;
       navigate({ to: "/", replace: true });
     } catch (err) {
-      setNotice({ kind: "error", text: err instanceof Error ? err.message : "Google sign-in failed." });
+      setNotice({
+        kind: "error",
+        text: err instanceof Error ? err.message : "Google sign-in failed.",
+      });
       setLoading(false);
     }
   };
 
-  const eyebrow = mode === "signup" ? "Create account" : mode === "reset" ? "Reset access" : "Sign in";
+  const eyebrow =
+    mode === "signup" ? "Create account" : mode === "reset" ? "Reset access" : "Sign in";
   const title =
-    mode === "signup" ? "Create your Aegis." : mode === "reset" ? "Reset your password." : "Welcome back.";
+    mode === "signup"
+      ? "Create your Aegis."
+      : mode === "reset"
+        ? "Reset your password."
+        : "Welcome back.";
   const subtitle =
     mode === "signup"
       ? "One account, every one-time code — quietly protected."
@@ -155,7 +161,6 @@ function AuthPage() {
             </AnimatePresence>
           </div>
         </div>
-
 
         <form onSubmit={handleEmail} className="flex flex-col gap-2.5">
           <Field icon={<Mail className="h-4 w-4" strokeWidth={1.6} />} delay={0.05}>
@@ -208,15 +213,20 @@ function AuthPage() {
                 (mode === "signup" && scoreStrength(password) < 2)
               }
             >
-              {mode === "signup" ? "Create account" : mode === "reset" ? "Send reset link" : "Sign in"}
+              {mode === "signup"
+                ? "Create account"
+                : mode === "reset"
+                  ? "Send reset link"
+                  : "Sign in"}
             </PrimaryButton>
           </div>
         </form>
 
-
         <div className="flex items-center gap-3">
           <div className="h-px flex-1" style={{ background: BORDER }} />
-          <span className="text-[11px] uppercase tracking-[0.14em]" style={{ color: MUTED }}>or</span>
+          <span className="text-[11px] uppercase tracking-[0.14em]" style={{ color: MUTED }}>
+            or
+          </span>
           <div className="h-px flex-1" style={{ background: BORDER }} />
         </div>
 
@@ -224,13 +234,20 @@ function AuthPage() {
           Continue with Google
         </GhostButton>
 
-        <div className="flex flex-col items-center gap-1.5 pt-1 text-[13px]" style={{ color: MUTED }}>
+        <div
+          className="flex flex-col items-center gap-1.5 pt-1 text-[13px]"
+          style={{ color: MUTED }}
+        >
           {mode === "signin" && (
             <>
               <TextLink onClick={() => setMode("reset")}>Forgot your password?</TextLink>
               <div>
                 New to Aegis?{" "}
-                <button onClick={() => setMode("signup")} className="underline underline-offset-[3px]" style={{ color: CHARCOAL }}>
+                <button
+                  onClick={() => setMode("signup")}
+                  className="underline underline-offset-[3px]"
+                  style={{ color: CHARCOAL }}
+                >
                   Create an account
                 </button>
               </div>
@@ -239,12 +256,18 @@ function AuthPage() {
           {mode === "signup" && (
             <div>
               Already have an account?{" "}
-              <button onClick={() => setMode("signin")} className="underline underline-offset-[3px]" style={{ color: CHARCOAL }}>
+              <button
+                onClick={() => setMode("signin")}
+                className="underline underline-offset-[3px]"
+                style={{ color: CHARCOAL }}
+              >
                 Sign in
               </button>
             </div>
           )}
-          {mode === "reset" && <TextLink onClick={() => setMode("signin")}>Back to sign in</TextLink>}
+          {mode === "reset" && (
+            <TextLink onClick={() => setMode("signin")}>Back to sign in</TextLink>
+          )}
         </div>
       </div>
     </AegisScreen>
