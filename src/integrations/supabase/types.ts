@@ -41,6 +41,39 @@ export type Database = {
         }
         Relationships: []
       }
+      announcements: {
+        Row: {
+          audience: Json
+          body: string
+          created_at: string
+          dismissable: boolean
+          expires_at: string | null
+          id: string
+          kind: string
+          title: string
+        }
+        Insert: {
+          audience?: Json
+          body: string
+          created_at?: string
+          dismissable?: boolean
+          expires_at?: string | null
+          id?: string
+          kind?: string
+          title: string
+        }
+        Update: {
+          audience?: Json
+          body?: string
+          created_at?: string
+          dismissable?: boolean
+          expires_at?: string | null
+          id?: string
+          kind?: string
+          title?: string
+        }
+        Relationships: []
+      }
       client_errors: {
         Row: {
           at: string
@@ -68,6 +101,33 @@ export type Database = {
           stack_redacted?: string | null
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      feature_flags: {
+        Row: {
+          audience: Json
+          created_at: string
+          description: string | null
+          enabled: boolean
+          key: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: Json
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          key: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: Json
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          key?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -114,12 +174,14 @@ export type Database = {
           digits: number
           icon_slug: string | null
           id: string
+          is_favorite: boolean
           issuer: string
           label: string
           period: number
           secret_ciphertext: string
           secret_iv: string
           sort_order: number
+          tags: string[]
           updated_at: string
           user_id: string
         }
@@ -129,12 +191,14 @@ export type Database = {
           digits?: number
           icon_slug?: string | null
           id?: string
+          is_favorite?: boolean
           issuer?: string
           label?: string
           period?: number
           secret_ciphertext: string
           secret_iv: string
           sort_order?: number
+          tags?: string[]
           updated_at?: string
           user_id: string
         }
@@ -144,12 +208,14 @@ export type Database = {
           digits?: number
           icon_slug?: string | null
           id?: string
+          is_favorite?: boolean
           issuer?: string
           label?: string
           period?: number
           secret_ciphertext?: string
           secret_iv?: string
           sort_order?: number
+          tags?: string[]
           updated_at?: string
           user_id?: string
         }
