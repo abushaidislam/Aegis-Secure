@@ -219,6 +219,17 @@ function SecurityPage() {
       </div>
 
       <AnimatePresence>
+        {autoLockOpen && (
+          <AutoLockSheet
+            current={autoLockMs}
+            onClose={() => setAutoLockOpen(false)}
+            onPick={(opt) => {
+              setAutoLockMs(opt.value);
+              setAutoLockOpen(false);
+              setNotice({ kind: "info", text: `Auto-lock set to “${opt.label.toLowerCase()}”.` });
+            }}
+          />
+        )}
         {changeOpen && (
           <ChangePassphraseSheet
             userId={user.id}
@@ -232,6 +243,7 @@ function SecurityPage() {
           />
         )}
       </AnimatePresence>
+
     </>
   );
 }
