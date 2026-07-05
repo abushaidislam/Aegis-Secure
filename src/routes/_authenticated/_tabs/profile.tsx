@@ -171,8 +171,69 @@ function ProfilePage() {
     }
   };
 
+  const handleAvatarPick = () => {
+    if (avatarBusy) return;
+    fileRef.current?.click();
+  };
+
+  const handleAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setAvatarBusy(true);
+    setNotice(null);
+    try {
+      const blob = await fileToSquareJpeg(file);
+      const path = avatarPathFor(user.id);
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
+      if (upErr) throw upErr;
+      const { error: profErr } = await supabase
+        .from("profiles")
+        .upsert({ id: user.id, avatar_url: path }, { onConflict: "id" });
+      if (profErr) throw profErr;
+      // Force signed-URL refresh by re-setting the path (cache-bust via query).
+      setAvatarPath(`${path}?v=${Date.now()}`);
+      // Then normalize back to the real path so future updates work.
+      setTimeout(() => setAvatarPath(path), 50);
+      setNotice({ kind: "info", text: "Photo updated." });
+    } catch (err) {
+      setNotice({
+        kind: "error",
+        text: err instanceof Error ? err.message : "Could not upload photo.",
+      });
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    if (!avatarPath || avatarBusy) return;
+    if (!window.confirm("Remove your profile photo?")) return;
+    setAvatarBusy(true);
+    setNotice(null);
+    try {
+      const cleanPath = avatarPath.split("?")[0];
+      await supabase.storage.from("avatars").remove([cleanPath]);
+      const { error } = await supabase
+        .from("profiles")
+        .upsert({ id: user.id, avatar_url: null }, { onConflict: "id" });
+      if (error) throw error;
+      setAvatarPath(null);
+    } catch (err) {
+      setNotice({
+        kind: "error",
+        text: err instanceof Error ? err.message : "Could not remove photo.",
+      });
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
   const seed = displayName || user.email || "?";
   const displayShown = initialName || "Unnamed";
+  const hasAvatar = !!avatarPath;
 
   return (
     <>
