@@ -140,10 +140,7 @@ export function StrengthMeter({ value }: { value: string }) {
           />
         ))}
       </div>
-      <span
-        className="text-[11px] tabular-nums"
-        style={{ color: CHARCOAL, opacity: 0.75 }}
-      >
+      <span className="text-[11px] tabular-nums" style={{ color: CHARCOAL, opacity: 0.75 }}>
         {STRENGTH_LABELS[score]}
       </span>
     </div>

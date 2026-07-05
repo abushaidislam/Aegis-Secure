@@ -79,15 +79,35 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#f7f4ed" },
       { title: "Aegis — Security that simply works" },
-      { name: "description", content: "Aegis is a beautifully minimal authenticator that protects every account with secure one-time codes." },
+      {
+        name: "description",
+        content:
+          "Aegis is a beautifully minimal authenticator that protects every account with secure one-time codes.",
+      },
       { property: "og:title", content: "Aegis — Security that simply works" },
-      { property: "og:description", content: "Aegis is a beautifully minimal authenticator that protects every account with secure one-time codes." },
+      {
+        property: "og:description",
+        content:
+          "Aegis is a beautifully minimal authenticator that protects every account with secure one-time codes.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Aegis — Security that simply works" },
-      { name: "twitter:description", content: "Aegis is a beautifully minimal authenticator that protects every account with secure one-time codes." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/30722301-0b4c-46e5-bf0e-7e63535d296f" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/30722301-0b4c-46e5-bf0e-7e63535d296f" },
+      {
+        name: "twitter:description",
+        content:
+          "Aegis is a beautifully minimal authenticator that protects every account with secure one-time codes.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/30722301-0b4c-46e5-bf0e-7e63535d296f",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/30722301-0b4c-46e5-bf0e-7e63535d296f",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -126,21 +146,20 @@ function RootComponent() {
 
   useEffect(() => {
     let mounted = true;
-    Promise.all([
-      import("@/integrations/supabase/client"),
-      import("@/lib/vault-session"),
-    ]).then(([{ supabase }, { lockVault }]) => {
-      if (!mounted) return;
-      const { data } = supabase.auth.onAuthStateChange((event) => {
-        if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-        if (event === "SIGNED_OUT") lockVault();
-        router.invalidate();
-        if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
-      });
-      // Store for cleanup
-      (window as unknown as { __aegis_auth_sub?: { unsubscribe: () => void } }).__aegis_auth_sub =
-        data.subscription;
-    });
+    Promise.all([import("@/integrations/supabase/client"), import("@/lib/vault-session")]).then(
+      ([{ supabase }, { lockVault }]) => {
+        if (!mounted) return;
+        const { data } = supabase.auth.onAuthStateChange((event) => {
+          if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+          if (event === "SIGNED_OUT") lockVault();
+          router.invalidate();
+          if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+        });
+        // Store for cleanup
+        (window as unknown as { __aegis_auth_sub?: { unsubscribe: () => void } }).__aegis_auth_sub =
+          data.subscription;
+      },
+    );
     return () => {
       mounted = false;
       const sub = (window as unknown as { __aegis_auth_sub?: { unsubscribe: () => void } })

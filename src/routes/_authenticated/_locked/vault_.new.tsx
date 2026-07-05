@@ -29,12 +29,7 @@ import {
   PrimaryButton,
   soft,
 } from "@/components/aegis/chrome";
-import {
-  AppBar,
-  AppBarButton,
-  SectionLabel,
-  SettingsGroup,
-} from "@/components/aegis/settings";
+import { AppBar, AppBarButton, SectionLabel, SettingsGroup } from "@/components/aegis/settings";
 import { BottomTabs } from "@/components/aegis/BottomTabs";
 
 export const Route = createFileRoute("/_authenticated/_locked/vault_/new")({
@@ -160,7 +155,10 @@ function NewAccountPage() {
                     } catch (err) {
                       setNotice({
                         kind: "error",
-                        text: err instanceof Error ? err.message : "That QR isn't a valid otpauth code.",
+                        text:
+                          err instanceof Error
+                            ? err.message
+                            : "That QR isn't a valid otpauth code.",
                       });
                     }
                   }}
@@ -187,8 +185,7 @@ function SegmentedTabs({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) 
       style={{
         background: CREAM_SOFT,
         border: `1px solid ${BORDER}`,
-        boxShadow:
-          "inset 0 1px 0 rgba(255,255,255,0.6), 0 1px 2px rgba(28,28,28,0.04)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6), 0 1px 2px rgba(28,28,28,0.04)",
       }}
     >
       <SegButton
@@ -237,8 +234,7 @@ function SegButton({
           style={{
             background: "#ffffff",
             border: `1px solid ${BORDER}`,
-            boxShadow:
-              "0 1px 2px rgba(28,28,28,0.06), 0 4px 12px -6px rgba(28,28,28,0.12)",
+            boxShadow: "0 1px 2px rgba(28,28,28,0.06), 0 4px 12px -6px rgba(28,28,28,0.12)",
           }}
           transition={{ type: "spring", stiffness: 400, damping: 34 }}
         />
@@ -330,8 +326,7 @@ function ScanTab({
         style={{
           border: `1px solid ${BORDER}`,
           background: "#0a0a0a",
-          boxShadow:
-            "inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 32px -18px rgba(28,28,28,0.35)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 32px -18px rgba(28,28,28,0.35)",
         }}
       >
         <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
@@ -341,8 +336,7 @@ function ScanTab({
           aria-hidden
           className="pointer-events-none absolute inset-0"
           style={{
-            background:
-              "radial-gradient(closest-side, transparent 55%, rgba(0,0,0,0.55) 100%)",
+            background: "radial-gradient(closest-side, transparent 55%, rgba(0,0,0,0.55) 100%)",
           }}
         />
 
@@ -472,7 +466,14 @@ function ManualTab({
   onSubmit,
   saving,
 }: {
-  onSubmit: (v: { issuer: string; label: string; secret: string; algorithm: Algorithm; digits: number; period: number }) => void;
+  onSubmit: (v: {
+    issuer: string;
+    label: string;
+    secret: string;
+    algorithm: Algorithm;
+    digits: number;
+    period: number;
+  }) => void;
   saving: boolean;
 }) {
   const [issuer, setIssuer] = useState("");
@@ -500,7 +501,13 @@ function ManualTab({
     <form onSubmit={submit} className="flex flex-col gap-1">
       <SectionLabel>Account</SectionLabel>
       <SettingsGroup>
-        <FieldRow label="Issuer" value={issuer} onChange={setIssuer} placeholder="GitHub" autoFocus />
+        <FieldRow
+          label="Issuer"
+          value={issuer}
+          onChange={setIssuer}
+          placeholder="GitHub"
+          autoFocus
+        />
         <FieldRow label="Account" value={label} onChange={setLabel} placeholder="you@example.com" />
       </SettingsGroup>
 
@@ -645,10 +652,7 @@ function FieldRow({
         />
       )}
       {invalid && (
-        <span
-          className="h-1.5 w-1.5 shrink-0 rounded-full"
-          style={{ background: "#c9a24a" }}
-        />
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "#c9a24a" }} />
       )}
     </label>
   );
@@ -667,10 +671,7 @@ function SelectRow({
 }) {
   return (
     <label className="flex items-center gap-3 px-4 py-3">
-      <span
-        className="w-[76px] shrink-0 text-[12px]"
-        style={{ color: MUTED, fontWeight: 500 }}
-      >
+      <span className="w-[76px] shrink-0 text-[12px]" style={{ color: MUTED, fontWeight: 500 }}>
         {label}
       </span>
       <select

@@ -190,10 +190,7 @@ export function SettingsRow({
           )}
         </div>
         {(description || value) && (
-          <div
-            className="mt-0.5 truncate text-[12.5px] leading-[1.4]"
-            style={{ color: MUTED }}
-          >
+          <div className="mt-0.5 truncate text-[12.5px] leading-[1.4]" style={{ color: MUTED }}>
             {value ?? description}
           </div>
         )}

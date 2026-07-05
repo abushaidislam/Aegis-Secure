@@ -3,12 +3,7 @@
 import * as OTPAuth from "otpauth";
 import { parseOtpauthUri, type ParsedOtpauth, type Algorithm } from "@/lib/vault-accounts";
 
-export type ImportSource =
-  | "otpauth"
-  | "otpauth-migration"
-  | "aegis"
-  | "2fas"
-  | "unknown";
+export type ImportSource = "otpauth" | "otpauth-migration" | "aegis" | "2fas" | "unknown";
 
 export interface ImportResult {
   source: ImportSource;

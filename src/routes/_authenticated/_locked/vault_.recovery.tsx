@@ -23,9 +23,7 @@ import {
 export const Route = createFileRoute("/_authenticated/_locked/vault_/recovery")({
   component: RecoverySheetPage,
   errorComponent: ({ error }) => (
-    <div className="flex min-h-screen items-center justify-center p-6 text-sm">
-      {error.message}
-    </div>
+    <div className="flex min-h-screen items-center justify-center p-6 text-sm">{error.message}</div>
   ),
   notFoundComponent: () => <div className="p-6 text-sm">Not found</div>,
 });
@@ -98,7 +96,8 @@ function RecoverySheetPage() {
         });
         if (!cancelled) setQrDataUrl(dataUrl);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Could not build recovery sheet.");
+        if (!cancelled)
+          setError(e instanceof Error ? e.message : "Could not build recovery sheet.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -210,11 +209,7 @@ function RecoverySheetPage() {
       const footY = doc.internal.pageSize.getHeight() - 32;
       doc.setFontSize(8);
       doc.setTextColor(140);
-      doc.text(
-        "Aegis · end-to-end encrypted · print & store offline",
-        marginX,
-        footY,
-      );
+      doc.text("Aegis · end-to-end encrypted · print & store offline", marginX, footY);
 
       doc.save(`aegis-recovery-${new Date().toISOString().slice(0, 10)}.pdf`);
       toast.success("Recovery sheet downloaded");
@@ -261,9 +256,8 @@ function RecoverySheetPage() {
           Print this. Store it somewhere real.
         </div>
         <div className="mt-2 text-[13.5px]" style={{ color: MUTED }}>
-          A one-page backup of the accounts you have and the wrapped key needed
-          to restore them. Paired with your passphrase, this sheet rebuilds
-          your vault after a lost device.
+          A one-page backup of the accounts you have and the wrapped key needed to restore them.
+          Paired with your passphrase, this sheet rebuilds your vault after a lost device.
         </div>
       </div>
 
@@ -297,13 +291,7 @@ function RecoverySheetPage() {
               className="rounded-[16px] p-3"
               style={{ background: "#fbf7ee", border: `1px solid ${BORDER}` }}
             >
-              <img
-                src={qrDataUrl}
-                alt="Recovery QR"
-                width={196}
-                height={196}
-                className="block"
-              />
+              <img src={qrDataUrl} alt="Recovery QR" width={196} height={196} className="block" />
             </div>
             <div className="text-center">
               <div className="text-[13px]" style={{ color: CHARCOAL, fontWeight: 600 }}>
@@ -327,9 +315,8 @@ function RecoverySheetPage() {
           >
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.8} />
             <div className="text-[12px]" style={{ color: MUTED, lineHeight: 1.55 }}>
-              The QR contains your wrapped key — it is useless without your
-              passphrase. We still recommend keeping the printed sheet
-              somewhere private (safe, drawer, sealed envelope).
+              The QR contains your wrapped key — it is useless without your passphrase. We still
+              recommend keeping the printed sheet somewhere private (safe, drawer, sealed envelope).
             </div>
           </motion.div>
 

@@ -41,7 +41,6 @@ import {
 import { PasswordField, StrengthMeter, scoreStrength } from "@/components/aegis/password-field";
 import { Loader2 } from "lucide-react";
 
-
 const searchSchema = z.object({ redirect: z.string().optional() });
 
 export const Route = createFileRoute("/_authenticated/lock")({
@@ -148,7 +147,6 @@ function LockPage() {
     }
   };
 
-
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setNotice(null);
@@ -162,7 +160,8 @@ function LockPage() {
     }
     setLoading(true);
     try {
-      const { salt, wrappedKey, wrappedKeyIv, dek, kdfAlgorithm } = await createNewVaultKey(passphrase);
+      const { salt, wrappedKey, wrappedKeyIv, dek, kdfAlgorithm } =
+        await createNewVaultKey(passphrase);
       const { error } = await supabase.from("vault_meta").insert({
         user_id: user.id,
         kdf_salt: toByteaHex(salt),
@@ -176,12 +175,14 @@ function LockPage() {
       await maybeEnrollBiometric(dek);
       routeAfterUnlock();
     } catch (err) {
-      setNotice({ kind: "error", text: err instanceof Error ? err.message : "Could not create vault." });
+      setNotice({
+        kind: "error",
+        text: err instanceof Error ? err.message : "Could not create vault.",
+      });
     } finally {
       setLoading(false);
     }
   };
-
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -254,8 +255,6 @@ function LockPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, bioAvailable, bioEnrolled, bioAutoTried]);
 
-
-
   if (mode === "loading") {
     return (
       <AegisScreen>
@@ -307,7 +306,6 @@ function LockPage() {
             )}
           </div>
         </div>
-
 
         {/* Biometric FIRST when enrolled — that's the fast path. */}
         {!isCreate && bioEnrolled && bioAvailable && (
@@ -399,21 +397,16 @@ function LockPage() {
           </div>
 
           {isCreate && bioAvailable && isBiometricPending() && (
-            <p
-              className="pt-1 text-center text-[11.5px]"
-              style={{ color: MUTED }}
-            >
+            <p className="pt-1 text-center text-[11.5px]" style={{ color: MUTED }}>
               We'll set up Face ID / fingerprint right after your vault is created.
             </p>
           )}
         </form>
 
-
         {isCreate ? (
           <p className="text-center text-[11.5px] leading-snug" style={{ color: MUTED }}>
             If you forget this passphrase, your codes cannot be recovered.
-            <br />
-            A printable recovery sheet is coming in a later step.
+            <br />A printable recovery sheet is coming in a later step.
           </p>
         ) : (
           <div className="flex flex-col items-center gap-2 pt-1">
@@ -434,7 +427,10 @@ function LockPage() {
                   setPassphraseHint(null);
                   setMode("create");
                 } catch (err) {
-                  setNotice({ kind: "error", text: err instanceof Error ? err.message : "Reset failed." });
+                  setNotice({
+                    kind: "error",
+                    text: err instanceof Error ? err.message : "Reset failed.",
+                  });
                 } finally {
                   setLoading(false);
                 }
@@ -456,9 +452,7 @@ function LockPage() {
             </button>
           </div>
         )}
-
       </div>
     </AegisScreen>
   );
 }
-

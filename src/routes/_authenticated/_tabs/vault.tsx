@@ -102,9 +102,7 @@ function VaultPage() {
     const q = query.trim().toLowerCase();
     if (!q) return accounts;
     return accounts.filter(
-      (a) =>
-        a.issuer.toLowerCase().includes(q) ||
-        a.label.toLowerCase().includes(q),
+      (a) => a.issuer.toLowerCase().includes(q) || a.label.toLowerCase().includes(q),
     );
   }, [accounts, query]);
 
@@ -121,7 +119,6 @@ function VaultPage() {
 
   return (
     <>
-
       <LargeTitle
         title="Your codes"
         subtitle={
@@ -131,9 +128,7 @@ function VaultPage() {
         }
       />
 
-      {accounts && accounts.length > 0 && (
-        <SearchField value={query} onChange={setQuery} />
-      )}
+      {accounts && accounts.length > 0 && <SearchField value={query} onChange={setQuery} />}
 
       <div className="pt-2">
         {error && <Notice kind="error">{error}</Notice>}
@@ -240,7 +235,6 @@ function UnifiedAccountList({
   );
 }
 
-
 function AccountGroup({
   items,
   now,
@@ -288,13 +282,7 @@ function AccountGroup({
   );
 }
 
-function SearchField({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
+function SearchField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <div
       className="flex h-11 shrink-0 items-center gap-2 rounded-full px-3.5"

@@ -53,7 +53,10 @@ function ResetPasswordPage() {
       setNotice({ kind: "info", text: "Password updated. Redirecting…" });
       setTimeout(() => navigate({ to: "/", replace: true }), 800);
     } catch (err) {
-      setNotice({ kind: "error", text: err instanceof Error ? err.message : "Could not update password." });
+      setNotice({
+        kind: "error",
+        text: err instanceof Error ? err.message : "Could not update password.",
+      });
     } finally {
       setLoading(false);
     }

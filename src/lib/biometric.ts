@@ -128,13 +128,7 @@ export function isBiometricPending(): boolean {
  * bind it to a stable info string and yield a fresh 256-bit AES key.
  */
 async function wrapKeyFromPrf(prfOutput: ArrayBuffer): Promise<CryptoKey> {
-  const ikm = await crypto.subtle.importKey(
-    "raw",
-    prfOutput,
-    "HKDF",
-    false,
-    ["deriveKey"],
-  );
+  const ikm = await crypto.subtle.importKey("raw", prfOutput, "HKDF", false, ["deriveKey"]);
   return crypto.subtle.deriveKey(
     {
       name: "HKDF",
@@ -367,4 +361,3 @@ export function disableBiometric(userId: string): { removed: boolean; error?: st
   // hadAny=false means it was already gone — still a successful end state.
   return { removed: true, error: hadAny ? undefined : "No enrollment was present." };
 }
-

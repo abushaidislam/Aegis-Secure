@@ -1,25 +1,35 @@
 # Aegis — current plan
 
-Last updated after landing the Phase 0 audit deliverables, the Phase 1.1
-admin/schema migrations, and the Phase 2 crypto version-lock + golden vectors.
+Last updated: Phase 0 is now **fully complete** (audit deliverables + clean
+CI). Phase 1.1 admin/schema migrations and Phase 2 crypto version-lock +
+golden vectors also landed.
 
-## Just landed (this session)
+## Phase 0 — Baseline audit ✅ CLOSED
 
-Reconciling the roadmap's "done but never actually created" checkboxes with
-reality. Everything below now exists in the repo/DB:
-
-### Phase 0 — Baseline audit
-- `SECURITY.md` v0.1 — zero-knowledge invariant, v1 crypto parameters,
-  authorization model, coordinated-disclosure stub.
-- `docs/routing.md` — 14-route table with SSR posture and guard stack,
-  plus the public/auth/locked map that the Phase 1.2 RLS CI test will
-  consume.
-- `perf/baseline.json` — snapshot of top client chunks and server libs
-  >100 KB, with the two biggest code-split wins called out.
-- `@zxing/library@^0.22.0` added as an explicit dep (was previously an
+- `SECURITY.md` v0.1 published — zero-knowledge invariant, v1 crypto
+  params, RLS-only authz stance, coordinated-disclosure stub.
+- `docs/routing.md` published — 14 routes tabulated with SSR posture,
+  guard stack, data reads; plus the public/auth/locked map that the
+  Phase 1.2 RLS CI test will consume.
+- `perf/baseline.json` captured from a real `bun run build`:
+  - Typecheck: `bunx tsgo --noEmit` → **0 errors**.
+  - Lint: `bunx eslint .` → **0 errors, 10 warnings** (all
+    `react-refresh/only-export-components` in shadcn UI — expected).
+    Auto-fixed 1167 prettier formatting errors in the same pass.
+  - Build: **clean**. Biggest client chunks: `esm` 458 KB, `index`
+    450 KB, `vault_.recovery` 419 KB. Biggest server libs:
+    `@zxing/browser` 1.07 MB, `@tanstack/react-router` 656 KB,
+    `jspdf` 477 KB. Both are called out under `nextWins` for
+    Phase 6 code-splitting.
+- `@zxing/library@^0.22.0` locked as an explicit dep (was previously an
   unresolved peer of `@zxing/browser`).
 
-### Phase 1.1 — Schema migrations
+**Exit criterion met:** clean typecheck ✅, zero-error lint ✅, clean
+build ✅, baseline snapshot ✅, security stub ✅, route-map doc ✅.
+Phase 0 is closed — Phase 1 backend hardening is where new PRs go.
+
+## Phase 1.1 — Schema migrations (landed)
+
 - `profiles.role` (`'user' | 'admin'`, default `'user'`) with a
   `prevent_role_self_promotion` trigger — role changes require the
   `service_role` connection.

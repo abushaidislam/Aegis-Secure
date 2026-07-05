@@ -8,17 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lockVault } from "@/lib/vault-session";
 import { deleteMyAccount } from "@/lib/account.functions";
 import { avatarPathFor, fileToSquareJpeg } from "@/lib/avatar";
-import {
-  User,
-  Mail,
-  Loader2,
-  LogOut,
-  Check,
-  Pencil,
-  Trash2,
-  Camera,
-  X,
-} from "lucide-react";
+import { User, Mail, Loader2, LogOut, Check, Pencil, Trash2, Camera, X } from "lucide-react";
 import {
   BORDER,
   CHARCOAL,
@@ -28,13 +18,7 @@ import {
   Notice,
   soft,
 } from "@/components/aegis/chrome";
-import {
-
-  LargeTitle,
-  SectionLabel,
-  SettingsGroup,
-  SettingsRow,
-} from "@/components/aegis/settings";
+import { LargeTitle, SectionLabel, SettingsGroup, SettingsRow } from "@/components/aegis/settings";
 
 export const Route = createFileRoute("/_authenticated/_tabs/profile")({
   component: ProfilePage,
@@ -119,10 +103,9 @@ function ProfilePage() {
     setSaving(true);
     setNotice(null);
     try {
-      const { error } = await supabase.from("profiles").upsert(
-        { id: user.id, display_name: displayName.trim() || null },
-        { onConflict: "id" },
-      );
+      const { error } = await supabase
+        .from("profiles")
+        .upsert({ id: user.id, display_name: displayName.trim() || null }, { onConflict: "id" });
       if (error) throw error;
       setInitialName(displayName);
       setEditing(false);
@@ -246,7 +229,6 @@ function ProfilePage() {
 
   return (
     <>
-
       <LargeTitle title="Account" subtitle="How you show up inside Aegis." />
 
       <div className="flex flex-col gap-1 pt-1">
@@ -374,11 +356,7 @@ function ProfilePage() {
                 className="min-w-0 flex-1 bg-transparent text-[14.5px] outline-none"
                 style={{ color: CHARCOAL, fontWeight: 500 }}
               />
-              <button
-                onClick={cancelEdit}
-                className="text-[12px]"
-                style={{ color: MUTED }}
-              >
+              <button onClick={cancelEdit} className="text-[12px]" style={{ color: MUTED }}>
                 Cancel
               </button>
               <motion.button
@@ -402,7 +380,9 @@ function ProfilePage() {
               title="Display name"
               value={initialName || "Not set"}
               onClick={() => setEditing(true)}
-              trailing={<Pencil className="h-3.5 w-3.5" strokeWidth={1.8} style={{ color: MUTED }} />}
+              trailing={
+                <Pencil className="h-3.5 w-3.5" strokeWidth={1.8} style={{ color: MUTED }} />
+              }
             />
           )}
           <SettingsRow
@@ -520,9 +500,11 @@ function AvatarActionSheet({
               <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
             ) : (
               (() => {
-                const parts = seed.trim().split(/[\s._@-]+/).filter(Boolean);
-                const chars =
-                  parts.length >= 2 ? parts[0][0] + parts[1][0] : seed.slice(0, 2);
+                const parts = seed
+                  .trim()
+                  .split(/[\s._@-]+/)
+                  .filter(Boolean);
+                const chars = parts.length >= 2 ? parts[0][0] + parts[1][0] : seed.slice(0, 2);
                 return chars.toUpperCase() || "?";
               })()
             )}

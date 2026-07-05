@@ -1,28 +1,43 @@
 {
-  "$schema": "./baseline.schema.json",
   "recordedAt": "2026-07-06",
-  "note": "Phase 0 baseline. Regenerate by running `vite build` and updating the numbers. Values are the raw byte size of the emitted file in `dist/`.",
-  "buildCommand": "vite build",
+  "note": "Phase 0 baseline snapshot. Regenerate by running `bun run build` and updating the numbers.",
+  "buildCommand": "bun run build",
+  "buildStatus": "clean",
+  "typecheck": { "command": "bunx tsgo --noEmit", "errors": 0 },
+  "lint": {
+    "command": "bunx eslint .",
+    "errors": 0,
+    "warnings": 10,
+    "warningsNote": "All 10 are `react-refresh/only-export-components` in shadcn UI files. Expected — these files intentionally export helper constants alongside components."
+  },
   "clientChunksTop10": [
-    { "file": "assets/zxing-browser-<hash>.js", "bytes": 1048576, "notes": "@zxing/browser QR decoder. Candidate for code-split behind /vault/import QR scanner." },
-    { "file": "assets/react-vendor-<hash>.js", "bytes": 180000, "notes": "React 19 + react-dom." },
-    { "file": "assets/router-<hash>.js", "bytes": 120000, "notes": "TanStack Router runtime." },
-    { "file": "assets/supabase-<hash>.js", "bytes": 95000, "notes": "@supabase/supabase-js." },
-    { "file": "assets/query-<hash>.js", "bytes": 40000, "notes": "TanStack Query." },
-    { "file": "assets/otpauth-<hash>.js", "bytes": 35000, "notes": "otpauth TOTP library." },
-    { "file": "assets/framer-<hash>.js", "bytes": 60000, "notes": "framer-motion." },
-    { "file": "assets/radix-<hash>.js", "bytes": 55000, "notes": "Radix primitives shared." },
-    { "file": "assets/index-<hash>.js", "bytes": 45000, "notes": "App entry." },
-    { "file": "assets/vault-<hash>.js", "bytes": 25000, "notes": "Vault route bundle." }
+    { "file": "esm-*.js", "bytes": 468442, "notes": "ESM vendor bundle (React + framer-motion runtime)." },
+    { "file": "index-*.js", "bytes": 460747, "notes": "App entry + shared router runtime." },
+    { "file": "vault_.recovery-*.js", "bytes": 429547, "notes": "Recovery route — pulls jspdf + qrcode. Candidate for further split." },
+    { "file": "client-*.js", "bytes": 204520, "notes": "Supabase client + router core." },
+    { "file": "html2canvas-*.js", "bytes": 199568, "notes": "PDF export dependency. Lazy-load with the recovery route." },
+    { "file": "index.es-*.js", "bytes": 151414, "notes": "Third-party ESM chunk (dompurify + friends)." },
+    { "file": "shield-*.js", "bytes": 121413, "notes": "Icon set slice." },
+    { "file": "styles-*.css", "bytes": 84040, "notes": "Tailwind v4 output." },
+    { "file": "security-*.js", "bytes": 46767, "notes": "Security tab route." },
+    { "file": "purify.es-*.js", "bytes": 26107, "notes": "DOMPurify." }
   ],
   "serverLibsOver100KB": [
-    { "name": "@supabase/supabase-js", "bytes": 480000 },
-    { "name": "@tanstack/react-start", "bytes": 220000 },
-    { "name": "@tanstack/react-router", "bytes": 210000 }
+    { "name": "@zxing/browser+deps", "bytes": 1068040 },
+    { "name": "@tanstack/react-router+deps", "bytes": 655630 },
+    { "name": "jspdf", "bytes": 476730 },
+    { "name": "framer-motion", "bytes": 351880 },
+    { "name": "canvg+deps", "bytes": 330520 },
+    { "name": "html2canvas", "bytes": 318290 },
+    { "name": "@supabase/auth-js+tslib", "bytes": 301840 },
+    { "name": "fast-png+iobuffer+pako", "bytes": 142920 },
+    { "name": "@supabase/storage-js+deps", "bytes": 118930 },
+    { "name": "@supabase/postgrest-js", "bytes": 105410 }
   ],
   "unresolvedPeerDeps": [],
   "nextWins": [
-    "Route-level code-split of /vault/import to defer @zxing/browser (~1 MB).",
-    "Route-level code-split of any PDF export (jspdf, html2canvas) if/when the feature ships."
+    "Route-level code-split @zxing/browser (1.07 MB) — only /vault/import needs it.",
+    "Route-level code-split jspdf + html2canvas + canvg (~1.13 MB together) — only /vault/recovery + planned PDF export need them.",
+    "Consider swapping html2canvas for a lighter DOM→canvas path once PDF export ships."
   ]
 }
