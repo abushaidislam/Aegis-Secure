@@ -17,7 +17,16 @@ import {
 import { toast } from "sonner";
 import { getVaultKey } from "@/lib/vault-session";
 import { addAccount, type ParsedOtpauth } from "@/lib/vault-accounts";
-import { importFromJson, importFromText, sourceLabel, type ImportSource } from "@/lib/vault-import";
+import {
+  importFromAvf,
+  importFromJson,
+  importFromText,
+  isAvfJson,
+  sourceLabel,
+  type ImportSource,
+} from "@/lib/vault-import";
+import type { EncryptedExportFile } from "@/lib/vault-export";
+import { KeyRound } from "lucide-react";
 import {
   AegisScreen,
   BORDER,
