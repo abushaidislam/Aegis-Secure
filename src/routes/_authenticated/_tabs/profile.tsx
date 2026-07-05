@@ -43,12 +43,14 @@ function ProfilePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = Route.useRouteContext();
+  const deleteAccount = useServerFn(deleteMyAccount);
 
   const [displayName, setDisplayName] = useState("");
   const [initialName, setInitialName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [notice, setNotice] = useState<{ kind: "error" | "info"; text: string } | null>(null);
 
   useEffect(() => {
