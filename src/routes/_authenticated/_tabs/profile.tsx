@@ -230,11 +230,11 @@ function ProfilePage() {
         .upsert({ id: user.id, avatar_url: null }, { onConflict: "id" });
       if (error) throw error;
       setAvatarPath(null);
+      toast.success("Photo removed");
     } catch (err) {
-      setNotice({
-        kind: "error",
-        text: err instanceof Error ? err.message : "Could not remove photo.",
-      });
+      const msg = err instanceof Error ? err.message : "Could not remove photo.";
+      setNotice({ kind: "error", text: msg });
+      toast.error(msg);
     } finally {
       setAvatarBusy(false);
     }
