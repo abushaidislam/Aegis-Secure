@@ -33,6 +33,14 @@ import {
 } from "@/components/aegis/chrome";
 import { LargeTitle, SectionLabel, SettingsGroup, SettingsRow } from "@/components/aegis/settings";
 import { getThemePref, setThemePref, type ThemePref } from "@/lib/theme";
+import {
+  SUPPORTED_LOCALES,
+  getLocalePref,
+  setLocalePref,
+  type LocalePref,
+} from "@/lib/i18n";
+import { useLingui } from "@lingui/react";
+import { Globe } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/_tabs/profile")({
   component: ProfilePage,
@@ -67,10 +75,17 @@ function ProfilePage() {
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarSheet, setAvatarSheet] = useState(false);
   const [themeSheet, setThemeSheet] = useState(false);
+  const [localeSheet, setLocaleSheet] = useState(false);
 
   const [notice, setNotice] = useState<{ kind: "error" | "info"; text: string } | null>(null);
   const [themePref, setThemePrefState] = useState<ThemePref>(() => getThemePref());
+  const [localePref, setLocalePrefState] = useState<LocalePref>(() => getLocalePref());
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const msg = i18n._(id);
+    return msg === id ? fallback : msg;
+  };
 
   const chooseTheme = async (pref: ThemePref) => {
     setThemePrefState(pref);
@@ -82,12 +97,29 @@ function ProfilePage() {
     }
   };
 
+  const chooseLocale = async (pref: LocalePref) => {
+    setLocalePrefState(pref);
+    setLocalePref(pref);
+    try {
+      // "system" is stored locally only — the server column tracks explicit
+      // locales so a fresh device without localStorage falls back to browser
+      // detection, matching the same "system" behaviour.
+      const localeValue = pref === "system" ? null : pref;
+      await supabase.from("profiles").upsert(
+        { id: user.id, locale: localeValue },
+        { onConflict: "id" },
+      );
+    } catch {
+      // Local change already applied; sync will retry next sign-in.
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, theme_pref")
+        .select("display_name, avatar_url, theme_pref, locale")
         .eq("id", user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -99,6 +131,10 @@ function ProfilePage() {
         setAvatarPath(data?.avatar_url ?? null);
         const p = data?.theme_pref;
         if (p === "system" || p === "light" || p === "dark") setThemePrefState(p);
+        const l = data?.locale as LocalePref | null | undefined;
+        if (l && (l === "system" || SUPPORTED_LOCALES.some((sl) => sl.code === l))) {
+          setLocalePrefState(l);
+        }
       }
       setLoading(false);
     })();
@@ -416,7 +452,7 @@ function ProfilePage() {
           )}
           <SettingsRow
             icon={<Mail className="h-4 w-4" strokeWidth={1.8} />}
-            title="Email"
+            title={t("profile.email", "Email")}
             value={user.email ?? ""}
           />
         </SettingsGroup>
@@ -427,7 +463,7 @@ function ProfilePage() {
           </div>
         )}
 
-        <SectionLabel>Appearance</SectionLabel>
+        <SectionLabel>{t("profile.section.appearance", "Appearance")}</SectionLabel>
         <SettingsGroup>
           <SettingsRow
             icon={
@@ -439,34 +475,51 @@ function ProfilePage() {
                 <Monitor className="h-4 w-4" strokeWidth={1.8} />
               )
             }
-            title="Theme"
+            title={t("profile.theme", "Theme")}
             value={
-              themePref === "system" ? "System" : themePref === "light" ? "Light" : "Dark"
+              themePref === "system"
+                ? t("appearance.system", "System")
+                : themePref === "light"
+                  ? t("appearance.light", "Light")
+                  : t("appearance.dark", "Dark")
             }
             onClick={() => setThemeSheet(true)}
             chevron
           />
         </SettingsGroup>
 
+        <SectionLabel>{t("profile.section.language", "Language")}</SectionLabel>
+        <SettingsGroup>
+          <SettingsRow
+            icon={<Globe className="h-4 w-4" strokeWidth={1.8} />}
+            title={t("profile.language", "Language")}
+            value={
+              localePref === "system"
+                ? t("language.system", "System")
+                : (SUPPORTED_LOCALES.find((l) => l.code === localePref)?.nativeLabel ?? "English")
+            }
+            onClick={() => setLocaleSheet(true)}
+            chevron
+          />
+        </SettingsGroup>
 
-
-        <SectionLabel>Session</SectionLabel>
+        <SectionLabel>{t("profile.section.session", "Session")}</SectionLabel>
         <SettingsGroup>
           <SettingsRow
             icon={<LogOut className="h-4 w-4" strokeWidth={1.8} />}
-            title="Sign out"
-            description="You'll need to sign in and unlock again"
+            title={t("profile.signOut", "Sign out")}
+            description={t("profile.signOut.description", "You'll need to sign in and unlock again")}
             onClick={signOut}
             chevron
           />
         </SettingsGroup>
 
-        <SectionLabel>Danger zone</SectionLabel>
+        <SectionLabel>{t("profile.section.danger", "Danger zone")}</SectionLabel>
         <SettingsGroup>
           <SettingsRow
             icon={<Trash2 className="h-4 w-4" strokeWidth={1.8} />}
-            title={deleting ? "Deleting account…" : "Delete account"}
-            description="Erase your account, codes, and passphrase forever."
+            title={deleting ? t("profile.delete.busy", "Deleting account…") : t("profile.delete", "Delete account")}
+            description={t("profile.delete.description", "Erase your account, codes, and passphrase forever.")}
             onClick={handleDelete}
             disabled={deleting}
             danger
@@ -494,6 +547,16 @@ function ProfilePage() {
               setThemeSheet(false);
             }}
             onClose={() => setThemeSheet(false)}
+          />
+        )}
+        {localeSheet && (
+          <LocaleSheet
+            value={localePref}
+            onChoose={(p) => {
+              chooseLocale(p);
+              setLocaleSheet(false);
+            }}
+            onClose={() => setLocaleSheet(false)}
           />
         )}
       </AnimatePresence>
@@ -633,6 +696,91 @@ function ThemeSheet({
     </motion.div>
   );
 }
+
+function LocaleSheet({
+  value,
+  onChoose,
+  onClose,
+}: {
+  value: LocalePref;
+  onChoose: (pref: LocalePref) => void;
+  onClose: () => void;
+}) {
+  type Row = { pref: LocalePref; title: string; description: string };
+  const rows: Row[] = [
+    { pref: "system", title: "System", description: "Follow your device." },
+    ...SUPPORTED_LOCALES.map((l) => ({
+      pref: l.code as LocalePref,
+      title: l.nativeLabel,
+      description: l.label,
+    })),
+  ];
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.button
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute inset-0"
+        style={{ background: "rgb(var(--aegis-ink-rgb) / 0.35)", backdropFilter: "blur(4px)" }}
+      />
+      <motion.div
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 40, opacity: 0 }}
+        transition={soft}
+        className="relative z-10 mx-auto w-full max-w-[440px] rounded-t-[22px] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:rounded-[22px]"
+        style={{
+          background: CREAM_SOFT,
+          border: `1px solid ${BORDER}`,
+          boxShadow: "0 -12px 40px -12px rgba(0,0,0,0.25)",
+        }}
+      >
+        <div
+          className="mx-auto mb-4 h-1 w-10 rounded-full"
+          style={{ background: "rgb(var(--aegis-ink-rgb) / 0.15)" }}
+        />
+        <div
+          className="mb-3 px-1 text-[11px] uppercase"
+          style={{ color: MUTED, letterSpacing: "0.14em", fontWeight: 600 }}
+        >
+          Language
+        </div>
+        <div
+          className="max-h-[60vh] overflow-y-auto overflow-x-hidden rounded-[16px]"
+          style={{ border: `1px solid ${BORDER}`, background: "rgb(var(--aegis-ink-rgb) / 0.02)" }}
+        >
+          {rows.map((opt, i) => (
+            <div key={String(opt.pref)}>
+              {i > 0 && <div style={{ height: 1, background: BORDER, marginLeft: 60 }} />}
+              <ThemeRow
+                icon={<Globe className="h-4 w-4" strokeWidth={1.8} />}
+                title={opt.title}
+                description={opt.description}
+                active={value === opt.pref}
+                onClick={() => onChoose(opt.pref)}
+              />
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={onClose}
+          className="mt-3 w-full rounded-[14px] px-4 py-3 text-[13.5px]"
+          style={{ color: MUTED, fontWeight: 500 }}
+        >
+          Cancel
+        </button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+
+
 
 
 function AvatarActionSheet({

@@ -8,10 +8,18 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { I18nProvider } from "@lingui/react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { THEME_INIT_SCRIPT, initTheme, setThemePref, type ThemePref } from "@/lib/theme";
+import {
+  LOCALE_INIT_SCRIPT,
+  i18n,
+  initLocale,
+  setLocalePref,
+  type LocalePref,
+} from "@/lib/i18n";
 
 function NotFoundComponent() {
   return (
@@ -152,8 +160,10 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         {/* Applied pre-hydration so first paint matches the user's saved
-            theme — prevents a light-mode flash before React mounts. */}
+            theme + locale — prevents a light-mode flash and mismatched
+            <html lang> before React mounts. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: LOCALE_INIT_SCRIPT }} />
         <HeadContent />
       </head>
       <body>
@@ -175,6 +185,12 @@ function RootComponent() {
   }, []);
 
   useEffect(() => {
+    // Idempotent locale re-apply once React is mounted — the pre-hydration
+    // script already set <html lang> so this just aligns the `i18n` runtime.
+    initLocale();
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
     Promise.all([
       import("@/integrations/supabase/client"),
@@ -183,27 +199,29 @@ function RootComponent() {
     ]).then(([{ supabase }, { lockVault }, { clearVaultCache }]) => {
       if (!mounted) return;
 
-      // Pull the user's saved theme preference from `profiles.theme_pref`
-      // so a fresh sign-in on a new device matches their choice.
-      const syncThemeFromProfile = async () => {
+      // Pull the user's saved theme + locale preferences from `profiles`
+      // so a fresh sign-in on a new device matches their choices.
+      const syncPrefsFromProfile = async () => {
         try {
           const { data: sess } = await supabase.auth.getSession();
           const uid = sess.session?.user?.id;
           if (!uid) return;
           const { data } = await supabase
             .from("profiles")
-            .select("theme_pref")
+            .select("theme_pref, locale")
             .eq("id", uid)
             .maybeSingle();
-          const pref = data?.theme_pref as ThemePref | undefined;
-          if (pref === "system" || pref === "light" || pref === "dark") {
-            setThemePref(pref);
+          const themePref = data?.theme_pref as ThemePref | undefined;
+          if (themePref === "system" || themePref === "light" || themePref === "dark") {
+            setThemePref(themePref);
           }
+          const localePref = data?.locale as LocalePref | undefined;
+          if (localePref) setLocalePref(localePref);
         } catch {
           // Offline / RLS blocked — the local preference stays authoritative.
         }
       };
-      void syncThemeFromProfile();
+      void syncPrefsFromProfile();
 
       const { data } = supabase.auth.onAuthStateChange((event) => {
         if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
@@ -211,7 +229,7 @@ function RootComponent() {
           lockVault();
           void clearVaultCache();
         } else {
-          void syncThemeFromProfile();
+          void syncPrefsFromProfile();
         }
         router.invalidate();
         if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
@@ -238,9 +256,11 @@ function RootComponent() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
-    </QueryClientProvider>
+    <I18nProvider i18n={i18n}>
+      <QueryClientProvider client={queryClient}>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+      </QueryClientProvider>
+    </I18nProvider>
   );
 }

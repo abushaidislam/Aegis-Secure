@@ -1,21 +1,23 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { KeyRound, ShieldCheck, Plus, User, type LucideIcon } from "lucide-react";
+import { useLingui } from "@lingui/react";
 import { BORDER, CHARCOAL, CREAM_SOFT, INSET_SHADOW, MUTED, soft } from "./chrome";
 
 interface Tab {
   id: string;
-  label: string;
+  labelId: string;
+  labelFallback: string;
   icon: LucideIcon;
   to: string;
   emphasized?: boolean;
 }
 
 const TABS: Tab[] = [
-  { id: "vault", label: "Vault", icon: KeyRound, to: "/vault" },
-  { id: "security", label: "Security", icon: ShieldCheck, to: "/security" },
-  { id: "add", label: "Add", icon: Plus, to: "/vault/new", emphasized: true },
-  { id: "profile", label: "Profile", icon: User, to: "/profile" },
+  { id: "vault", labelId: "tabs.vault", labelFallback: "Vault", icon: KeyRound, to: "/vault" },
+  { id: "security", labelId: "tabs.security", labelFallback: "Security", icon: ShieldCheck, to: "/security" },
+  { id: "add", labelId: "tabs.add", labelFallback: "Add", icon: Plus, to: "/vault/new", emphasized: true },
+  { id: "profile", labelId: "tabs.profile", labelFallback: "Profile", icon: User, to: "/profile" },
 ];
 
 function isActive(pathname: string, to: string) {
@@ -30,6 +32,11 @@ function isActive(pathname: string, to: string) {
  */
 export function BottomTabs() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const msg = i18n._(id);
+    return msg === id ? fallback : msg;
+  };
 
   return (
     <motion.nav
@@ -52,13 +59,14 @@ export function BottomTabs() {
         {TABS.map((tab) => {
           const active = isActive(pathname, tab.to);
           const Icon = tab.icon;
+          const label = t(tab.labelId, tab.labelFallback);
 
           if (tab.emphasized) {
             return (
               <Link
                 key={tab.id}
                 to={tab.to}
-                aria-label={tab.label}
+                aria-label={label}
                 className="relative flex flex-1 flex-col items-center justify-center gap-1 rounded-[14px] py-1.5"
               >
                 <motion.span
@@ -80,7 +88,7 @@ export function BottomTabs() {
                     letterSpacing: "0.01em",
                   }}
                 >
-                  {tab.label}
+                  {label}
                 </span>
               </Link>
             );
@@ -90,7 +98,7 @@ export function BottomTabs() {
             <Link
               key={tab.id}
               to={tab.to}
-              aria-label={tab.label}
+              aria-label={label}
               aria-current={active ? "page" : undefined}
               className="relative flex flex-1 flex-col items-center justify-center gap-1 rounded-[14px] py-1.5"
             >
@@ -120,7 +128,7 @@ export function BottomTabs() {
                   letterSpacing: "0.01em",
                 }}
               >
-                {tab.label}
+                {label}
               </span>
             </Link>
           );

@@ -139,6 +139,7 @@ export type Database = {
           display_name: string | null
           hide_codes_pref: boolean
           id: string
+          locale: string | null
           onboarded_at: string | null
           role: string
           theme_pref: string
@@ -151,6 +152,7 @@ export type Database = {
           display_name?: string | null
           hide_codes_pref?: boolean
           id: string
+          locale?: string | null
           onboarded_at?: string | null
           role?: string
           theme_pref?: string
@@ -163,6 +165,7 @@ export type Database = {
           display_name?: string | null
           hide_codes_pref?: boolean
           id?: string
+          locale?: string | null
           onboarded_at?: string | null
           role?: string
           theme_pref?: string

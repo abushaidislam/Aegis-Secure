@@ -162,11 +162,11 @@ HOTP + Steam Guard all in the vault screen without a new route.
 - [x] `prefers-color-scheme` respected via `subscribeToSystemTheme()`; inline pre-hydration script in `__root.tsx` sets the class + `theme-color` meta before first paint (no light-mode flash)
 - [ ] Screenshot regression harness across every route in `docs/routing.md` — deferred to Phase 8.4's a11y sweep
 
-### 8.3 Localization `[P1]`
-- [ ] `@lingui/core` with message extraction from JSX
-- [ ] First eight locales: en, es, pt-BR, fr, de, ja, hi, bn
-- [ ] String freeze policy: every PR touching user-facing copy runs the extractor
-- [ ] Locale picker in Profile → mirrored to `profiles.locale`
+### 8.3 Localization `[P1]` `[done]`
+- [x] `@lingui/core` + `@lingui/react` wired through a single `i18n` singleton in `src/lib/i18n.ts`; all eight catalogs (en, es, pt-BR, fr, de, ja, hi, bn) statically imported so locale switches are synchronous with no flash of untranslated content. Explicit-id call style (`i18n._("id")` / `<Trans id="…">Default</Trans>`) keeps the managed `vite-tanstack-config` untouched and makes partial catalogs safe — missing ids fall back to the English default at the call site.
+- [x] Pre-hydration `LOCALE_INIT_SCRIPT` in `__root.tsx` mirrors the theme boot: reads `localStorage.aegis:locale`, walks `navigator.languages`, and sets `<html lang>` before React mounts.
+- [x] Profile → Language sheet in `_tabs/profile.tsx` mirrors the Appearance sheet: rows for System + the eight locales (native name + English label + active check), tap syncs `profiles.locale` (nullable text with `CHECK` constraint) and mirrors to `localStorage`. `syncPrefsFromProfile()` in `__root.tsx` re-applies the saved locale on cross-device sign-in.
+- [x] String freeze policy documented in `docs/i18n.md` (add id to en catalog first, translate sibling catalogs best-effort, always ship a fallback). CI extractor check deferred to Phase 8.4.
 
 ### 8.4 Accessibility `[P0]`
 - [ ] Axe-core in CI walking the same route list — zero critical or serious violations
