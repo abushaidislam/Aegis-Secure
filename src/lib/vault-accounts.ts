@@ -660,6 +660,9 @@ export async function flushPendingOutbox(): Promise<number> {
           is_favorite: payload.is_favorite,
           secret_ciphertext: payload.secret_ciphertext_hex,
           secret_iv: payload.secret_iv_hex,
+          otp_type: payload.otp_type ?? "totp",
+          counter_ciphertext: payload.counter_ciphertext_hex ?? null,
+          counter_iv: payload.counter_iv_hex ?? null,
         })
         .select(ACCOUNT_SELECT)
         .single();
