@@ -1189,16 +1189,8 @@ export function AccountCard({
                           >
                             <div className="mb-2 flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
-                                <span
-                                  className="text-[9.5px] uppercase"
-                                  style={{
-                                    color: MUTED,
-                                    fontFamily: "'JetBrains Mono', monospace",
-                                    letterSpacing: "0.22em",
-                                  }}
-                                >
-                                  Tags
-                                </span>
+                                <span style={typeEyebrow}>Tags</span>
+
                                 {tagsDraft.length > 0 && (
                                   <span
                                     className="rounded-full px-1.5 py-0.5 text-[10px]"
