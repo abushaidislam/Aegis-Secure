@@ -81,6 +81,7 @@ import {
 } from "@/components/aegis/typography";
 import { LargeTitle, SectionLabel } from "@/components/aegis/settings";
 import { InstallPrompt } from "@/components/aegis/InstallPrompt";
+import { useLingui } from "@lingui/react";
 
 export const Route = createFileRoute("/_authenticated/_tabs/vault")({
   beforeLoad: ({ location }) => {
@@ -99,6 +100,12 @@ function VaultPage() {
   const navigate = useNavigate();
   const unlocked = useVaultUnlocked();
   const { user } = Route.useRouteContext();
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const msg = i18n._(id);
+    return msg === id ? fallback : msg;
+  };
+
 
   useActivityKeepAlive();
 
@@ -518,11 +525,14 @@ function VaultPage() {
   return (
     <>
       <LargeTitle
-        title="Your codes"
+        title={t("vault.title", "Your codes")}
         subtitle={
           accounts && accounts.length > 0
-            ? `${accounts.length} ${accounts.length === 1 ? "account" : "accounts"} · tap to copy`
-            : "One-time codes, encrypted end-to-end."
+            ? (accounts.length === 1
+                ? t("vault.subtitle.count.one", "{count} account · tap to copy")
+                : t("vault.subtitle.count.other", "{count} accounts · tap to copy")
+              ).replace("{count}", String(accounts.length))
+            : t("vault.subtitle.empty", "One-time codes, encrypted end-to-end.")
         }
       />
 
@@ -905,6 +915,11 @@ function UnifiedAccountList({
   selectedIds: Set<string>;
   onSelectToggle: (id: string) => void;
 }) {
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const msg = i18n._(id);
+    return msg === id ? fallback : msg;
+  };
   const showBothLabels = favoriteList.length > 0 && otherList.length > 0;
 
   // Long-press activation keeps normal tap-to-copy working: a real drag
@@ -952,7 +967,7 @@ function UnifiedAccountList({
 
   return (
     <div className="flex flex-col gap-1.5">
-      {favoriteList.length > 0 && <SectionLabel>Favorites</SectionLabel>}
+      {favoriteList.length > 0 && <SectionLabel>{t("vault.section.favorites", "Favorites")}</SectionLabel>}
       <div
         className="overflow-hidden rounded-[16px]"
         style={{
@@ -970,7 +985,7 @@ function UnifiedAccountList({
         )}
         {showBothLabels && (
           <div className="px-4 pb-1.5 pt-3">
-            <SectionLabel>All accounts</SectionLabel>
+            <SectionLabel>{t("vault.section.all", "All accounts")}</SectionLabel>
           </div>
         )}
         {otherList.length > 0 && (

@@ -36,6 +36,7 @@ import {
 import { typeBody, typeDisplay } from "@/components/aegis/typography";
 import { AppBar, AppBarButton, SectionLabel, SettingsGroup } from "@/components/aegis/settings";
 import { BottomTabs } from "@/components/aegis/BottomTabs";
+import { useLingui } from "@lingui/react";
 
 // Phase 6.1: accept an inbound `otpauth://` payload from the PWA
 // protocol handler + Web Share Target so a scan/share from another app
@@ -60,6 +61,11 @@ function NewAccountPage() {
   const { user } = Route.useRouteContext();
   const { uri: incomingUri } = Route.useSearch();
   const [tab, setTab] = useState<Tab>("scan");
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const msg = i18n._(id);
+    return msg === id ? fallback : msg;
+  };
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{ kind: "error" | "info"; text: string } | null>(null);
   // Bumped when a QR-triggered save fails so ScanTab can fully re-mount the
@@ -164,9 +170,9 @@ function NewAccountPage() {
         style={{ WebkitOverflowScrolling: "touch" as never }}
       >
         <AppBar
-          title="Add account"
+          title={t("add.appbar", "Add account")}
           trailing={
-            <AppBarButton label="Back" onClick={() => navigate({ to: "/vault" })}>
+            <AppBarButton label={t("add.back", "Back")} onClick={() => navigate({ to: "/vault" })}>
               <ArrowLeft className="h-4 w-4" strokeWidth={1.8} />
             </AppBarButton>
           }
@@ -175,7 +181,7 @@ function NewAccountPage() {
         {/* Compact hero */}
         <div className="flex flex-col gap-1.5 pt-2 pb-4">
           <h1 style={typeDisplay}>
-            {tab === "scan" ? "Scan a code" : "Enter by hand"}
+            {tab === "scan" ? t("add.hero.scan", "Scan a code") : t("add.hero.manual", "Enter by hand")}
           </h1>
           <p style={typeBody}>
             {tab === "scan"
@@ -345,6 +351,11 @@ function ManualTab({
   }) => void;
   saving: boolean;
 }) {
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const msg = i18n._(id);
+    return msg === id ? fallback : msg;
+  };
   const [issuer, setIssuer] = useState("");
   const [label, setLabel] = useState("");
   const [secret, setSecret] = useState("");
@@ -386,11 +397,11 @@ function ManualTab({
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-1">
-      <SectionLabel>Code type</SectionLabel>
+      <SectionLabel>{t("add.section.codeType", "Code type")}</SectionLabel>
       <TypePicker value={otpType} onChange={setOtpType} />
 
       <div className="pt-3">
-        <SectionLabel>Account</SectionLabel>
+        <SectionLabel>{t("add.section.account", "Account")}</SectionLabel>
         <SettingsGroup>
           <FieldRow
             label="Issuer"
@@ -409,7 +420,7 @@ function ManualTab({
       </div>
 
       <div className="pt-3">
-        <SectionLabel>Secret</SectionLabel>
+        <SectionLabel>{t("add.section.secret", "Secret")}</SectionLabel>
         <SettingsGroup>
           <FieldRow
             label="Secret key"
@@ -432,7 +443,7 @@ function ManualTab({
       </div>
 
       <div className="pt-3">
-        <SectionLabel>Tags · optional</SectionLabel>
+        <SectionLabel>{t("add.section.tags", "Tags · optional")}</SectionLabel>
         <TagInput value={tags} onChange={setTags} placeholder="work, personal, finance…" />
       </div>
 

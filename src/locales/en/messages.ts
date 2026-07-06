@@ -13,6 +13,7 @@ export const messages: Record<string, string> = {
   // Bottom tabs
   "tabs.vault": "Vault",
   "tabs.security": "Security",
+  "tabs.add": "Add",
   "tabs.profile": "Profile",
 
   // Profile — section labels
@@ -46,6 +47,50 @@ export const messages: Record<string, string> = {
   "language.title": "Language",
   "language.system": "System",
   "language.system.description": "Follow your device.",
+
+  // Vault page
+  "vault.title": "Your codes",
+  "vault.subtitle.empty": "One-time codes, encrypted end-to-end.",
+  "vault.subtitle.count.one": "{count} account · tap to copy",
+  "vault.subtitle.count.other": "{count} accounts · tap to copy",
+  "vault.section.favorites": "Favorites",
+  "vault.section.all": "All accounts",
+
+  // Security page
+  "security.title": "Locks & recovery",
+  "security.subtitle": "Everything protecting your codes lives here.",
+  "security.section.vault": "Vault",
+  "security.section.signIn": "Sign-in",
+  "security.section.privacy": "Privacy",
+  "security.section.session": "Session",
+  "security.section.danger": "Danger zone",
+  "security.passphraseHint": "Passphrase hint",
+  "security.passphraseHint.empty": "No hint set",
+  "security.autoLock": "Auto-lock",
+  "security.changePassphrase": "Change passphrase",
+  "security.changePassphrase.description": "Rotate your master key without re-adding accounts",
+  "security.recoverySheet": "Recovery sheet",
+  "security.recoverySheet.description": "Printable backup — accounts list + wrapped key QR",
+  "security.encryptedExport": "Encrypted export",
+  "security.encryptedExport.description": "Download a passphrase-protected .avf backup file",
+  "security.biometric": "Biometric unlock",
+  "security.hideCodes": "Hide codes",
+  "security.hideCodes.on": "Codes stay masked. Tap an account to reveal or copy.",
+  "security.hideCodes.off": "Codes are visible in the vault at a glance.",
+  "security.lockNow": "Lock vault now",
+  "security.lockNow.description": "Require your passphrase to open again",
+  "security.reset": "Reset vault",
+  "security.reset.description": "Erase everything. This cannot be undone.",
+
+  // Add account page
+  "add.appbar": "Add account",
+  "add.back": "Back",
+  "add.hero.scan": "Scan a code",
+  "add.hero.manual": "Enter by hand",
+  "add.section.codeType": "Code type",
+  "add.section.account": "Account",
+  "add.section.secret": "Secret",
+  "add.section.tags": "Tags · optional",
 
   // Common actions
   "common.cancel": "Cancel",

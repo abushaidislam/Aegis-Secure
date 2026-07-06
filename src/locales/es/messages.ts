@@ -1,10 +1,10 @@
-// Spanish (es). Seeded with translations for the shell (nav + profile) so a
-// user switching locales sees an immediate visible change. Untranslated keys
-// fall back to the English default at the call site.
+// Spanish (es). See src/locales/en/messages.ts for the source-of-truth key
+// list. Missing keys fall back to the English default.
 
 export const messages: Record<string, string> = {
   "tabs.vault": "Bóveda",
   "tabs.security": "Seguridad",
+  "tabs.add": "Añadir",
   "tabs.profile": "Perfil",
 
   "profile.section.account": "Cuenta",
@@ -34,6 +34,47 @@ export const messages: Record<string, string> = {
   "language.title": "Idioma",
   "language.system": "Sistema",
   "language.system.description": "Sigue tu dispositivo.",
+
+  "vault.title": "Tus códigos",
+  "vault.subtitle.empty": "Códigos de un solo uso, cifrados de extremo a extremo.",
+  "vault.subtitle.count.one": "{count} cuenta · toca para copiar",
+  "vault.subtitle.count.other": "{count} cuentas · toca para copiar",
+  "vault.section.favorites": "Favoritos",
+  "vault.section.all": "Todas las cuentas",
+
+  "security.title": "Bloqueos y recuperación",
+  "security.subtitle": "Todo lo que protege tus códigos vive aquí.",
+  "security.section.vault": "Bóveda",
+  "security.section.signIn": "Inicio de sesión",
+  "security.section.privacy": "Privacidad",
+  "security.section.session": "Sesión",
+  "security.section.danger": "Zona peligrosa",
+  "security.passphraseHint": "Pista de la frase",
+  "security.passphraseHint.empty": "Sin pista",
+  "security.autoLock": "Bloqueo automático",
+  "security.changePassphrase": "Cambiar frase secreta",
+  "security.changePassphrase.description": "Rota tu clave maestra sin volver a añadir cuentas",
+  "security.recoverySheet": "Hoja de recuperación",
+  "security.recoverySheet.description": "Copia imprimible — lista de cuentas + QR con la clave envuelta",
+  "security.encryptedExport": "Exportación cifrada",
+  "security.encryptedExport.description": "Descarga un archivo .avf protegido con frase",
+  "security.biometric": "Desbloqueo biométrico",
+  "security.hideCodes": "Ocultar códigos",
+  "security.hideCodes.on": "Los códigos permanecen ocultos. Toca una cuenta para ver o copiar.",
+  "security.hideCodes.off": "Los códigos son visibles en la bóveda de un vistazo.",
+  "security.lockNow": "Bloquear la bóveda",
+  "security.lockNow.description": "Requiere la frase secreta para volver a abrir",
+  "security.reset": "Restablecer la bóveda",
+  "security.reset.description": "Borra todo. Esto no se puede deshacer.",
+
+  "add.appbar": "Añadir cuenta",
+  "add.back": "Atrás",
+  "add.hero.scan": "Escanear un código",
+  "add.hero.manual": "Introducir a mano",
+  "add.section.codeType": "Tipo de código",
+  "add.section.account": "Cuenta",
+  "add.section.secret": "Secreto",
+  "add.section.tags": "Etiquetas · opcional",
 
   "common.cancel": "Cancelar",
   "common.save": "Guardar",
