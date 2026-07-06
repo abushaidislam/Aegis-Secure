@@ -98,8 +98,12 @@ function touch() {
 /*  Origin allow-list (defence-in-depth vs `externally_connectable`)      */
 /* --------------------------------------------------------------------- */
 
+// Kept in sync with manifest.externally_connectable.matches. If you change
+// one, change the other. Wildcard *.lovable.app is intentionally NOT here
+// — every Lovable project would otherwise be able to push a vault at us.
 const ALLOWED_EXTERNAL_ORIGINS = [
-  /^https:\/\/([a-z0-9-]+\.)*lovable\.app$/,
+  /^https:\/\/hug-machine-maker\.lovable\.app$/,
+  /^https:\/\/id-preview--04418077-cd09-40ce-bb05-4708ee844e27\.lovable\.app$/,
   /^http:\/\/localhost:8080$/,
 ];
 
@@ -109,14 +113,48 @@ function originAllowed(origin: string | undefined): boolean {
 }
 
 /* --------------------------------------------------------------------- */
+/*  Rate limiting + payload validation for external messages             */
+/* --------------------------------------------------------------------- */
+
+const SYNC_MIN_INTERVAL_MS = 1000;
+const MAX_ACCOUNTS = 500;
+const MAX_ISSUER_LEN = 256;
+const MAX_LABEL_LEN = 256;
+const MAX_SECRET_LEN = 512; // base32 secret; 512 fits any realistic issuer
+const MAX_USERID_LEN = 128;
+const ALLOWED_ALGORITHMS: ReadonlySet<string> = new Set(["SHA1", "SHA256", "SHA512"]);
+const ALLOWED_OTP_TYPES: ReadonlySet<string> = new Set(["totp", "hotp", "steam"]);
+
+const lastSyncAtByOrigin = new Map<string, number>();
+
+function checkRate(origin: string): boolean {
+  const now = Date.now();
+  const last = lastSyncAtByOrigin.get(origin) ?? 0;
+  if (now - last < SYNC_MIN_INTERVAL_MS) return false;
+  lastSyncAtByOrigin.set(origin, now);
+  return true;
+}
+
+function validateAccount(a: unknown): a is ExtAccount {
+  if (!a || typeof a !== "object") return false;
+  const o = a as Record<string, unknown>;
+  if (typeof o.id !== "string" || o.id.length === 0 || o.id.length > 128) return false;
+  if (typeof o.issuer !== "string" || o.issuer.length > MAX_ISSUER_LEN) return false;
+  if (typeof o.label !== "string" || o.label.length > MAX_LABEL_LEN) return false;
+  if (typeof o.secret !== "string" || o.secret.length === 0 || o.secret.length > MAX_SECRET_LEN) return false;
+  if (typeof o.algorithm !== "string" || !ALLOWED_ALGORITHMS.has(o.algorithm)) return false;
+  if (typeof o.digits !== "number" || !Number.isInteger(o.digits) || o.digits < 4 || o.digits > 10) return false;
+  if (typeof o.period !== "number" || !Number.isInteger(o.period) || o.period < 5 || o.period > 300) return false;
+  if (typeof o.otp_type !== "string" || !ALLOWED_OTP_TYPES.has(o.otp_type)) return false;
+  return true;
+}
+
+/* --------------------------------------------------------------------- */
 /*  TOTP                                                                 */
 /* --------------------------------------------------------------------- */
 
 function generateCode(account: ExtAccount): string {
   if (account.otp_type === "hotp") {
-    // HOTP counter increments live in the web app; the extension only
-    // surfaces TOTP/Steam. Guarded here so a corrupt SYNC payload can't
-    // silently emit stale HOTP codes.
     throw new Error("HOTP not supported in extension");
   }
   const totp = new OTPAuth.TOTP({
@@ -158,17 +196,27 @@ function handle(msg: Message, sender: chrome.runtime.MessageSender): Response {
       return { ok: true };
 
     case "SYNC_VAULT": {
-      // Validated in the external-message wrapper. Assumes caller is
-      // trusted at this point.
+      if (typeof msg.userId !== "string" || msg.userId.length === 0 || msg.userId.length > MAX_USERID_LEN) {
+        return { ok: false, error: "bad_user_id" };
+      }
       if (!Array.isArray(msg.accounts)) return { ok: false, error: "bad_payload" };
-      const ttl = Math.min(msg.ttlMs ?? IDLE_LOCK_MS, IDLE_LOCK_MS);
+      if (msg.accounts.length > MAX_ACCOUNTS) return { ok: false, error: "too_many_accounts" };
+      // Validate every row; reject the whole batch on any failure so we
+      // never store a partially-corrupt vault.
+      const cleaned: ExtAccount[] = [];
+      for (const raw of msg.accounts) {
+        if (!validateAccount(raw)) return { ok: false, error: "bad_account_shape" };
+        cleaned.push(raw);
+      }
+      const ttl = Math.min(Math.max(msg.ttlMs ?? IDLE_LOCK_MS, 30_000), IDLE_LOCK_MS);
       unlocked = {
-        accounts: msg.accounts,
+        accounts: cleaned,
         userId: msg.userId,
         expiresAt: Date.now() + ttl,
       };
-      return { ok: true, accountCount: msg.accounts.length };
+      return { ok: true, accountCount: cleaned.length };
     }
+
 
     case "MATCH_HOST": {
       if (!isUnlocked()) return { ok: false, error: "locked" };
@@ -256,7 +304,8 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
 });
 
 chrome.runtime.onMessageExternal.addListener((msg: Message, sender, sendResponse) => {
-  if (!originAllowed(sender.origin ?? sender.url)) {
+  const origin = sender.origin ?? (sender.url ? new URL(sender.url).origin : undefined);
+  if (!originAllowed(origin)) {
     sendResponse({ ok: false, error: "forbidden_origin" });
     return;
   }
@@ -265,6 +314,12 @@ chrome.runtime.onMessageExternal.addListener((msg: Message, sender, sendResponse
   // to a user action inside the extension surface).
   if (msg.type !== "SYNC_VAULT" && msg.type !== "GET_STATE" && msg.type !== "PING" && msg.type !== "LOCK") {
     sendResponse({ ok: false, error: "forbidden_message" });
+    return;
+  }
+  // Rate-limit SYNC_VAULT per origin to make a hostile script that lands
+  // on an allow-listed origin unable to spam the SW with vault swaps.
+  if (msg.type === "SYNC_VAULT" && !checkRate(origin!)) {
+    sendResponse({ ok: false, error: "rate_limited" });
     return;
   }
   try {
