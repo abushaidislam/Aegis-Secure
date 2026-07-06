@@ -5,7 +5,7 @@
 
 import { type KeyboardEvent } from "react";
 import { X, Check } from "lucide-react";
-import { BORDER, CHARCOAL, MUTED } from "@/components/aegis/chrome";
+import { BORDER, CHARCOAL, CREAM_SOFT, MUTED } from "@/components/aegis/chrome";
 
 export const MAX_TAGS_PER_ACCOUNT = 20;
 export const MAX_TAG_LENGTH = 24;
