@@ -82,6 +82,103 @@ export function getLocalSyncSeq(): number {
   return LOCAL_SYNC_SEQ;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Pairing key + HMAC signing (PR 3 defence-in-depth)                */
+/* ------------------------------------------------------------------ */
+
+const PAIRING_LS_PREFIX = "aegis:ext:pairing:";
+
+function pairingCache = new Map<string, string>();
+
+function readPairing(extId: string): string | null {
+  if (pairingCache.has(extId)) return pairingCache.get(extId)!;
+  try {
+    const v = localStorage.getItem(PAIRING_LS_PREFIX + extId);
+    if (v) pairingCache.set(extId, v);
+    return v;
+  } catch {
+    return null;
+  }
+}
+
+function storePairing(extId: string, key: string): void {
+  pairingCache.set(extId, key);
+  try {
+    localStorage.setItem(PAIRING_LS_PREFIX + extId, key);
+  } catch {
+    /* private browsing */
+  }
+}
+
+function clearPairing(extId: string): void {
+  pairingCache.delete(extId);
+  try {
+    localStorage.removeItem(PAIRING_LS_PREFIX + extId);
+  } catch {
+    /* ignore */
+  }
+}
+
+async function fetchPairingKey(runtime: ChromeRuntimeLike, extId: string): Promise<string | null> {
+  const res = await new Promise<Record<string, unknown> | undefined>((resolve) => {
+    try {
+      runtime.sendMessage(extId, { type: "GET_PAIRING" }, (r) => resolve(r));
+    } catch {
+      resolve(undefined);
+    }
+  });
+  if (res && res.ok && typeof res.pairingKey === "string" && res.pairingKey.length >= 32) {
+    storePairing(extId, res.pairingKey);
+    return res.pairingKey;
+  }
+  return null;
+}
+
+async function ensurePairingKey(runtime: ChromeRuntimeLike, extId: string): Promise<string | null> {
+  const cached = readPairing(extId);
+  if (cached) return cached;
+  return fetchPairingKey(runtime, extId);
+}
+
+function b64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function bytesToHex(buf: ArrayBuffer): string {
+  const arr = new Uint8Array(buf);
+  let s = "";
+  for (let i = 0; i < arr.length; i++) s += arr[i].toString(16).padStart(2, "0");
+  return s;
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return bytesToHex(buf);
+}
+
+async function hmacHex(keyB64: string, msg: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    b64ToBytes(keyB64),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(msg));
+  return bytesToHex(sig);
+}
+
+function randomNonce(): string {
+  const bytes = new Uint8Array(12);
+  crypto.getRandomValues(bytes);
+  let s = "";
+  for (const b of bytes) s += b.toString(16).padStart(2, "0");
+  return s;
+}
+
 
 export async function syncVaultToExtension(params: {
   userId: string;
