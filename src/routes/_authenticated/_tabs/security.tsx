@@ -29,6 +29,7 @@ import {
   soft,
 } from "@/components/aegis/chrome";
 import { LargeTitle, SectionLabel, SettingsGroup, SettingsRow } from "@/components/aegis/settings";
+import { useLingui } from "@lingui/react";
 import { PasswordField, StrengthMeter, scoreStrength } from "@/components/aegis/password-field";
 import {
   AUTO_LOCK_OPTIONS,
