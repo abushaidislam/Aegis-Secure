@@ -41,8 +41,23 @@ import {
 } from "@/lib/vault-tag-queue";
 import { useOnlineStatus } from "@/lib/use-online";
 import { AccountCard } from "@/components/vault/AccountCard";
-import { TagChip } from "@/components/vault/tags";
-import { Shield, Plus, Loader2, Search, X, WifiOff, RefreshCw, Tags } from "lucide-react";
+import { PRESET_TAGS, TagChip } from "@/components/vault/tags";
+import { ExportPassphraseSheet } from "@/components/vault/ExportPassphraseSheet";
+import {
+  Shield,
+  Plus,
+  Loader2,
+  Search,
+  X,
+  WifiOff,
+  RefreshCw,
+  Tags,
+  CheckSquare,
+  Check,
+  Trash2,
+  Download,
+  Tag as TagIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   BORDER,
