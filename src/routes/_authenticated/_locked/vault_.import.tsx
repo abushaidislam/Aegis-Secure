@@ -37,6 +37,7 @@ import {
   PrimaryButton,
   soft,
 } from "@/components/aegis/chrome";
+import { typeBody, typeDisplay, typeMonoInline } from "@/components/aegis/typography";
 import { AppBar, AppBarButton, SectionLabel, SettingsGroup } from "@/components/aegis/settings";
 import { BottomTabs } from "@/components/aegis/BottomTabs";
 
@@ -260,22 +261,13 @@ function ImportPage() {
         {stage === "input" ? (
           <>
             <div className="flex flex-col gap-1.5 pt-2 pb-4">
-              <h1
-                className="text-[26px] leading-[1.1]"
-                style={{
-                  color: CHARCOAL,
-                  fontFamily: "'Geist', ui-sans-serif, system-ui, sans-serif",
-                  fontWeight: 600,
-                  letterSpacing: "-0.025em",
-                }}
-              >
-                Bring your codes with you
-              </h1>
-              <p className="text-[13.5px] leading-[1.4]" style={{ color: MUTED }}>
+              <h1 style={typeDisplay}>Bring your codes with you</h1>
+              <p style={typeBody}>
                 Import from Google Authenticator, Aegis, 2FAS, or paste raw{" "}
-                <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>otpauth://</span> links.
+                <span style={typeMonoInline}>otpauth://</span> links.
               </p>
             </div>
+
 
             <SegmentedTabs tab={tab} setTab={setTab} />
 
@@ -567,21 +559,14 @@ function PreviewStage({
   return (
     <div className="flex flex-col gap-4 pt-2">
       <div className="flex flex-col gap-1.5">
-        <h1
-          className="text-[26px] leading-[1.1]"
-          style={{
-            color: CHARCOAL,
-            fontFamily: "'Geist', ui-sans-serif, system-ui, sans-serif",
-            fontWeight: 600,
-            letterSpacing: "-0.025em",
-          }}
-        >
+        <h1 style={typeDisplay}>
           Review {preview.entries.length} account
           {preview.entries.length === 1 ? "" : "s"}
         </h1>
-        <p className="text-[13.5px] leading-[1.4]" style={{ color: MUTED }}>
+        <p style={typeBody}>
           Found in your {sourceLabel(preview.source)} export. Uncheck anything you'd rather skip.
         </p>
+
       </div>
 
       {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
@@ -826,22 +811,13 @@ function AvfPassStage({
   return (
     <div className="flex flex-col gap-4 pt-2">
       <div className="flex flex-col gap-1.5">
-        <h1
-          className="text-[26px] leading-[1.1]"
-          style={{
-            color: CHARCOAL,
-            fontFamily: "'Geist', ui-sans-serif, system-ui, sans-serif",
-            fontWeight: 600,
-            letterSpacing: "-0.025em",
-          }}
-        >
-          Unlock encrypted backup
-        </h1>
-        <p className="text-[13.5px] leading-[1.4]" style={{ color: MUTED }}>
+        <h1 style={typeDisplay}>Unlock encrypted backup</h1>
+        <p style={typeBody}>
           Enter the export passphrase you chose when creating this{" "}
-          <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>.avf</span> file. We decrypt
+          <span style={typeMonoInline}>.avf</span> file. We decrypt
           it locally — the passphrase never leaves your device.
         </p>
+
       </div>
 
       {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}

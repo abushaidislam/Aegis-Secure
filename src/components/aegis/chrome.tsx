@@ -12,6 +12,9 @@ export const CHARCOAL = "var(--aegis-ink)";
 export const BORDER = "var(--aegis-border)";
 export const MUTED = "var(--aegis-muted)";
 export const DANGER = "var(--aegis-danger)";
+export const FAV = "var(--aegis-fav)";
+export const PLACEHOLDER = "var(--aegis-placeholder)";
+
 
 export const INSET_SHADOW =
   "rgba(255,255,255,0.2) 0 0.5px 0 0 inset, rgba(0,0,0,0.2) 0 0 0 0.5px inset, rgba(0,0,0,0.05) 0 1px 2px 0";

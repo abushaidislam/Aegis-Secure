@@ -24,13 +24,28 @@ import {
   type DecryptedAccount,
 } from "@/lib/vault-accounts";
 import { getVaultKey } from "@/lib/vault-session";
-import { BORDER, CHARCOAL, CREAM_SOFT, MUTED, soft } from "@/components/aegis/chrome";
+import { BORDER, CHARCOAL, CREAM_SOFT, DANGER, FAV, MUTED, soft } from "@/components/aegis/chrome";
+import {
+  typeBadge,
+  typeBody,
+  typeCardTitle,
+  typeCode,
+  typeCodeLg,
+  typeCodeNext,
+  typeDanger,
+  typeEyebrow,
+  typeMetaLabel,
+  typeMetaValue,
+  typeSheetTitle,
+  typeSheetTitleSm,
+  typeSubLabel,
+  typeTimer,
+} from "@/components/aegis/typography";
+
 import { logoUrlFor, domainFromIssuer } from "@/lib/issuer-domain";
 import { useHideCodes } from "@/lib/vault-privacy";
 import { TagChip, TagInput } from "@/components/vault/tags";
 
-const DANGER = "#b23a2a";
-const FAV = "#c99a2b";
 
 // Shared edit-mode motion. iOS-style ease with a slightly longer collapse
 // than expand so exit feels intentional, not abrupt. Opacity resolves a hair
@@ -615,14 +630,11 @@ export function AccountCard({
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col">
-            <div
-              className="truncate text-[14px]"
-              style={{ color: CHARCOAL, fontWeight: 600, letterSpacing: "-0.005em" }}
-            >
+            <div className="truncate" style={typeCardTitle}>
               {account.issuer || "Untitled"}
             </div>
             {account.label && (
-              <div className="truncate text-[11.5px]" style={{ color: MUTED }}>
+              <div className="truncate" style={typeSubLabel}>
                 {account.label}
               </div>
             )}
@@ -633,8 +645,13 @@ export function AccountCard({
                 ))}
                 {account.tags.length > 3 && (
                   <span
-                    className="inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[10px]"
-                    style={{ color: MUTED, background: "rgb(var(--aegis-ink-rgb) / 0.06)", fontWeight: 600 }}
+                    className="inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5"
+                    style={{
+                      ...typeBadge,
+                      color: MUTED,
+                      background: "rgb(var(--aegis-ink-rgb) / 0.06)",
+                      fontSize: 10,
+                    }}
                   >
                     +{account.tags.length - 3}
                   </span>
@@ -642,6 +659,7 @@ export function AccountCard({
               </div>
             )}
           </div>
+
 
 
           {onToggleFavorite && (
@@ -714,14 +732,8 @@ export function AccountCard({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -4 }}
                 transition={{ duration: 0.18 }}
-                className="text-[26px] leading-none tabular-nums"
-                style={{
-                  color: warn ? DANGER : CHARCOAL,
-                  fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                  fontFeatureSettings: "'tnum'",
-                  fontWeight: 600,
-                  letterSpacing: "0.06em",
-                }}
+                className="tabular-nums"
+                style={{ ...typeCode, color: warn ? DANGER : CHARCOAL }}
               >
                 {formatCode(code)}
               </motion.div>
@@ -736,12 +748,8 @@ export function AccountCard({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.85 }}
                 transition={{ type: "spring", stiffness: 500, damping: 26 }}
-                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px]"
-                style={{
-                  color: CREAM_SOFT,
-                  background: CHARCOAL,
-                  fontWeight: 500,
-                }}
+                className="flex items-center gap-1 rounded-full px-2 py-0.5"
+                style={{ ...typeBadge, background: CHARCOAL, fontWeight: 500 }}
               >
                 <Check className="h-3 w-3" strokeWidth={2.4} />
                 Copied
@@ -754,18 +762,13 @@ export function AccountCard({
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.18 }}
                 className="flex items-baseline gap-1.5 tabular-nums"
-                style={{
-                  color: MUTED,
-                  fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                  fontFeatureSettings: "'tnum'",
-                  fontSize: 11,
-                  letterSpacing: "0.05em",
-                }}
+                style={{ ...typeCodeNext, color: MUTED, fontWeight: 400 }}
                 aria-label={`Next code ${nextCode}`}
               >
                 <span style={{ opacity: 0.7 }}>next</span>
                 <span style={{ color: CHARCOAL, fontWeight: 600 }}>{formatCode(nextCode)}</span>
               </motion.div>
+
             ) : (
               <motion.div
                 key="copy"
@@ -845,16 +848,10 @@ export function AccountCard({
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div
-                          className="text-[9.5px] uppercase"
-                          style={{
-                            color: MUTED,
-                            fontFamily: "'JetBrains Mono', monospace",
-                            letterSpacing: "0.25em",
-                          }}
-                        >
+                        <div style={{ ...typeEyebrow, letterSpacing: "0.25em" }}>
                           {editing ? "Editing account" : "Current code"}
                         </div>
+
                         {editing ? (
                           <div className="mt-1 flex flex-col gap-1.5">
                             <input
@@ -888,23 +885,15 @@ export function AccountCard({
                           </div>
                         ) : (
                           <>
-                            <div
-                              id={detailsTitleId}
-                              className="truncate text-[17px]"
-                              style={{
-                                fontFamily: "'Playfair Display', serif",
-                                fontWeight: 600,
-                                letterSpacing: "-0.01em",
-                                color: CHARCOAL,
-                              }}
-                            >
+                            <div id={detailsTitleId} className="truncate" style={typeSheetTitle}>
                               {account.issuer || "Untitled"}
                             </div>
                             {account.label && (
-                              <div className="truncate text-[11.5px]" style={{ color: MUTED }}>
+                              <div className="truncate" style={typeSubLabel}>
                                 {account.label}
                               </div>
                             )}
+
                           </>
                         )}
                       </div>
@@ -1052,14 +1041,9 @@ export function AccountCard({
                             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                             exit={{ opacity: 0, y: -6, filter: "blur(8px)" }}
                             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-                            className="flex items-center text-[32px] leading-none tabular-nums"
-                            style={{
-                              color: warn ? DANGER : CHARCOAL,
-                              fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                              fontFeatureSettings: "'tnum'",
-                              fontWeight: 600,
-                              letterSpacing: "0.08em",
-                            }}
+                            className="flex items-center tabular-nums"
+                            style={{ ...typeCodeLg, color: warn ? DANGER : CHARCOAL }}
+
                           >
                             {formatCode(code)
                               .split("")
@@ -1205,16 +1189,8 @@ export function AccountCard({
                           >
                             <div className="mb-2 flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
-                                <span
-                                  className="text-[9.5px] uppercase"
-                                  style={{
-                                    color: MUTED,
-                                    fontFamily: "'JetBrains Mono', monospace",
-                                    letterSpacing: "0.22em",
-                                  }}
-                                >
-                                  Tags
-                                </span>
+                                <span style={typeEyebrow}>Tags</span>
+
                                 {tagsDraft.length > 0 && (
                                   <span
                                     className="rounded-full px-1.5 py-0.5 text-[10px]"
@@ -1417,9 +1393,10 @@ export function AccountCard({
                             disabled={!onDelete}
                             className="flex items-center justify-center gap-2 rounded-[14px] px-3 py-3 text-[13px] disabled:opacity-50"
                             style={{
-                              background: "rgba(178,58,42,0.06)",
+                              background: "rgb(var(--aegis-danger-rgb) / 0.06)",
                               color: DANGER,
-                              border: `1px solid rgba(178,58,42,0.25)`,
+                              border: `1px solid rgb(var(--aegis-danger-rgb) / 0.25)`,
+
                               fontWeight: 600,
                             }}
                           >
@@ -1506,23 +1483,15 @@ export function AccountCard({
                           )}
                         </div>
                         <div className="min-w-0">
-                          <div
-                            id={confirmTitleId}
-                            className="truncate text-[16px]"
-                            style={{
-                              fontFamily: "'Playfair Display', serif",
-                              fontWeight: 600,
-                              letterSpacing: "-0.01em",
-                              color: CHARCOAL,
-                            }}
-                          >
+                          <div id={confirmTitleId} className="truncate" style={typeSheetTitleSm}>
                             Remove {account.issuer || "this account"}?
                           </div>
                           {account.label && (
-                            <div className="mt-0.5 truncate text-[12px]" style={{ color: MUTED }}>
+                            <div className="mt-0.5 truncate" style={{ ...typeSubLabel, fontSize: 12 }}>
                               {account.label}
                             </div>
                           )}
+
                         </div>
                       </div>
                       <motion.button
@@ -1539,12 +1508,13 @@ export function AccountCard({
 
                     <p
                       id={confirmDescId}
-                      className="mb-4 text-[13px]"
-                      style={{ color: MUTED, lineHeight: 1.55 }}
+                      className="mb-4"
+                      style={{ ...typeBody, fontSize: 13 }}
                     >
                       The encrypted secret will be deleted from your vault. You'll need the original
                       QR or setup key to add it back. This can't be undone.
                     </p>
+
 
                     <div className="flex flex-col gap-2 pb-1">
                       <motion.button
@@ -1681,17 +1651,10 @@ function RingTimer({
           style={{ transition: "stroke-dashoffset 0.24s linear, stroke 0.2s ease" }}
         />
       </svg>
-      <span
-        className="absolute text-[10px] tabular-nums"
-        style={{
-          color,
-          fontFeatureSettings: "'tnum'",
-          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-          fontWeight: 600,
-        }}
-      >
+      <span className="absolute tabular-nums" style={{ ...typeTimer, color }}>
         {remaining}
       </span>
+
     </div>
   );
 }
@@ -1706,28 +1669,11 @@ function MetaCell({ label, value }: { label: string; value: string }) {
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
       }}
     >
-      <span
-        className="text-[9.5px] uppercase"
-        style={{
-          color: MUTED,
-          fontFamily: "'JetBrains Mono', monospace",
-          letterSpacing: "0.22em",
-        }}
-      >
-        {label}
-      </span>
-      <span
-        className="text-[13.5px] tabular-nums"
-        style={{
-          color: CHARCOAL,
-          fontFamily: "'JetBrains Mono', monospace",
-          fontFeatureSettings: "'tnum'",
-          fontWeight: 600,
-          letterSpacing: "0.02em",
-        }}
-      >
+      <span style={typeMetaLabel}>{label}</span>
+      <span className="tabular-nums" style={typeMetaValue}>
         {value}
       </span>
+
     </div>
   );
 }

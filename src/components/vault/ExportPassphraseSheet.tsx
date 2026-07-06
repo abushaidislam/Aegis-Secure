@@ -15,6 +15,7 @@ import {
   PrimaryButton,
   soft,
 } from "@/components/aegis/chrome";
+import { typeSheetTitleLg, typeSubLabel } from "@/components/aegis/typography";
 import { PasswordField, StrengthMeter, scoreStrength } from "@/components/aegis/password-field";
 import { buildEncryptedExport, downloadExport } from "@/lib/vault-export";
 import type { DecryptedAccount } from "@/lib/vault-accounts";
@@ -90,21 +91,12 @@ export function ExportPassphraseSheet({
       >
         <div className="mb-3 flex items-start justify-between">
           <div>
-            <div
-              className="text-[18px]"
-              style={{
-                fontFamily: "'Playfair Display', serif",
-                fontWeight: 600,
-                letterSpacing: "-0.01em",
-                color: CHARCOAL,
-              }}
-            >
-              {title}
-            </div>
-            <div className="mt-1 text-[12.5px]" style={{ color: MUTED }}>
+            <div style={typeSheetTitleLg}>{title}</div>
+            <div className="mt-1" style={{ ...typeSubLabel, fontSize: 12.5 }}>
               {accounts.length} account{accounts.length === 1 ? "" : "s"} selected. {subtitle}
             </div>
           </div>
+
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={onClose}

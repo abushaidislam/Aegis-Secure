@@ -19,6 +19,7 @@ import {
   PrimaryButton,
   soft,
 } from "@/components/aegis/chrome";
+import { typeBody, typeDisplaySerif } from "@/components/aegis/typography";
 
 export const Route = createFileRoute("/_authenticated/_locked/vault_/recovery")({
   component: RecoverySheetPage,
@@ -246,20 +247,12 @@ function RecoverySheetPage() {
       </div>
 
       <div className="pt-3">
-        <div
-          className="text-[26px] leading-tight"
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontWeight: 600,
-            letterSpacing: "-0.01em",
-          }}
-        >
-          Print this. Store it somewhere real.
-        </div>
-        <div className="mt-2 text-[13.5px]" style={{ color: MUTED }}>
+        <div style={typeDisplaySerif}>Print this. Store it somewhere real.</div>
+        <div className="mt-2" style={typeBody}>
           A one-page backup of the accounts you have and the wrapped key needed to restore them.
           Paired with your passphrase, this sheet rebuilds your vault after a lost device.
         </div>
+
       </div>
 
       {loading && (

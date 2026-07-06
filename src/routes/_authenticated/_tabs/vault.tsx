@@ -70,6 +70,15 @@ import {
   PrimaryButton,
   soft,
 } from "@/components/aegis/chrome";
+import {
+  typeBadge,
+  typeBody,
+  typeEyebrow,
+  typeSheetTitle,
+  typeSheetTitleLg,
+  typeSheetTitleSm,
+  typeSubLabel,
+} from "@/components/aegis/typography";
 import { LargeTitle, SectionLabel } from "@/components/aegis/settings";
 import { InstallPrompt } from "@/components/aegis/InstallPrompt";
 
@@ -762,22 +771,14 @@ function VaultPage() {
                     <Trash2 className="h-5 w-5" strokeWidth={1.8} />
                   </div>
                   <div className="min-w-0">
-                    <div
-                      id="bulk-delete-title"
-                      className="truncate text-[16px]"
-                      style={{
-                        fontFamily: "'Playfair Display', serif",
-                        fontWeight: 600,
-                        letterSpacing: "-0.01em",
-                        color: CHARCOAL,
-                      }}
-                    >
+                    <div id="bulk-delete-title" className="truncate" style={typeSheetTitleSm}>
                       Remove {selectedIds.size} account{selectedIds.size === 1 ? "" : "s"}?
                     </div>
-                    <div className="mt-0.5 truncate text-[12px]" style={{ color: MUTED }}>
+                    <div className="mt-0.5 truncate" style={{ ...typeSubLabel, fontSize: 12 }}>
                       Selected from your vault
                     </div>
                   </div>
+
                 </div>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
@@ -793,12 +794,13 @@ function VaultPage() {
 
               <p
                 id="bulk-delete-desc"
-                className="mb-4 text-[13px]"
-                style={{ color: MUTED, lineHeight: 1.55 }}
+                className="mb-4"
+                style={{ ...typeBody, fontSize: 13 }}
               >
                 The encrypted secrets will be deleted from your vault. You'll need the original QR
                 codes or setup keys to add them back. This can't be undone.
               </p>
+
 
               <div className="flex flex-col gap-2 pb-1">
                 <motion.button
@@ -1094,32 +1096,22 @@ function TagFilterRow({
       {/* Label row */}
       <div className="mb-1.5 flex items-center justify-between px-0.5">
         <div className="flex items-center gap-2">
-          <span
-            className="text-[9.5px] uppercase"
-            style={{
-              color: MUTED,
-              fontFamily: "'JetBrains Mono', monospace",
-              letterSpacing: "0.22em",
-              fontWeight: 600,
-            }}
-          >
-            Filter
-          </span>
+          <span style={typeEyebrow}>Filter</span>
           {activeCount > 0 && (
             <span
-              className="rounded-full px-1.5 py-0.5 text-[10px]"
+              className="rounded-full px-1.5 py-0.5"
               style={{
+                ...typeBadge,
                 background: CHARCOAL,
-                color: CREAM_SOFT,
                 fontWeight: 700,
-                lineHeight: 1,
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: "var(--font-mono)",
                 letterSpacing: "0.06em",
               }}
             >
               {activeCount}
             </span>
           )}
+
         </div>
         <div className="flex items-center gap-1">
           {activeCount > 0 && (
@@ -1336,20 +1328,9 @@ function TagManagerSheet({
         />
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <h3
-              className="text-[17px]"
-              style={{
-                fontFamily: "'Playfair Display', serif",
-                fontWeight: 600,
-                letterSpacing: "-0.01em",
-                color: CHARCOAL,
-              }}
-            >
-              Manage tags
-            </h3>
-            <p className="text-[11.5px]" style={{ color: MUTED }}>
-              Rename or delete tags across every account.
-            </p>
+            <h3 style={typeSheetTitle}>Manage tags</h3>
+            <p style={typeSubLabel}>Rename or delete tags across every account.</p>
+
           </div>
           <button
             onClick={onClose}
@@ -1432,8 +1413,9 @@ function TagManagerSheet({
                           onClick={() => doDelete(tag)}
                           className="rounded-full px-2.5 py-1 text-[11px] disabled:opacity-60"
                           style={{
-                            background: "rgba(178,58,42,0.08)",
-                            color: "#b23a2a",
+                            background: "rgb(var(--aegis-danger-rgb) / 0.08)",
+                            color: "var(--aegis-danger)",
+
                             fontWeight: 600,
                           }}
                         >
@@ -1520,7 +1502,7 @@ function SearchField({ value, onChange }: { value: string; onChange: (v: string)
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search accounts"
-        className="flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-[color:rgba(95,95,93,0.7)]"
+        className="flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-[color:var(--aegis-placeholder)]"
         style={{ color: CHARCOAL }}
       />
       {value && (
@@ -1678,8 +1660,9 @@ function BulkIconBtn({
       aria-label={label}
       className="flex h-9 w-9 items-center justify-center rounded-full transition-opacity disabled:opacity-40"
       style={{
-        background: danger ? "rgba(178,58,42,0.10)" : "rgb(var(--aegis-ink-rgb) / 0.06)",
-        color: danger ? "#b23a2a" : CHARCOAL,
+        background: danger ? "rgb(var(--aegis-danger-rgb) / 0.10)" : "rgb(var(--aegis-ink-rgb) / 0.06)",
+        color: danger ? "var(--aegis-danger)" : CHARCOAL,
+
       }}
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} /> : children}
@@ -1724,20 +1707,11 @@ function BulkTagSheet({
       >
         <div className="mb-3 flex items-start justify-between">
           <div>
-            <div
-              className="text-[18px]"
-              style={{
-                fontFamily: "'Playfair Display', serif",
-                fontWeight: 600,
-                letterSpacing: "-0.01em",
-                color: CHARCOAL,
-              }}
-            >
-              Add tag
-            </div>
-            <div className="mt-1 text-[12.5px]" style={{ color: MUTED }}>
+            <div style={typeSheetTitleLg}>Add tag</div>
+            <div className="mt-1" style={{ ...typeSubLabel, fontSize: 12.5 }}>
               Pick a tag to add to every selected account.
             </div>
+
           </div>
           <motion.button
             whileTap={{ scale: 0.9 }}

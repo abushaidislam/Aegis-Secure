@@ -71,12 +71,15 @@ function hueFor(seed: string): number {
 
 export function tagChipColors(tag: string): { bg: string; fg: string; ring: string } {
   const h = hueFor(tag);
+  // Use CSS light-dark() so the chip surface flips with the active theme:
+  // pastel wash on cream, muted saturated tone on the warm-dark surface.
   return {
-    bg: `hsl(${h}, 46%, 93%)`,
-    fg: `hsl(${h}, 42%, 26%)`,
-    ring: `hsl(${h}, 42%, 78%)`,
+    bg: `light-dark(hsl(${h}, 46%, 93%), hsl(${h}, 28%, 20%))`,
+    fg: `light-dark(hsl(${h}, 42%, 26%), hsl(${h}, 55%, 82%))`,
+    ring: `light-dark(hsl(${h}, 42%, 78%), hsl(${h}, 35%, 35%))`,
   };
 }
+
 
 interface TagChipProps {
   tag: string;

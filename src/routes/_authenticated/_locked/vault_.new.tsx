@@ -31,6 +31,7 @@ import {
   PrimaryButton,
   soft,
 } from "@/components/aegis/chrome";
+import { typeBody, typeDisplay } from "@/components/aegis/typography";
 import { AppBar, AppBarButton, SectionLabel, SettingsGroup } from "@/components/aegis/settings";
 import { BottomTabs } from "@/components/aegis/BottomTabs";
 
@@ -171,22 +172,15 @@ function NewAccountPage() {
 
         {/* Compact hero */}
         <div className="flex flex-col gap-1.5 pt-2 pb-4">
-          <h1
-            className="text-[26px] leading-[1.1]"
-            style={{
-              color: CHARCOAL,
-              fontFamily: "'Geist', ui-sans-serif, system-ui, sans-serif",
-              fontWeight: 600,
-              letterSpacing: "-0.025em",
-            }}
-          >
+          <h1 style={typeDisplay}>
             {tab === "scan" ? "Scan a code" : "Enter by hand"}
           </h1>
-          <p className="text-[13.5px] leading-[1.4]" style={{ color: MUTED }}>
+          <p style={typeBody}>
             {tab === "scan"
               ? "Point at the QR shown by any service. We'll do the rest."
               : "Type the secret shown as text on the service's setup screen."}
           </p>
+
         </div>
 
         <SegmentedTabs tab={tab} setTab={setTab} />
@@ -583,7 +577,7 @@ function TypePicker({
             <span className="text-[12.5px]">{o.label}</span>
             <span
               className="mt-0.5 text-[10.5px] leading-tight"
-              style={{ color: active ? MUTED : "rgba(95,95,93,0.7)" }}
+              style={{ color: active ? MUTED : "var(--aegis-placeholder)" }}
             >
               {o.hint}
             </span>
@@ -633,7 +627,7 @@ function FieldRow({
         autoComplete="off"
         autoCorrect="off"
         spellCheck={false}
-        className="min-w-0 flex-1 bg-transparent text-[14.5px] outline-none placeholder:text-[color:rgba(95,95,93,0.55)]"
+        className="min-w-0 flex-1 bg-transparent text-[14.5px] outline-none placeholder:text-[color:var(--aegis-placeholder)]"
         style={{
           color: CHARCOAL,
           fontFamily: mono
