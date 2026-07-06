@@ -1,5 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check, X, ShieldCheck, Cloud, Lock, KeyRound } from "lucide-react";
+import ogImageAsset from "@/assets/og-aegis-vs-google-authenticator.jpg.asset.json";
+
+const OG_IMAGE = `https://hug-machine-maker.lovable.app${ogImageAsset.url}`;
 
 const URL = "https://hug-machine-maker.lovable.app/blog/aegis-vs-google-authenticator";
 const TITLE = "Aegis vs Google Authenticator — the secure TOTP authenticator";
