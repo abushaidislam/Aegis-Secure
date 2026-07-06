@@ -44,9 +44,14 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedShell() {
   const { user } = Route.useRouteContext();
   useActivityKeepAlive();
+  const heartbeat = useServerFn(recordDeviceSeen);
   useEffect(() => {
     initAutoLockForUser(user.id);
     initHideCodesForUser(user.id);
-  }, [user.id]);
+    // Phase 9.1: record this device session so it shows up in Security → Devices.
+    void heartbeat().catch(() => {
+      // Non-fatal; the vault still works if this fails (e.g. offline).
+    });
+  }, [user.id, heartbeat]);
   return <Outlet />;
 }
