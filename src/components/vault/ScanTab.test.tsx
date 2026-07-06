@@ -9,7 +9,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act } from "react";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, fireEvent } from "@testing-library/react";
 import { ScanTab } from "./ScanTab";
 
 // Silence the "not configured to support act(...)" warning from happy-dom.
