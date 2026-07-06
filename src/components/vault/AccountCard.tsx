@@ -1651,17 +1651,10 @@ function RingTimer({
           style={{ transition: "stroke-dashoffset 0.24s linear, stroke 0.2s ease" }}
         />
       </svg>
-      <span
-        className="absolute text-[10px] tabular-nums"
-        style={{
-          color,
-          fontFeatureSettings: "'tnum'",
-          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-          fontWeight: 600,
-        }}
-      >
+      <span className="absolute tabular-nums" style={{ ...typeTimer, color }}>
         {remaining}
       </span>
+
     </div>
   );
 }
