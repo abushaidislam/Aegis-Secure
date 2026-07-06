@@ -143,11 +143,17 @@ export function ScanTab({ onDetected, onError, saving, switchToManual }: ScanTab
               background:
                 "linear-gradient(90deg, transparent, rgba(247,244,237,0.95), transparent)",
               boxShadow: "0 0 14px rgba(247,244,237,0.55)",
+              top: prefersReducedMotion ? "50%" : undefined,
             }}
-            animate={{ y: [4, "calc(100% - 4px)", 4] }}
-            transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+            animate={prefersReducedMotion ? undefined : { y: [4, "calc(100% - 4px)", 4] }}
+            transition={
+              prefersReducedMotion
+                ? undefined
+                : { duration: 2.8, repeat: Infinity, ease: "easeInOut" }
+            }
           />
         </div>
+
 
         {(starting || saving || decoding) && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/35 backdrop-blur-[2px]">
