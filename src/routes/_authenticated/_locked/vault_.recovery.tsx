@@ -89,6 +89,9 @@ function RecoverySheetPage() {
         };
         setPayload(p);
         setAccounts(list);
+        // Recovery QR is a printable/backup asset — intentionally light
+        // background + dark foreground regardless of app theme so it stays
+        // scannable when printed or screenshotted.
         const dataUrl = await QRCode.toDataURL(JSON.stringify(p), {
           errorCorrectionLevel: "M",
           margin: 1,
