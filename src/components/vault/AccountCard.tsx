@@ -251,35 +251,77 @@ export function AccountCard({
     setDetailsSaving(true);
     setDetailsError(null);
     setTagError(null);
-    try {
-      if (dirtyDetails) {
-        const saved = await updateAccountDetails(account.id, {
-          issuer: issuerDraft,
-          label: labelDraft,
-        });
-        onDetailsChanged?.(account.id, saved);
-        setIssuerDraft(saved.issuer);
-        setLabelDraft(saved.label);
-      }
-      if (dirtyTags) {
-        const { tags: saved, queued } = await setAccountTags(account.id, tagsDraft);
-        onTagsChanged?.(account.id, saved);
-        setTagsDraft(saved);
-        if (queued) {
-          toast.success("Changes saved · tags will sync when back online");
-        } else {
-          toast.success("Changes saved");
-        }
-      } else {
-        toast.success("Changes saved");
-      }
+
+    // Run details + tags in parallel so a slow write on one doesn't
+    // serialize the other, and so we can report which half (if any)
+    // failed instead of silently leaving a partial update behind.
+    const detailsPromise = dirtyDetails
+      ? updateAccountDetails(account.id, { issuer: issuerDraft, label: labelDraft })
+      : Promise.resolve(null);
+    const tagsPromise = dirtyTags
+      ? setAccountTags(account.id, tagsDraft)
+      : Promise.resolve(null);
+
+    const [detailsResult, tagsResult] = await Promise.allSettled([
+      detailsPromise,
+      tagsPromise,
+    ]);
+
+    let queuedTags = false;
+    const errors: string[] = [];
+
+    if (detailsResult.status === "fulfilled" && detailsResult.value) {
+      const saved = detailsResult.value;
+      onDetailsChanged?.(account.id, saved);
+      setIssuerDraft(saved.issuer);
+      setLabelDraft(saved.label);
+    } else if (detailsResult.status === "rejected") {
+      const msg =
+        detailsResult.reason instanceof Error
+          ? detailsResult.reason.message
+          : "Could not update details.";
+      setDetailsError(msg);
+      errors.push(msg);
+    }
+
+    if (tagsResult.status === "fulfilled" && tagsResult.value) {
+      const { tags: saved, queued } = tagsResult.value;
+      onTagsChanged?.(account.id, saved);
+      setTagsDraft(saved);
+      queuedTags = queued;
+    } else if (tagsResult.status === "rejected") {
+      const msg =
+        tagsResult.reason instanceof Error
+          ? tagsResult.reason.message
+          : "Could not update tags.";
+      setTagError(msg);
+      errors.push(msg);
+    }
+
+    setDetailsSaving(false);
+
+    if (errors.length === 0) {
+      toast.success(
+        queuedTags ? "Changes saved · tags will sync when back online" : "Changes saved",
+      );
       setEditing(false);
-    } catch (e) {
-      setDetailsError(e instanceof Error ? e.message : "Could not save changes.");
-    } finally {
-      setDetailsSaving(false);
+      return;
+    }
+
+    // Partial or full failure: keep edit mode open so the user can retry.
+    // Drafts already reflect anything that DID persist (via the setters
+    // above), so Cancel will correctly restore to the new server truth.
+    if (errors.length === 2) {
+      toast.error("Couldn't save changes. Please try again.");
+    } else {
+      toast.error(
+        detailsResult.status === "rejected"
+          ? "Tags saved, but details couldn't be updated."
+          : "Details saved, but tags couldn't be updated.",
+      );
     }
   };
+
 
   const cancelEdit = () => {
     setIssuerDraft(account.issuer ?? "");
