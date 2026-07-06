@@ -1000,7 +1000,15 @@ export function AccountCard({
                           </motion.span>
                         </motion.span>
                       )}
-                      <RingTimer progress={progress} remaining={remaining} warn={warn} />
+                      {isHotp ? (
+                        <HotpRefreshButton
+                          onClick={refreshHotp}
+                          busy={hotpBusy}
+                          counter={hotpCounter}
+                        />
+                      ) : (
+                        <RingTimer progress={progress} remaining={remaining} warn={warn} />
+                      )}
                     </div>
 
                     {/* Code display (revealed or dotted) — tap to toggle */}
