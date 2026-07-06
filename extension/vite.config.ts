@@ -10,11 +10,13 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 import fs from "node:fs";
+import { storeListing } from "./store-listing.config";
 
 const ROOT = path.resolve(__dirname);
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const TARGET_DIR = (process.env.TARGET ?? "chrome").toLowerCase() === "firefox" ? "dist-ext-firefox" : "dist-ext";
 const OUT_DIR = path.resolve(PROJECT_ROOT, TARGET_DIR);
+const META_DIR = path.resolve(PROJECT_ROOT, "dist-ext-meta");
 
 // Read the same VITE_* env the web app uses so we bake the correct
 // Supabase URL into the manifest's CSP `connect-src`.
