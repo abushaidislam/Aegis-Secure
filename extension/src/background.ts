@@ -304,7 +304,8 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
 });
 
 chrome.runtime.onMessageExternal.addListener((msg: Message, sender, sendResponse) => {
-  if (!originAllowed(sender.origin ?? sender.url)) {
+  const origin = sender.origin ?? (sender.url ? new URL(sender.url).origin : undefined);
+  if (!originAllowed(origin)) {
     sendResponse({ ok: false, error: "forbidden_origin" });
     return;
   }
@@ -313,6 +314,12 @@ chrome.runtime.onMessageExternal.addListener((msg: Message, sender, sendResponse
   // to a user action inside the extension surface).
   if (msg.type !== "SYNC_VAULT" && msg.type !== "GET_STATE" && msg.type !== "PING" && msg.type !== "LOCK") {
     sendResponse({ ok: false, error: "forbidden_message" });
+    return;
+  }
+  // Rate-limit SYNC_VAULT per origin to make a hostile script that lands
+  // on an allow-listed origin unable to spam the SW with vault swaps.
+  if (msg.type === "SYNC_VAULT" && !checkRate(origin!)) {
+    sendResponse({ ok: false, error: "rate_limited" });
     return;
   }
   try {
