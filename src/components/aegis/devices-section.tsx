@@ -84,6 +84,22 @@ export function DevicesSection({ heading = "Devices" }: { heading?: string }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [pendingRevoke, setPendingRevoke] = useState<DeviceRow | null>(null);
+  // Screen-reader announcements. `politeMsg` uses role="status" for
+  // non-critical success updates; `assertiveMsg` uses role="alert" for
+  // failures so AT interrupts and reads them immediately.
+  const [politeMsg, setPoliteMsg] = useState("");
+  const [assertiveMsg, setAssertiveMsg] = useState("");
+
+  const announce = (text: string, tone: "polite" | "assertive" = "polite") => {
+    // Clear then set on next tick so repeated identical messages re-announce.
+    if (tone === "assertive") {
+      setAssertiveMsg("");
+      window.setTimeout(() => setAssertiveMsg(text), 50);
+    } else {
+      setPoliteMsg("");
+      window.setTimeout(() => setPoliteMsg(text), 50);
+    }
+  };
 
   const load = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -94,6 +110,7 @@ export function DevicesSection({ heading = "Devices" }: { heading?: string }) {
     } catch (err) {
       const text = err instanceof Error ? err.message : "Could not load devices.";
       toast.error("Couldn't load devices", { description: text });
+      announce(`Couldn't load devices. ${text}`, "assertive");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -114,19 +131,24 @@ export function DevicesSection({ heading = "Devices" }: { heading?: string }) {
       await revokeFn({ data: { sessionId: row.session_id } });
       if (row.is_current) {
         toast.success("Signed out. Redirecting…");
+        announce("Signed out of this device. Redirecting to sign in.", "assertive");
         setPendingRevoke(null);
         window.location.replace("/auth");
         return;
       }
       setDevices((prev) => (prev ? prev.filter((d) => d.session_id !== row.session_id) : prev));
+      const location = formatLocation(row.coarse_country, row.coarse_region);
       toast.success(`Signed out ${label}`, {
-        description: `${formatLocation(row.coarse_country, row.coarse_region)} · Last active ${formatWhen(row.last_seen_at)}`,
+        description: `${location} · Last active ${formatWhen(row.last_seen_at)}`,
       });
+      announce(
+        `${label} in ${location} was signed out successfully. Last active ${formatWhen(row.last_seen_at)}.`,
+      );
       setPendingRevoke(null);
     } catch (err) {
-      toast.error("Couldn't sign that device out", {
-        description: err instanceof Error ? err.message : "Please try again.",
-      });
+      const reason = err instanceof Error ? err.message : "Please try again.";
+      toast.error("Couldn't sign that device out", { description: reason });
+      announce(`Couldn't sign ${label} out. ${reason}`, "assertive");
     } finally {
       setBusyId(null);
     }
@@ -144,6 +166,26 @@ export function DevicesSection({ heading = "Devices" }: { heading?: string }) {
 
   return (
     <>
+      {/* Screen-reader-only live regions. Kept outside the sheet so
+          announcements still fire after the sheet unmounts (e.g. after
+          a revoke closes the confirmation dialog). */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {politeMsg}
+      </div>
+      <div
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {assertiveMsg}
+      </div>
+
       <SettingsGroup>
         <SettingsRow
           icon={<Monitor className="h-4 w-4" strokeWidth={1.8} />}
