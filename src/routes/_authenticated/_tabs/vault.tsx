@@ -100,6 +100,12 @@ function VaultPage() {
   const navigate = useNavigate();
   const unlocked = useVaultUnlocked();
   const { user } = Route.useRouteContext();
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const msg = i18n._(id);
+    return msg === id ? fallback : msg;
+  };
+
 
   useActivityKeepAlive();
 
