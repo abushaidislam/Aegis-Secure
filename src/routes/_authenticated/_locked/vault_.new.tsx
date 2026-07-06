@@ -314,10 +314,25 @@ function ScanTab({
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [decoding, setDecoding] = useState(false);
 
+  // Stash the latest handlers in refs so the camera-init effect can run
+  // exactly once per mount. Depending on the raw callbacks would restart
+  // the camera on every parent render (saving/notice state changes).
+  const onDetectedRef = useRef(onDetected);
+  const onErrorRef = useRef(onError);
+  useEffect(() => {
+    onDetectedRef.current = onDetected;
+    onErrorRef.current = onError;
+  });
+
+  // Latch so the same QR frame — or a stale second decode arriving before
+  // controls.stop() takes effect — can't trigger two saves.
+  const handledRef = useRef(false);
+
   const handleImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    if (handledRef.current) return;
     setDecoding(true);
     const url = URL.createObjectURL(file);
     try {
@@ -326,12 +341,13 @@ function ScanTab({
       const result = await reader.decodeFromImageUrl(url);
       const text = result.getText();
       if (!text.startsWith("otpauth://")) {
-        onError("That image doesn't contain a valid otpauth QR code.");
+        onErrorRef.current("That image doesn't contain a valid otpauth QR code.");
         return;
       }
-      onDetected(text);
+      handledRef.current = true;
+      onDetectedRef.current(text);
     } catch {
-      onError("Couldn't read a QR code from that image. Try a clearer screenshot.");
+      onErrorRef.current("Couldn't read a QR code from that image. Try a clearer screenshot.");
     } finally {
       URL.revokeObjectURL(url);
       setDecoding(false);
@@ -347,13 +363,12 @@ function ScanTab({
       const reader = new BrowserQRCodeReader();
       try {
         controls = await reader.decodeFromVideoDevice(undefined, videoRef.current!, (result) => {
-          if (result && !cancelled) {
-            const text = result.getText();
-            if (text.startsWith("otpauth://")) {
-              controls?.stop();
-              onDetected(text);
-            }
-          }
+          if (!result || cancelled || handledRef.current) return;
+          const text = result.getText();
+          if (!text.startsWith("otpauth://")) return;
+          handledRef.current = true;
+          controls?.stop();
+          onDetectedRef.current(text);
         });
         if (!cancelled) setStarting(false);
       } catch (err) {
@@ -361,7 +376,7 @@ function ScanTab({
         setStarting(false);
         const name = (err as { name?: string })?.name ?? "";
         if (name === "NotAllowedError" || name === "SecurityError") setPermissionDenied(true);
-        else onError(err instanceof Error ? err.message : "Could not start camera.");
+        else onErrorRef.current(err instanceof Error ? err.message : "Could not start camera.");
       }
     })();
 
@@ -369,7 +384,8 @@ function ScanTab({
       cancelled = true;
       controls?.stop();
     };
-  }, [onDetected, onError]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex flex-col gap-4">
