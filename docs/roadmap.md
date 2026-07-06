@@ -191,8 +191,8 @@ in production, no hard-coded colours in `src/components/aegis/*`.
 
 
 ### 9.3 Vault health `[P1]`
-- [ ] Client-side pass: duplicate secrets (hash decrypted secret in memory), issuers with no icon, favourites with weak issuers
-- [ ] Optional HIBP lookup for issuer domains (k-anonymity endpoint)
+- [x] Client-side pass: duplicate secrets (hash decrypted secret in memory), issuers with no icon, favourites with weak issuers
+- [x] Optional HIBP lookup for issuer domains (k-anonymity endpoint)
 
 ### 9.4 Passphrase strength on change `[P1]`
 - [ ] Port export passphrase meter to change-passphrase, refuse `zxcvbn score < 3`

@@ -19,6 +19,7 @@ import {
 
 import { DevicesSection } from "@/components/aegis/devices-section";
 import { SignInHistorySection } from "@/components/aegis/signin-history-section";
+import { VaultHealthSection } from "@/components/aegis/vault-health-section";
 
 import { Switch } from "@/components/ui/switch";
 import { setHideCodes, useHideCodes } from "@/lib/vault-privacy";
@@ -276,6 +277,11 @@ function SecurityPage() {
             chevron
           />
         </SettingsGroup>
+
+        <SectionLabel>{t("security.section.health", "Health")}</SectionLabel>
+        <VaultHealthSection heading={t("security.vaultHealth", "Vault health")} />
+
+
 
         <SectionLabel>{t("security.section.signIn", "Sign-in")}</SectionLabel>
         <SettingsGroup>
