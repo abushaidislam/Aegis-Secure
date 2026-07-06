@@ -29,6 +29,24 @@ import { TagChip, TagInput } from "@/components/vault/tags";
 const DANGER = "#b23a2a";
 const FAV = "#c99a2b";
 
+// Shared edit-mode motion. iOS-style ease with a slightly longer collapse
+// than expand so exit feels intentional, not abrupt. Opacity resolves a hair
+// before height so content doesn't clip mid-fade.
+const EDIT_EASE = [0.32, 0.72, 0, 1] as const;
+const EDIT_EXPAND = {
+  height: { duration: 0.28, ease: EDIT_EASE },
+  opacity: { duration: 0.2, ease: EDIT_EASE, delay: 0.04 },
+  y: { duration: 0.28, ease: EDIT_EASE },
+  marginBottom: { duration: 0.28, ease: EDIT_EASE },
+};
+const EDIT_COLLAPSE = {
+  height: { duration: 0.24, ease: EDIT_EASE, delay: 0.04 },
+  opacity: { duration: 0.16, ease: EDIT_EASE },
+  y: { duration: 0.2, ease: EDIT_EASE },
+  marginBottom: { duration: 0.24, ease: EDIT_EASE, delay: 0.04 },
+};
+const ACTION_SWAP = { duration: 0.22, ease: EDIT_EASE } as const;
+
 // Dedupe toast per issuer so the same failing logo doesn't spam notifications.
 const notifiedIssuers = new Set<string>();
 function notifyLogoIssue(issuer: string, reason: "unmapped" | "error") {
