@@ -36,6 +36,7 @@ import {
 import { typeBody, typeDisplay } from "@/components/aegis/typography";
 import { AppBar, AppBarButton, SectionLabel, SettingsGroup } from "@/components/aegis/settings";
 import { BottomTabs } from "@/components/aegis/BottomTabs";
+import { useLingui } from "@lingui/react";
 
 // Phase 6.1: accept an inbound `otpauth://` payload from the PWA
 // protocol handler + Web Share Target so a scan/share from another app
