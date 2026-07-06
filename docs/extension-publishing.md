@@ -66,7 +66,7 @@ from there into the store submission form.
 1. `bun run package:ext:firefox`
 2. Open https://addons.mozilla.org/developers/ (free account).
 3. **Submit a new add-on** → upload `public/aegis-extension-firefox.zip`.
-4. Same listing content as CWS.
+4. Listing content: copy from `dist-ext-meta/firefox-store-listing.json` (same fields as CWS, plus `storeListing.sourceCodeUrl` if set and `storeListing.reviewerNotes` for the reviewer form).
 5. `browser_specific_settings.gecko.id` is baked in as `aegis@lovable.app` (override with `GECKO_ID=…`).
 6. Firefox requires `strict_min_version: "128.0"` (MV3 stability threshold).
 
