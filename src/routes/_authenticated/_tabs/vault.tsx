@@ -35,6 +35,7 @@ import {
   soft,
 } from "@/components/aegis/chrome";
 import { LargeTitle, SectionLabel } from "@/components/aegis/settings";
+import { InstallPrompt } from "@/components/aegis/InstallPrompt";
 
 export const Route = createFileRoute("/_authenticated/_tabs/vault")({
   beforeLoad: ({ location }) => {
@@ -257,6 +258,8 @@ function VaultPage() {
             : "One-time codes, encrypted end-to-end."
         }
       />
+
+      <InstallPrompt />
 
       {(!online || source === "cache") && accounts && (
         <div

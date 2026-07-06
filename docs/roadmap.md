@@ -14,7 +14,10 @@ matters*.
 **Legend:** `[P0]` blocker for GA · `[P1]` fast-follow · `[P2]` polish /
 post-launch. Tick `- [x]` as each task lands.
 
-**Progress:** Phase 0–5 complete. Currently on **Phase 6 — Offline & installability**.
+**Progress:** Phase 0–5 complete. **Phase 6.1 shipped** (PWA manifest,
+service worker, guarded registration, protocol handler, share target,
+install prompt behind `feature_flags.pwa_install_prompt`). Currently on
+**Phase 6.2 — encrypted offline vault mirror**.
 
 ---
 
@@ -73,10 +76,11 @@ shadcn warnings), build clean, RLS + crypto CI green.
 A web authenticator that dies when you're on the subway loses to a native
 app every time.
 
-### 6.1 Service worker + PWA manifest `[P0]`
-- [ ] `vite-plugin-pwa` with `workbox` in `injectManifest` mode (network-first API, SWR static, cache-first fonts + icons)
-- [ ] Web-app manifest: `display: standalone`, brand icons 192/256/384/512 + maskable + monochrome, `theme_color` matching cream palette, share-target intent for `otpauth://`
-- [ ] Install prompt on the vault screen after the third successful visit (behind `feature_flags.pwa_install_prompt`)
+### 6.1 Service worker + PWA manifest `[P0]` `[done]`
+- [x] `vite-plugin-pwa` with `generateSW` (skill-mandated), `injectRegister: null`, `devOptions.enabled: false`, network-first navigations, SWR Google Fonts CSS, cache-first Google Fonts files
+- [x] Web-app manifest: `display: standalone`, brand icons 192/256/512 + maskable, `theme_color` matching cream palette, `protocol_handlers` for `otpauth://`, `share_target` accepting `otpauth://` payloads
+- [x] Guarded registration wrapper (`src/lib/pwa-register.ts`) refusing dev, iframe, Lovable preview hosts, and `?sw=off`; unregisters stale `/sw.js` in refused contexts
+- [x] Install prompt on the vault screen after the third successful visit (behind `feature_flags.pwa_install_prompt`, disabled by default)
 
 ### 6.2 Encrypted offline vault mirror `[P0]`
 - [ ] IndexedDB `vault_cache` holding ciphertext rows (never sees plaintext)

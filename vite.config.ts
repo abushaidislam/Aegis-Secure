@@ -60,6 +60,20 @@ export default defineConfig({
               purpose: "maskable",
             },
           ],
+          // Deep-link support: services that hand out `otpauth://` URIs
+          // (e.g. share-sheet from a native app, external QR reader) route
+          // straight into Add Account with the URI in the query string.
+          // Chrome's protocol-handler safelist includes `otpauth`.
+          protocol_handlers: [
+            { protocol: "otpauth", url: "/vault/new?uri=%s" },
+          ],
+          // Share Target: iOS / Android share-sheet can send an `otpauth://`
+          // URL (text or url payload) into the same Add Account flow.
+          share_target: {
+            action: "/vault/new",
+            method: "GET",
+            params: { title: "issuer", text: "uri", url: "uri" },
+          },
         },
         workbox: {
           globPatterns: ["**/*.{js,css,ico,png,svg,webmanifest,woff,woff2}"],

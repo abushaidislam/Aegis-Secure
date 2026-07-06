@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import { AnimatePresence, motion } from "framer-motion";
 import { getVaultKey } from "@/lib/vault-session";
 import { useOnlineStatus } from "@/lib/use-online";
@@ -32,7 +33,15 @@ import {
 import { AppBar, AppBarButton, SectionLabel, SettingsGroup } from "@/components/aegis/settings";
 import { BottomTabs } from "@/components/aegis/BottomTabs";
 
+// Phase 6.1: accept an inbound `otpauth://` payload from the PWA
+// protocol handler + Web Share Target so a scan/share from another app
+// lands straight on Add Account with the URI pre-parsed.
+const searchSchema = z.object({
+  uri: z.string().optional().catch(undefined),
+});
+
 export const Route = createFileRoute("/_authenticated/_locked/vault_/new")({
+  validateSearch: searchSchema,
   component: NewAccountPage,
   errorComponent: ({ error }) => (
     <div className="flex min-h-screen items-center justify-center p-6 text-sm">{error.message}</div>
@@ -45,6 +54,7 @@ type Tab = "scan" | "manual";
 function NewAccountPage() {
   const navigate = useNavigate();
   const { user } = Route.useRouteContext();
+  const { uri: incomingUri } = Route.useSearch();
   const [tab, setTab] = useState<Tab>("scan");
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{ kind: "error" | "info"; text: string } | null>(null);
@@ -53,6 +63,8 @@ function NewAccountPage() {
   // save-side error (offline, expired key, server rejection).
   const [scanAttempt, setScanAttempt] = useState(0);
   const online = useOnlineStatus();
+  // Latch so a deep-linked `?uri=` is consumed exactly once per navigation.
+  const handledIncomingRef = useRef(false);
 
   const save = useCallback(
     async (input: {
@@ -116,6 +128,24 @@ function NewAccountPage() {
   }, []);
 
   const switchToManual = useCallback(() => setTab("manual"), []);
+
+  // Phase 6.1: consume an inbound `?uri=otpauth://…` from the PWA
+  // protocol handler / Share Target exactly once per navigation. Runs
+  // once `save` is stable and only if the URI actually looks like an
+  // otpauth payload — a share sheet can dump arbitrary text on us.
+  useEffect(() => {
+    if (handledIncomingRef.current) return;
+    if (!incomingUri) return;
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(incomingUri);
+    } catch {
+      decoded = incomingUri;
+    }
+    if (!decoded.startsWith("otpauth://")) return;
+    handledIncomingRef.current = true;
+    void handleQrDetected(decoded);
+  }, [incomingUri, handleQrDetected]);
 
   return (
     <AegisScreen>
