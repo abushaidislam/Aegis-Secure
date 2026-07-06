@@ -415,7 +415,7 @@ function SegButton({
           layoutId="import-tab-pill"
           className="absolute inset-0 rounded-full"
           style={{
-            background: "#ffffff",
+            background: CREAM_SOFT,
             border: `1px solid ${BORDER}`,
             boxShadow: "0 1px 2px rgb(var(--aegis-ink-rgb) / 0.06), 0 4px 12px -6px rgb(var(--aegis-ink-rgb) / 0.12)",
           }}

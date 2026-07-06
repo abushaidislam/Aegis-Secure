@@ -53,7 +53,7 @@ export function InstallPrompt() {
         type="button"
         onClick={dismiss}
         aria-label="Dismiss install prompt"
-        className="shrink-0 rounded-full p-1.5 transition-colors hover:bg-black/5"
+        className="shrink-0 rounded-full p-1.5 transition-colors hover:bg-[rgb(var(--aegis-ink-rgb)/0.06)]"
         style={{ color: MUTED }}
       >
         <X className="h-3.5 w-3.5" strokeWidth={2} />

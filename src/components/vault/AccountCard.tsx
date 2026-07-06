@@ -866,7 +866,7 @@ export function AccountCard({
                               maxLength={80}
                               className="w-full rounded-[10px] px-2.5 py-1.5 text-[15px] outline-none transition-colors focus:border-current"
                               style={{
-                                background: "#fff",
+                                background: CREAM_SOFT,
                                 border: `1px solid ${BORDER}`,
                                 color: CHARCOAL,
                                 fontWeight: 600,
@@ -880,7 +880,7 @@ export function AccountCard({
                               maxLength={120}
                               className="w-full rounded-[10px] px-2.5 py-1 text-[12px] outline-none"
                               style={{
-                                background: "#fff",
+                                background: CREAM_SOFT,
                                 border: `1px solid ${BORDER}`,
                                 color: CHARCOAL,
                               }}
@@ -1020,7 +1020,7 @@ export function AccountCard({
                       aria-pressed={revealed}
                       className="relative mb-2 flex w-full flex-col items-center gap-1.5 overflow-hidden rounded-[16px] py-5 outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-offset-1"
                       style={{
-                        background: "#fff",
+                        background: CREAM_SOFT,
                         border: `1px solid ${BORDER}`,
                         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
                         cursor: "pointer",
@@ -1152,7 +1152,7 @@ export function AccountCard({
                       <div
                         className="mb-3 flex items-center gap-3 rounded-[14px] px-4 py-3"
                         style={{
-                          background: "#fff",
+                          background: CREAM_SOFT,
                           border: `1px solid ${BORDER}`,
                           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
                         }}
@@ -1374,7 +1374,7 @@ export function AccountCard({
                             disabled={detailsSaving}
                             className="flex items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-[13px]"
                             style={{
-                              background: "#fff",
+                              background: CREAM_SOFT,
                               color: CHARCOAL,
                               border: `1px solid ${BORDER}`,
                               fontWeight: 600,
@@ -1401,7 +1401,7 @@ export function AccountCard({
                             }}
                             className="flex items-center justify-center gap-2 rounded-[14px] px-3 py-3 text-[13px]"
                             style={{
-                              background: "#fff",
+                              background: CREAM_SOFT,
                               color: CHARCOAL,
                               border: `1px solid ${BORDER}`,
                               fontWeight: 600,
@@ -1554,7 +1554,7 @@ export function AccountCard({
                         className="flex items-center justify-center gap-2 rounded-[14px] px-4 py-3.5 text-[14px]"
                         style={{
                           background: DANGER,
-                          color: "#fff",
+                          color: CREAM_SOFT,
                           fontWeight: 600,
                           letterSpacing: "-0.005em",
                           opacity: deleting ? 0.75 : 1,
@@ -1701,7 +1701,7 @@ function MetaCell({ label, value }: { label: string; value: string }) {
     <div
       className="flex flex-col items-center gap-1 rounded-[12px] px-2 py-2.5"
       style={{
-        background: "#fff",
+        background: CREAM_SOFT,
         border: `1px solid ${BORDER}`,
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
       }}

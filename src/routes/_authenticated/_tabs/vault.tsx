@@ -811,7 +811,7 @@ function VaultPage() {
                   className="flex items-center justify-center gap-2 rounded-[14px] px-4 py-3.5 text-[14px]"
                   style={{
                     background: DANGER,
-                    color: "#fff",
+                    color: CREAM_SOFT,
                     fontWeight: 600,
                     letterSpacing: "-0.005em",
                     opacity: bulkBusy ? 0.75 : 1,
@@ -1126,7 +1126,7 @@ function TagFilterRow({
             <button
               type="button"
               onClick={onClear}
-              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] transition-colors hover:bg-black/5"
+              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] transition-colors hover:bg-[rgb(var(--aegis-ink-rgb)/0.06)]"
               style={{ color: MUTED, fontWeight: 500 }}
               aria-label="Clear tag filters"
             >
@@ -1364,14 +1364,14 @@ function TagManagerSheet({
         {tagIndex.length === 0 ? (
           <div
             className="rounded-[14px] px-4 py-8 text-center text-[13px]"
-            style={{ background: "#fff", border: `1px solid ${BORDER}`, color: MUTED }}
+            style={{ background: CREAM_SOFT, border: `1px solid ${BORDER}`, color: MUTED }}
           >
             No tags yet. Add one from any account's details sheet.
           </div>
         ) : (
           <div
             className="aegis-scroll flex-1 overflow-y-auto rounded-[14px]"
-            style={{ background: "#fff", border: `1px solid ${BORDER}` }}
+            style={{ background: CREAM_SOFT, border: `1px solid ${BORDER}` }}
           >
             <ul className="divide-y" style={{ borderColor: BORDER }}>
               {tagIndex.map(({ tag, count }) => {
@@ -1396,7 +1396,7 @@ function TagManagerSheet({
                             if (e.key === "Escape") setRenameFor(null);
                           }}
                           className="h-7 w-28 rounded-full border px-2.5 text-[12px] outline-none"
-                          style={{ borderColor: BORDER, color: CHARCOAL, background: "#fff" }}
+                          style={{ borderColor: BORDER, color: CHARCOAL, background: CREAM_SOFT }}
                         />
                         <button
                           type="button"
