@@ -286,22 +286,23 @@ export function VaultHealthHero() {
                     color: CHARCOAL,
                     fontFamily: "'Playfair Display', serif",
                     fontWeight: 600,
-                    fontSize: 44,
-                    letterSpacing: "-0.02em",
+                    fontSize: 48,
+                    letterSpacing: "-1.2px",
                   }}
                 >
                   {report.score}
                 </motion.span>
                 <span
-                  className="mt-1 text-[10px] uppercase"
+                  className="mt-1.5 text-[10.5px] uppercase"
                   style={{
                     color: tone.color,
                     letterSpacing: "0.18em",
-                    fontWeight: 700,
+                    fontWeight: 600,
                   }}
                 >
                   {tone.label}
                 </span>
+
               </>
             )}
           </div>
