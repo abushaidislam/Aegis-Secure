@@ -87,13 +87,15 @@ export default defineConfig({
         popup: path.join(ROOT, "src/popup/index.html"),
         background: path.join(ROOT, "src/background.ts"),
         content: path.join(ROOT, "src/content.ts"),
+        announce: path.join(ROOT, "src/announce.ts"),
       },
       output: {
-        // Service worker + content script must live at stable paths the
+        // Service worker + content scripts must live at stable paths the
         // manifest can reference. Everything else gets Vite's hashed name.
         entryFileNames: (chunk) => {
           if (chunk.name === "background") return "background.js";
           if (chunk.name === "content") return "content.js";
+          if (chunk.name === "announce") return "announce.js";
           return "assets/[name]-[hash].js";
         },
         chunkFileNames: "assets/[name]-[hash].js",
