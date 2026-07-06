@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { AegisScreen } from "@/components/aegis/chrome";
 import { BottomTabs } from "@/components/aegis/BottomTabs";
+import { useExtensionHeartbeat } from "@/lib/extension-heartbeat";
 
 /**
  * Pathless layout shared by all bottom-tab destinations (Vault, Security,
@@ -13,6 +14,10 @@ export const Route = createFileRoute("/_authenticated/_tabs")({
 });
 
 function TabsLayout() {
+  // Background auto-resync to the browser extension when its SW evicts.
+  // No-op on non-Chromium browsers and when the vault is locked.
+  useExtensionHeartbeat();
+
   return (
     <AegisScreen>
       <div
@@ -25,3 +30,4 @@ function TabsLayout() {
     </AegisScreen>
   );
 }
+
