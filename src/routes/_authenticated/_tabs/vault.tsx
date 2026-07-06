@@ -72,11 +72,15 @@ function VaultPage() {
   const [pendingTagCount, setPendingTagCount] = useState<number>(
     () => (typeof window === "undefined" ? 0 : listQueuedTagUpdates().length),
   );
+  const [pendingOutbox, setPendingOutbox] = useState<number>(
+    () => (typeof window === "undefined" ? 0 : pendingOutboxCount()),
+  );
   const [syncingTags, setSyncingTags] = useState(false);
   const online = useOnlineStatus();
 
   const refreshPendingCount = useCallback(() => {
     setPendingTagCount(listQueuedTagUpdates().length);
+    setPendingOutbox(pendingOutboxCount());
   }, []);
 
   const allTags = useMemo(() => {
