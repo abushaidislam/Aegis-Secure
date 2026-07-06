@@ -449,7 +449,7 @@ export function HealthSheet({
                     key={d.groupId}
                     className="rounded-[12px] px-3 py-2.5"
                     style={{
-                      background: "rgb(var(--aegis-ink-rgb) / 0.025)",
+                      background: CREAM,
                       border: `1px solid ${BORDER}`,
                     }}
                   >
@@ -490,7 +490,7 @@ export function HealthSheet({
                     key={w.accountId}
                     className="flex items-start gap-3 rounded-[12px] px-3 py-2.5"
                     style={{
-                      background: "rgb(var(--aegis-ink-rgb) / 0.025)",
+                      background: CREAM,
                       border: `1px solid ${BORDER}`,
                     }}
                   >
@@ -526,7 +526,7 @@ export function HealthSheet({
                     key={m.accountId}
                     className="flex items-center gap-3 rounded-[12px] px-3 py-2"
                     style={{
-                      background: "rgb(var(--aegis-ink-rgb) / 0.025)",
+                      background: CREAM,
                       border: `1px solid ${BORDER}`,
                     }}
                   >
@@ -564,7 +564,7 @@ export function HealthSheet({
                         key={issuer}
                         className="flex items-center justify-between gap-3 rounded-[12px] px-3 py-2"
                         style={{
-                          background: "rgb(var(--aegis-ink-rgb) / 0.025)",
+                          background: CREAM,
                           border: `1px solid ${BORDER}`,
                         }}
                       >
@@ -669,7 +669,7 @@ function Category({
         <div
           className="rounded-[12px] px-3 py-2.5 text-[12px]"
           style={{
-            background: "rgb(var(--aegis-ink-rgb) / 0.025)",
+            background: CREAM,
             border: `1px solid ${BORDER}`,
             color: MUTED,
           }}
