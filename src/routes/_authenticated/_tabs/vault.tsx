@@ -70,6 +70,15 @@ import {
   PrimaryButton,
   soft,
 } from "@/components/aegis/chrome";
+import {
+  typeBadge,
+  typeBody,
+  typeEyebrow,
+  typeSheetTitle,
+  typeSheetTitleLg,
+  typeSheetTitleSm,
+  typeSubLabel,
+} from "@/components/aegis/typography";
 import { LargeTitle, SectionLabel } from "@/components/aegis/settings";
 import { InstallPrompt } from "@/components/aegis/InstallPrompt";
 
