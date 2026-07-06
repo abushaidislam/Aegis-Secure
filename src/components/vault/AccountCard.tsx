@@ -630,14 +630,11 @@ export function AccountCard({
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col">
-            <div
-              className="truncate text-[14px]"
-              style={{ color: CHARCOAL, fontWeight: 600, letterSpacing: "-0.005em" }}
-            >
+            <div className="truncate" style={typeCardTitle}>
               {account.issuer || "Untitled"}
             </div>
             {account.label && (
-              <div className="truncate text-[11.5px]" style={{ color: MUTED }}>
+              <div className="truncate" style={typeSubLabel}>
                 {account.label}
               </div>
             )}
@@ -648,8 +645,13 @@ export function AccountCard({
                 ))}
                 {account.tags.length > 3 && (
                   <span
-                    className="inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[10px]"
-                    style={{ color: MUTED, background: "rgb(var(--aegis-ink-rgb) / 0.06)", fontWeight: 600 }}
+                    className="inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5"
+                    style={{
+                      ...typeBadge,
+                      color: MUTED,
+                      background: "rgb(var(--aegis-ink-rgb) / 0.06)",
+                      fontSize: 10,
+                    }}
                   >
                     +{account.tags.length - 3}
                   </span>
@@ -657,6 +659,7 @@ export function AccountCard({
               </div>
             )}
           </div>
+
 
 
           {onToggleFavorite && (
