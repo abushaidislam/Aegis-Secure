@@ -1,0 +1,111 @@
+/* Popup shell — mirrors the web app's cream palette from src/styles.css
+   but ships as a standalone stylesheet so the extension build doesn't
+   need to pull the full Tailwind theme graph. */
+
+:root {
+  --cream: #f7f4ed;
+  --charcoal: #1f1d1a;
+  --muted: #6b6862;
+  --border: #eceae4;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--cream);
+  color: var(--charcoal);
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  width: 340px;
+  min-height: 220px;
+}
+
+h1 {
+  font-family: "Playfair Display", serif;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+.wrap {
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: transparent;
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--charcoal);
+  background: var(--charcoal);
+  color: var(--cream);
+  padding: 9px 14px;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+.btn:hover {
+  opacity: 0.9;
+}
+.btn.ghost {
+  background: transparent;
+  color: var(--charcoal);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 2px -18px;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3c8c5a;
+}
+.dot.warn {
+  background: #b47a2d;
+}
