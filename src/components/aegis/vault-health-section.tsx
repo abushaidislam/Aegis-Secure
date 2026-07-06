@@ -154,7 +154,7 @@ export function VaultHealthSection({ heading = "Vault health" }: { heading?: str
   );
 }
 
-function HealthSheet({
+export function HealthSheet({
   report,
   loading,
   errorMsg,

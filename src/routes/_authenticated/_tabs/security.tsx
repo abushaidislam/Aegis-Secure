@@ -19,7 +19,7 @@ import {
 
 import { DevicesSection } from "@/components/aegis/devices-section";
 import { SignInHistorySection } from "@/components/aegis/signin-history-section";
-import { VaultHealthSection } from "@/components/aegis/vault-health-section";
+import { VaultHealthHero } from "@/components/aegis/vault-health-hero";
 
 import { Switch } from "@/components/ui/switch";
 import { setHideCodes, useHideCodes } from "@/lib/vault-privacy";
@@ -210,35 +210,7 @@ function SecurityPage() {
       />
 
       <div className="flex flex-col gap-1 pt-1">
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={soft}
-          className="scroll-fade-out flex shrink-0 items-center gap-3.5 rounded-[16px] px-4 py-4"
-          style={{
-            background: CREAM_SOFT,
-            border: `1px solid ${BORDER}`,
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
-          }}
-        >
-          <div
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full"
-            style={{ background: CHARCOAL, color: CREAM_SOFT }}
-          >
-            <ShieldCheck className="h-6 w-6" strokeWidth={1.7} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div
-              className="truncate text-[15px]"
-              style={{ color: CHARCOAL, fontWeight: 600, letterSpacing: "-0.01em" }}
-            >
-              Vault unlocked
-            </div>
-            <div className="truncate text-[12.5px]" style={{ color: MUTED }}>
-              End-to-end encrypted on this device
-            </div>
-          </div>
-        </motion.div>
+        <VaultHealthHero />
 
         <SectionLabel>{t("security.section.vault", "Vault")}</SectionLabel>
         <SettingsGroup>
@@ -278,8 +250,6 @@ function SecurityPage() {
           />
         </SettingsGroup>
 
-        <SectionLabel>{t("security.section.health", "Health")}</SectionLabel>
-        <VaultHealthSection heading={t("security.vaultHealth", "Vault health")} />
 
 
 
