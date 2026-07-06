@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ShieldCheck, ChevronRight, Copy, Heart, Image as ImageIcon, Lock } from "lucide-react";
+import { ShieldCheck, Lock } from "lucide-react";
 
 import { BORDER, CHARCOAL, CREAM_SOFT, DANGER, MUTED, soft } from "@/components/aegis/chrome";
 import { getVaultKey, useVaultUnlocked } from "@/lib/vault-session";
@@ -9,9 +9,10 @@ import { computeVaultHealth, type VaultHealthReport } from "@/lib/vault-health";
 import { HealthSheet } from "@/components/aegis/vault-health-section";
 
 /**
- * Vault health hero — polished circular score chart shown at the top of the
- * Security tab. Tapping opens the existing HealthSheet for the full breakdown.
- * All scanning happens on-device against already-decrypted accounts.
+ * Vault health hero — a clean semi-circular gauge (Apple-style) that lives
+ * at the top of the Security tab. Ticks around the perimeter, a small
+ * indicator dot at the current score, and center label. Tap opens the
+ * existing HealthSheet for the full breakdown.
  */
 
 function scoreTone(score: number): { label: string; color: string } {
@@ -20,9 +21,31 @@ function scoreTone(score: number): { label: string; color: string } {
   return { label: "Needs attention", color: DANGER };
 }
 
-const RADIUS = 46;
-const STROKE = 8;
-const CIRC = 2 * Math.PI * RADIUS;
+// Gauge geometry — 270° arc opening at the bottom.
+const CX = 140;
+const CY = 130;
+const R = 96;                       // arc radius
+const START_DEG = 135;              // bottom-left
+const SWEEP_DEG = 270;              // total arc span
+const TICK_COUNT = 50;              // small ticks along the arc
+const LABELED = [0, 20, 40, 60, 80, 100]; // score values that get a number
+
+function polar(cx: number, cy: number, r: number, deg: number) {
+  const rad = (deg * Math.PI) / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+function scoreToAngle(score: number) {
+  const clamped = Math.max(0, Math.min(100, score));
+  return START_DEG + (clamped / 100) * SWEEP_DEG;
+}
+
+function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: number) {
+  const start = polar(cx, cy, r, startDeg);
+  const end = polar(cx, cy, r, endDeg);
+  const largeArc = endDeg - startDeg > 180 ? 1 : 0;
+  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 1 ${end.x} ${end.y}`;
+}
 
 export function VaultHealthHero() {
   const unlocked = useVaultUnlocked();
@@ -61,23 +84,27 @@ export function VaultHealthHero() {
     () => (report ? scoreTone(report.score) : scoreTone(100)),
     [report],
   );
+
   const score = report?.score ?? 0;
-  const dashOffset = CIRC - (Math.max(0, Math.min(100, score)) / 100) * CIRC;
+  const showScore = unlocked && !loading && !!report;
+  const angle = scoreToAngle(showScore ? score : 0);
+  const filledPath = arcPath(CX, CY, R, START_DEG, angle);
+  const trackPath = arcPath(CX, CY, R, START_DEG, START_DEG + SWEEP_DEG);
+  const indicator = polar(CX, CY, R, angle);
 
-  const dupCount = report?.duplicates.length ?? 0;
-  const weakCount = report?.weakFavorites.length ?? 0;
-  const missCount = report?.missingIcons.length ?? 0;
-  const findingCount = dupCount + weakCount + missCount;
+  const findingCount = report
+    ? report.duplicates.length + report.weakFavorites.length + report.missingIcons.length
+    : 0;
 
-  const subtitle = !unlocked
-    ? "Unlock the vault to see your score"
+  const subLine = !unlocked
+    ? "Vault locked"
     : loading
       ? "Scanning your vault…"
       : errorMsg
-        ? errorMsg
+        ? "Tap to retry"
         : findingCount === 0
-          ? "All clear — nothing needs your attention"
-          : `${findingCount} ${findingCount === 1 ? "finding" : "findings"} to review`;
+          ? "All clear"
+          : `${findingCount} ${findingCount === 1 ? "finding" : "findings"}`;
 
   return (
     <>
@@ -89,143 +116,203 @@ export function VaultHealthHero() {
         transition={soft}
         whileTap={{ scale: 0.995 }}
         aria-label={
-          report
-            ? `Vault health score ${report.score} of 100, ${tone.label}. ${findingCount} findings. Tap to view details.`
+          showScore
+            ? `Vault health score ${report!.score} of 100, ${tone.label}. Tap to view details.`
             : "Open vault health"
         }
-        className="group relative w-full overflow-hidden rounded-[20px] px-4 py-5 text-left focus-visible:outline-none focus-visible:ring-2"
+        className="relative flex w-full flex-col items-center overflow-hidden rounded-[22px] px-4 pb-5 pt-6 focus-visible:outline-none focus-visible:ring-2"
         style={{
           background: CREAM_SOFT,
           border: `1px solid ${BORDER}`,
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6), 0 6px 24px -18px rgba(0,0,0,0.35)",
+          boxShadow:
+            "inset 0 1px 0 rgba(255,255,255,0.7), 0 10px 30px -22px rgba(0,0,0,0.35)",
         }}
       >
-        {/* soft gradient wash keyed to score tone */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: `radial-gradient(120% 80% at 100% 0%, ${tone.color}22 0%, transparent 55%)`,
-          }}
-        />
+        {/* Section label */}
+        <div className="mb-1 flex items-center gap-1.5">
+          <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.8} style={{ color: MUTED }} />
+          <span
+            className="text-[10.5px] uppercase"
+            style={{ color: MUTED, letterSpacing: "0.18em", fontWeight: 600 }}
+          >
+            Vault health
+          </span>
+        </div>
 
-        <div className="relative flex items-center gap-4">
-          {/* Ring chart */}
-          <div className="relative h-[112px] w-[112px] shrink-0">
-            <svg
-              viewBox="0 0 120 120"
-              className="h-full w-full -rotate-90"
-              aria-hidden="true"
-            >
-              <circle
-                cx="60"
-                cy="60"
-                r={RADIUS}
-                fill="none"
-                stroke="rgb(var(--aegis-ink-rgb) / 0.09)"
-                strokeWidth={STROKE}
-              />
-              <motion.circle
-                cx="60"
-                cy="60"
-                r={RADIUS}
+        {/* Gauge */}
+        <div className="relative w-full max-w-[300px]">
+          <svg viewBox="0 0 280 210" className="block h-auto w-full" aria-hidden="true">
+            {/* soft inner wash under the gauge */}
+            <defs>
+              <radialGradient id="gauge-wash" cx="50%" cy="65%" r="55%">
+                <stop offset="0%" stopColor={tone.color} stopOpacity="0.10" />
+                <stop offset="70%" stopColor={tone.color} stopOpacity="0.0" />
+              </radialGradient>
+            </defs>
+            <circle cx={CX} cy={CY} r={R - 8} fill="url(#gauge-wash)" />
+
+            {/* Track arc (very faint) */}
+            <path
+              d={trackPath}
+              fill="none"
+              stroke="rgb(var(--aegis-ink-rgb) / 0.08)"
+              strokeWidth={1.2}
+            />
+
+            {/* Ticks */}
+            {Array.from({ length: TICK_COUNT + 1 }).map((_, i) => {
+              const t = i / TICK_COUNT;             // 0..1
+              const s = Math.round(t * 100);        // score value at this tick
+              const a = START_DEG + t * SWEEP_DEG;
+              const isMajor = s % 10 === 0;
+              const inner = polar(CX, CY, R - (isMajor ? 10 : 6), a);
+              const outer = polar(CX, CY, R + (isMajor ? 2 : 0), a);
+              const active = showScore && s <= score;
+              return (
+                <line
+                  key={i}
+                  x1={inner.x}
+                  y1={inner.y}
+                  x2={outer.x}
+                  y2={outer.y}
+                  stroke={active ? tone.color : "rgb(var(--aegis-ink-rgb) / 0.28)"}
+                  strokeOpacity={active ? 0.9 : isMajor ? 0.75 : 0.45}
+                  strokeWidth={isMajor ? 1.4 : 0.9}
+                  strokeLinecap="round"
+                />
+              );
+            })}
+
+            {/* Numbered labels */}
+            {LABELED.map((s) => {
+              const a = scoreToAngle(s);
+              const p = polar(CX, CY, R + 18, a);
+              return (
+                <text
+                  key={s}
+                  x={p.x}
+                  y={p.y}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  style={{
+                    fontFamily:
+                      "ui-sans-serif, system-ui, -apple-system, 'SF Pro Text', sans-serif",
+                    fontSize: 10,
+                    fontWeight: 500,
+                    letterSpacing: "0.02em",
+                  }}
+                  fill="rgb(var(--aegis-ink-rgb) / 0.5)"
+                >
+                  {s}
+                </text>
+              );
+            })}
+
+            {/* Filled arc up to score */}
+            {showScore && (
+              <motion.path
+                d={filledPath}
                 fill="none"
                 stroke={tone.color}
-                strokeWidth={STROKE}
+                strokeOpacity={0.22}
+                strokeWidth={3}
                 strokeLinecap="round"
-                strokeDasharray={CIRC}
-                initial={{ strokeDashoffset: CIRC }}
-                animate={{ strokeDashoffset: loading || !report ? CIRC : dashOffset }}
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
                 transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
               />
-            </svg>
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              {!unlocked ? (
-                <Lock className="h-5 w-5" strokeWidth={1.8} style={{ color: MUTED }} />
-              ) : loading || !report ? (
+            )}
+
+            {/* Indicator dot */}
+            {showScore && (
+              <motion.g
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+              >
+                <circle
+                  cx={indicator.x}
+                  cy={indicator.y}
+                  r={7}
+                  fill={CREAM_SOFT}
+                  stroke={tone.color}
+                  strokeWidth={2}
+                />
+                <circle cx={indicator.x} cy={indicator.y} r={2.6} fill={tone.color} />
+              </motion.g>
+            )}
+          </svg>
+
+          {/* Center readout — absolutely positioned over the gauge */}
+          <div
+            className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
+            style={{ paddingBottom: "12%" }}
+          >
+            {!unlocked ? (
+              <>
                 <div
-                  className="h-6 w-10 animate-pulse rounded-md"
+                  className="flex h-11 w-11 items-center justify-center rounded-full"
+                  style={{ background: "rgb(var(--aegis-ink-rgb) / 0.06)", color: MUTED }}
+                >
+                  <Lock className="h-4 w-4" strokeWidth={1.8} />
+                </div>
+                <div
+                  className="mt-2 text-[11px] uppercase"
+                  style={{ color: MUTED, letterSpacing: "0.14em", fontWeight: 600 }}
+                >
+                  Locked
+                </div>
+              </>
+            ) : loading || !report ? (
+              <>
+                <div
+                  className="h-9 w-16 animate-pulse rounded-md"
                   style={{ background: "rgb(var(--aegis-ink-rgb) / 0.08)" }}
                 />
-              ) : (
-                <>
-                  <span
-                    className="leading-none"
-                    style={{
-                      color: CHARCOAL,
-                      fontFamily: "'Playfair Display', serif",
-                      fontWeight: 600,
-                      fontSize: 34,
-                      letterSpacing: "-0.02em",
-                    }}
-                  >
-                    {report.score}
-                  </span>
-                  <span
-                    className="mt-0.5 text-[9.5px] uppercase"
-                    style={{ color: MUTED, letterSpacing: "0.16em", fontWeight: 600 }}
-                  >
-                    / 100
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Meta */}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.8} style={{ color: MUTED }} />
-              <span
-                className="text-[10.5px] uppercase"
-                style={{ color: MUTED, letterSpacing: "0.16em", fontWeight: 600 }}
-              >
-                Vault health
-              </span>
-            </div>
-            <div
-              className="mt-1 text-[19px]"
-              style={{
-                color: CHARCOAL,
-                fontFamily: "'Playfair Display', serif",
-                fontWeight: 600,
-                letterSpacing: "-0.01em",
-                lineHeight: 1.1,
-              }}
-            >
-              {!unlocked || !report ? "\u2014" : tone.label}
-            </div>
-            <div className="mt-1 line-clamp-2 text-[12.5px]" style={{ color: MUTED }}>
-              {subtitle}
-            </div>
-
-            {/* Finding chips */}
-            {report && findingCount > 0 && (
-              <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                {dupCount > 0 && (
-                  <Chip icon={<Copy className="h-3 w-3" strokeWidth={2} />} tone="warn">
-                    {dupCount} duplicate{dupCount === 1 ? "" : "s"}
-                  </Chip>
-                )}
-                {weakCount > 0 && (
-                  <Chip icon={<Heart className="h-3 w-3" strokeWidth={2} />} tone="warn">
-                    {weakCount} weak fav{weakCount === 1 ? "" : "s"}
-                  </Chip>
-                )}
-                {missCount > 0 && (
-                  <Chip icon={<ImageIcon className="h-3 w-3" strokeWidth={2} />} tone="info">
-                    {missCount} missing icon{missCount === 1 ? "" : "s"}
-                  </Chip>
-                )}
-              </div>
+                <div
+                  className="mt-2 h-3 w-20 animate-pulse rounded-full"
+                  style={{ background: "rgb(var(--aegis-ink-rgb) / 0.06)" }}
+                />
+              </>
+            ) : (
+              <>
+                <motion.span
+                  key={report.score}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={soft}
+                  className="leading-none"
+                  style={{
+                    color: CHARCOAL,
+                    fontFamily: "'Playfair Display', serif",
+                    fontWeight: 600,
+                    fontSize: 44,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {report.score}
+                </motion.span>
+                <span
+                  className="mt-1 text-[10px] uppercase"
+                  style={{
+                    color: tone.color,
+                    letterSpacing: "0.18em",
+                    fontWeight: 700,
+                  }}
+                >
+                  {tone.label}
+                </span>
+              </>
             )}
           </div>
+        </div>
 
-          <ChevronRight
-            className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5"
-            strokeWidth={1.8}
-            style={{ color: MUTED }}
-          />
+        {/* Sub line */}
+        <div
+          className="-mt-1 text-[12.5px]"
+          style={{ color: MUTED, fontWeight: 500 }}
+        >
+          {subLine}
         </div>
       </motion.button>
 
@@ -242,31 +329,5 @@ export function VaultHealthHero() {
         )}
       </AnimatePresence>
     </>
-  );
-}
-
-function Chip({
-  icon,
-  tone,
-  children,
-}: {
-  icon: React.ReactNode;
-  tone: "warn" | "info";
-  children: React.ReactNode;
-}) {
-  return (
-    <span
-      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px]"
-      style={{
-        background: "rgb(var(--aegis-ink-rgb) / 0.05)",
-        border: `1px solid ${BORDER}`,
-        color: tone === "warn" ? DANGER : MUTED,
-        letterSpacing: "0.06em",
-        fontWeight: 600,
-      }}
-    >
-      {icon}
-      {children}
-    </span>
   );
 }
