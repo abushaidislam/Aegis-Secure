@@ -14,17 +14,15 @@ matters*.
 **Legend:** `[P0]` blocker for GA · `[P1]` fast-follow · `[P2]` polish /
 post-launch. Tick `- [x]` as each task lands.
 
-**Progress:** Phase 0–5 complete. **Phase 6.1 + 6.2 + 6.3 shipped** (PWA
-manifest, service worker, guarded registration, protocol handler, share
-target, install prompt behind `feature_flags.pwa_install_prompt`,
-encrypted IndexedDB vault mirror with cache-first paint, delta sync,
-optimistic favorite window, focus/visibility invalidation, route-level
-code splitting — dynamic-imported `@zxing/browser`+`jspdf`+`html2canvas`,
-manual chunks for router runtime / React / Supabase / framer-motion / icons;
-main entry now **60 KB gzipped** — well under 250 KB target).
-Offline export/restore + cache recovery integration tests landed
-(16 tests, `src/lib/offline-recovery.test.ts`).
-Currently on **Phase 6.4 — Offline UX affordances**.
+**Progress:** Phase 0–5 complete. **Phase 6 fully shipped** — PWA
+manifest, guarded service worker, protocol handler, share target,
+install prompt behind `feature_flags.pwa_install_prompt`, encrypted
+IndexedDB vault mirror with cache-first paint, delta sync, optimistic
+favorite window, focus/visibility invalidation, route-level code
+splitting (main entry **60 KB gz**), offline banner + Retry pill,
+persistent delete+edit outbox that auto-replays on reconnect, and
+scanner UI disabled offline. 67/67 tests green. Next: **Phase 7 —
+Vault UX depth II (tags UI, DnD, bulk ops, HOTP/Steam).**
 
 ---
 
