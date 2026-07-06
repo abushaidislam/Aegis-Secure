@@ -29,6 +29,8 @@ import {
   MUTED,
   Notice,
   PrimaryButton,
+  SUCCESS,
+  WARNING,
   soft,
 } from "@/components/aegis/chrome";
 import { typeBody, typeDisplay } from "@/components/aegis/typography";
