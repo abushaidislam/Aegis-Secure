@@ -203,7 +203,7 @@ export async function addAccount(
     const { data, error } = await supabase
       .from("vault_accounts")
       .insert(insertRow)
-      .select(ACCOUNT_SELECT + ", user_id")
+      .select(ACCOUNT_SELECT)
       .single();
     if (error) throw error;
     if (data) void upsertVaultCache(data as VaultAccountRecord);
