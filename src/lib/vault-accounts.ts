@@ -25,10 +25,13 @@ import {
 } from "@/lib/vault-tag-queue";
 import {
   dequeueOutbox,
+  enqueueCreate,
   enqueueDelete,
+  enqueueFavorite,
   enqueueUpdateDetails,
   flushOutbox,
   outboxSize,
+  type CreatePayload,
 } from "@/lib/vault-outbox";
 
 const ACCOUNT_SELECT =
@@ -128,31 +131,102 @@ export async function addAccount(
     icon_slug?: string | null;
     tags?: string[];
   },
-): Promise<void> {
+): Promise<{ queued: boolean }> {
   const clean = normalizeBase32(input.secret);
   if (!isValidBase32Secret(clean)) throw new Error("Invalid secret. Must be base32.");
 
   const { ciphertext, iv } = await encryptSecret(dek, clean);
   const tags = normalizeTagList(input.tags ?? []);
+  const issuer = input.issuer.trim();
+  const label = input.label.trim();
+  const algorithm = input.algorithm ?? "SHA1";
+  const digits = input.digits ?? 6;
+  const period = input.period ?? 30;
+  const icon_slug = input.icon_slug ?? null;
 
-  const { data, error } = await supabase
-    .from("vault_accounts")
-    .insert({
-      user_id: userId,
-      issuer: input.issuer.trim(),
-      label: input.label.trim(),
-      icon_slug: input.icon_slug ?? null,
-      algorithm: input.algorithm ?? "SHA1",
-      digits: input.digits ?? 6,
-      period: input.period ?? 30,
+  const insertRow = {
+    user_id: userId,
+    issuer,
+    label,
+    icon_slug,
+    algorithm,
+    digits,
+    period,
+    tags,
+    secret_ciphertext: toByteaHex(ciphertext),
+    secret_iv: toByteaHex(iv),
+  };
+
+  const enqueueOfflineCreate = async () => {
+    // A client-generated UUID becomes the row's server id on flush. The
+    // cached row uses the same id, so any follow-up delete / edit made
+    // while still offline can target it directly.
+    const clientId = generateClientId();
+    const payload: CreatePayload = {
+      userId,
+      issuer,
+      label,
+      icon_slug,
+      algorithm,
+      digits,
+      period,
+      tags,
+      is_favorite: false,
+      secret_ciphertext_hex: toByteaHex(ciphertext),
+      secret_iv_hex: toByteaHex(iv),
+    };
+    enqueueCreate(clientId, payload);
+    const cachedRow: VaultAccountRecord = {
+      id: clientId,
+      issuer,
+      label,
+      icon_slug,
+      algorithm,
+      digits,
+      period,
+      sort_order: 0,
+      is_favorite: false,
       tags,
       secret_ciphertext: toByteaHex(ciphertext),
       secret_iv: toByteaHex(iv),
-    })
-    .select(ACCOUNT_SELECT)
-    .single();
-  if (error) throw error;
-  if (data) void upsertVaultCache(data as VaultAccountRecord);
+      updated_at: new Date().toISOString(),
+    };
+    await upsertVaultCache(cachedRow);
+  };
+
+  if (isOffline()) {
+    await enqueueOfflineCreate();
+    return { queued: true };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("vault_accounts")
+      .insert(insertRow)
+      .select(ACCOUNT_SELECT)
+      .single();
+    if (error) throw error;
+    if (data) void upsertVaultCache(data as VaultAccountRecord);
+    return { queued: false };
+  } catch (err) {
+    if (isLikelyNetworkError(err)) {
+      await enqueueOfflineCreate();
+      return { queued: true };
+    }
+    throw err;
+  }
+}
+
+function generateClientId(): string {
+  const g = globalThis as { crypto?: { randomUUID?: () => string } };
+  if (g.crypto?.randomUUID) return g.crypto.randomUUID();
+  // Fallback: RFC4122-ish v4 shape sufficient for a Postgres uuid column.
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0"));
+  return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10, 16).join("")}`;
 }
 
 /**
@@ -187,25 +261,55 @@ export async function deleteAccount(id: string): Promise<{ queued: boolean }> {
   }
 }
 
-export async function setAccountFavorite(id: string, isFavorite: boolean): Promise<void> {
-  // Phase 6.2: record the toggle so an in-flight diff-sync doesn't
-  // clobber it with the pre-toggle server value. Best-effort — resolves
-  // the user_id from the account row we're about to write.
-  const { data, error } = await supabase
-    .from("vault_accounts")
-    .update({ is_favorite: isFavorite })
-    .eq("id", id)
-    .select(ACCOUNT_SELECT + ", user_id")
-    .single();
-  if (error) throw error;
-  if (data) {
-    const row = data as unknown as VaultAccountRecord & { user_id: string };
-    void upsertVaultCache(row);
-    recordFavoriteToggle(row.user_id, id, isFavorite);
-    // The server has confirmed our value — the optimistic-window entry
-    // has done its job for future syncs but we can drop it now that
-    // the cached row already carries the confirmed value.
-    clearFavoriteToggle(row.user_id, id);
+export async function setAccountFavorite(
+  id: string,
+  isFavorite: boolean,
+): Promise<{ queued: boolean }> {
+  const attempt = async () => {
+    const { data, error } = await supabase
+      .from("vault_accounts")
+      .update({ is_favorite: isFavorite })
+      .eq("id", id)
+      .select(ACCOUNT_SELECT + ", user_id")
+      .single();
+    if (error) throw error;
+    if (data) {
+      const row = data as unknown as VaultAccountRecord & { user_id: string };
+      void upsertVaultCache(row);
+      recordFavoriteToggle(row.user_id, id, isFavorite);
+      clearFavoriteToggle(row.user_id, id);
+    }
+  };
+
+  const patchCacheFavorite = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const rows = await readVaultCache(user.id);
+      const row = rows?.find((r) => r.id === id);
+      if (row) await upsertVaultCache({ ...row, is_favorite: isFavorite });
+      recordFavoriteToggle(user.id, id, isFavorite);
+    } catch {
+      // best-effort
+    }
+  };
+
+  if (isOffline()) {
+    enqueueFavorite(id, isFavorite);
+    await patchCacheFavorite();
+    return { queued: true };
+  }
+
+  try {
+    await attempt();
+    return { queued: false };
+  } catch (err) {
+    if (isLikelyNetworkError(err)) {
+      enqueueFavorite(id, isFavorite);
+      await patchCacheFavorite();
+      return { queued: true };
+    }
+    throw err;
   }
 }
 
@@ -357,13 +461,36 @@ export async function flushPendingTagUpdates(): Promise<number> {
 }
 
 /**
- * Flush queued delete + edit mutations against the server. Returns the
- * count that reached the server. Safe to call repeatedly; missing-row
- * errors are treated as success (intent satisfied).
+ * Flush every queued mutation (create / delete / update / favorite)
+ * against the server in enqueue order. Returns the count that reached
+ * the server. Safe to call repeatedly; missing-row errors are treated
+ * as success (intent satisfied). Failed entries stay queued.
  */
 export async function flushPendingOutbox(): Promise<number> {
   if (isOffline()) return 0;
   const flushed = await flushOutbox({
+    create: async (clientId, payload) => {
+      const { data, error } = await supabase
+        .from("vault_accounts")
+        .insert({
+          id: clientId,
+          user_id: payload.userId,
+          issuer: payload.issuer,
+          label: payload.label,
+          icon_slug: payload.icon_slug,
+          algorithm: payload.algorithm,
+          digits: payload.digits,
+          period: payload.period,
+          tags: payload.tags,
+          is_favorite: payload.is_favorite,
+          secret_ciphertext: payload.secret_ciphertext_hex,
+          secret_iv: payload.secret_iv_hex,
+        })
+        .select(ACCOUNT_SELECT)
+        .single();
+      if (error) throw error;
+      if (data) void upsertVaultCache(data as VaultAccountRecord);
+    },
     delete: async (id) => {
       const { error } = await supabase.from("vault_accounts").delete().eq("id", id);
       if (error) throw error;
@@ -378,6 +505,20 @@ export async function flushPendingOutbox(): Promise<number> {
         .single();
       if (error) throw error;
       if (data) void upsertVaultCache(data as VaultAccountRecord);
+    },
+    favorite: async (id, isFavorite) => {
+      const { data, error } = await supabase
+        .from("vault_accounts")
+        .update({ is_favorite: isFavorite })
+        .eq("id", id)
+        .select(ACCOUNT_SELECT + ", user_id")
+        .single();
+      if (error) throw error;
+      if (data) {
+        const row = data as unknown as VaultAccountRecord & { user_id: string };
+        void upsertVaultCache(row);
+        clearFavoriteToggle(row.user_id, id);
+      }
     },
   });
   return flushed.length;
