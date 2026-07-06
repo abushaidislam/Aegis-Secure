@@ -31,6 +31,7 @@ export function ScanTab({ onDetected, onError, saving, switchToManual }: ScanTab
   const [starting, setStarting] = useState(true);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [decoding, setDecoding] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
   const onDetectedRef = useRef(onDetected);
   const onErrorRef = useRef(onError);
