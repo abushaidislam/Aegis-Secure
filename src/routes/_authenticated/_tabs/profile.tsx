@@ -119,7 +119,7 @@ function ProfilePage() {
     (async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, theme_pref")
+        .select("display_name, avatar_url, theme_pref, locale")
         .eq("id", user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -131,6 +131,10 @@ function ProfilePage() {
         setAvatarPath(data?.avatar_url ?? null);
         const p = data?.theme_pref;
         if (p === "system" || p === "light" || p === "dark") setThemePrefState(p);
+        const l = data?.locale as LocalePref | null | undefined;
+        if (l && (l === "system" || SUPPORTED_LOCALES.some((sl) => sl.code === l))) {
+          setLocalePrefState(l);
+        }
       }
       setLoading(false);
     })();
