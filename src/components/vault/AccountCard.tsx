@@ -672,7 +672,11 @@ export function AccountCard({
             </motion.span>
           )}
 
-          <RingTimer progress={progress} remaining={remaining} warn={warn} />
+          {isHotp ? (
+            <HotpRefreshButton onClick={refreshHotp} busy={hotpBusy} counter={hotpCounter} />
+          ) : (
+            <RingTimer progress={progress} remaining={remaining} warn={warn} />
+          )}
         </div>
 
         <div className="flex items-baseline justify-between gap-3 pl-[52px]">
