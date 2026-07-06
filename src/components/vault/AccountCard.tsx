@@ -1235,8 +1235,8 @@ export function AccountCard({
                           key="edit-hint"
                           initial={{ opacity: 0, height: 0, marginBottom: 0, y: -4 }}
                           animate={{ opacity: 1, height: "auto", marginBottom: 16, y: 0 }}
-                          exit={{ opacity: 0, height: 0, marginBottom: 0, y: -4, transition: EDIT_COLLAPSE }}
-                          transition={EDIT_EXPAND}
+                          exit={{ opacity: 0, height: 0, marginBottom: 0, y: -4, transition: collapseT }}
+                          transition={expandT}
                           style={{ overflow: "hidden" }}
                         >
                           <div
