@@ -281,11 +281,29 @@ async function verifySyncSig(
 }
 
 /* --------------------------------------------------------------------- */
+/*  TOTP                                                                 */
+/* --------------------------------------------------------------------- */
+
+function generateCode(account: ExtAccount): string {
+  if (account.otp_type === "hotp") {
+    throw new Error("HOTP not supported in extension");
+  }
+  const totp = new OTPAuth.TOTP({
+    issuer: account.issuer,
+    label: account.label,
+    algorithm: account.algorithm,
+    digits: account.digits,
+    period: account.period,
+    secret: OTPAuth.Secret.fromBase32(account.secret),
+  });
+  return totp.generate();
+}
+
+/* --------------------------------------------------------------------- */
 /*  Handlers                                                             */
 /* --------------------------------------------------------------------- */
 
-// SYNC_VAULT is async now (HMAC verify uses crypto.subtle). Everything
-// else stays sync; the caller wraps this in a Promise where needed.
+// SYNC_VAULT / GET_PAIRING are async (crypto.subtle + chrome.storage).
 async function handle(msg: Message, sender: chrome.runtime.MessageSender): Promise<Response> {
   switch (msg.type) {
     case "PING":
@@ -293,6 +311,12 @@ async function handle(msg: Message, sender: chrome.runtime.MessageSender): Promi
 
     case "GET_VERSION":
       return { ok: true, version: chrome.runtime.getManifest().version };
+
+    case "GET_PAIRING": {
+      const pairingKey = await getPairingKey();
+      swLog("GET_PAIRING issued");
+      return { ok: true, pairingKey };
+    }
 
     case "GET_STATE": {
       const unlockedNow = isUnlocked();
@@ -324,9 +348,6 @@ async function handle(msg: Message, sender: chrome.runtime.MessageSender): Promi
       }
       if (!Array.isArray(msg.accounts)) { swLog("SYNC_VAULT reject: bad_payload"); return { ok: false, error: "bad_payload" }; }
       if (msg.accounts.length > MAX_ACCOUNTS) { swLog("SYNC_VAULT reject: too_many_accounts", msg.accounts.length); return { ok: false, error: "too_many_accounts" }; }
-      // Optional syncSeq: must be a finite non-negative integer if present.
-      // The web app increments this per push so a heartbeat GET_STATE can
-      // detect that the extension is running with a stale vault.
       let seq = 0;
       if (msg.syncSeq !== undefined) {
         if (
@@ -340,12 +361,33 @@ async function handle(msg: Message, sender: chrome.runtime.MessageSender): Promi
         }
         seq = msg.syncSeq;
       }
-      // Validate every row; reject the whole batch on any failure so we
-      // never store a partially-corrupt vault.
       const cleaned: ExtAccount[] = [];
       for (const raw of msg.accounts) {
         if (!validateAccount(raw)) { swLog("SYNC_VAULT reject: bad_account_shape"); return { ok: false, error: "bad_account_shape" }; }
         cleaned.push(raw);
+      }
+      // HMAC gate — see the pairing block above for the canonical string.
+      // Required for every external call. Popup / same-extension pushes
+      // (rare — the popup does not push) may omit and use origin trust.
+      const isExternal = !!sender.origin && sender.id !== chrome.runtime.id;
+      if (isExternal) {
+        if (typeof msg.ts !== "number" || typeof msg.nonce !== "string" || typeof msg.sig !== "string") {
+          swLog("SYNC_VAULT reject: unsigned external call");
+          return { ok: false, error: "unsigned" };
+        }
+        const key = await getPairingKey();
+        const verdict = await verifySyncSig(key, {
+          userId: msg.userId,
+          syncSeq: seq,
+          ts: msg.ts,
+          nonce: msg.nonce,
+          sig: msg.sig,
+          accounts: cleaned,
+        });
+        if (!verdict.ok) {
+          swLog("SYNC_VAULT reject:", verdict.error);
+          return { ok: false, error: verdict.error };
+        }
       }
       const ttl = Math.min(Math.max(msg.ttlMs ?? IDLE_LOCK_MS, 30_000), IDLE_LOCK_MS);
       const now = Date.now();
@@ -356,7 +398,7 @@ async function handle(msg: Message, sender: chrome.runtime.MessageSender): Promi
         syncedAt: now,
         syncSeq: seq,
       };
-      swLog("SYNC_VAULT ok", { seq, count: cleaned.length, ttlMs: ttl });
+      swLog("SYNC_VAULT ok", { seq, count: cleaned.length, ttlMs: ttl, signed: isExternal });
       return { ok: true, accountCount: cleaned.length, syncSeq: seq, syncedAt: now };
     }
 
