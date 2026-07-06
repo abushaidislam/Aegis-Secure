@@ -126,9 +126,10 @@ on reconnect. Lighthouse PWA ≥ 90, main bundle ≤ 250 KB gzipped.
 - [x] Tag filter bar above the vault list with active-tag pills + clear
 - [x] Tag manager sheet (rename, merge, delete) with offline queue via `vault-tag-queue`
 
-### 7.2 Drag-and-drop reorder `[P1]`
-- [ ] `@dnd-kit/core` on vault grid, writes existing `sort_order` column
-- [ ] Optimistic reorder + debounced batch update
+### 7.2 Drag-and-drop reorder `[P1]` `[done]`
+- [x] `@dnd-kit/core` + `sortable` on the vault list; long-press (220ms) activation preserves tap-to-copy on mobile
+- [x] Writes existing `sort_order` column via `reorderAccounts()`; local state + IndexedDB mirror patched optimistically, server batch flushed after 400ms debounce
+- [x] Two `SortableContext`s (favorites / others) keep the fav grouping intact; DnD auto-disabled while filtering (query or tag filter) or offline
 
 ### 7.3 Bulk operations `[P1]`
 - [ ] Long-press to enter selection mode
