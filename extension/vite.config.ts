@@ -10,11 +10,13 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 import fs from "node:fs";
+import { storeListing } from "./store-listing.config";
 
 const ROOT = path.resolve(__dirname);
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const TARGET_DIR = (process.env.TARGET ?? "chrome").toLowerCase() === "firefox" ? "dist-ext-firefox" : "dist-ext";
 const OUT_DIR = path.resolve(PROJECT_ROOT, TARGET_DIR);
+const META_DIR = path.resolve(PROJECT_ROOT, "dist-ext-meta");
 
 // Read the same VITE_* env the web app uses so we bake the correct
 // Supabase URL into the manifest's CSP `connect-src`.
@@ -72,6 +74,12 @@ function extensionManifestPlugin() {
         .replaceAll("__APP_ORIGIN__", APP_ORIGIN)
         .replaceAll("__APP_PREVIEW_ORIGIN__", APP_PREVIEW_ORIGIN);
 
+      // Inject store-listing homepage URL so `chrome://extensions` and AMO
+      // both show a working "Homepage" link. Sourced from store-listing.config.ts.
+      const parsedBase = JSON.parse(rendered);
+      parsedBase.homepage_url = storeListing.homepageUrl;
+      rendered = JSON.stringify(parsedBase, null, 2);
+
       if (TARGET === "firefox") {
         const parsed = JSON.parse(rendered);
         // Firefox MV3: classic background scripts, no `type: module`.
@@ -100,6 +108,23 @@ function extensionManifestPlugin() {
 
       // @ts-expect-error - rollup plugin context is untyped here
       this.emitFile({ type: "asset", fileName: "manifest.json", source: rendered });
+
+      // Write the store-listing metadata OUTSIDE the extension bundle
+      // (stores reject unexpected files inside the zip). CI + humans read
+      // this to fill out CWS / AMO forms without re-typing URLs.
+      try {
+        fs.mkdirSync(META_DIR, { recursive: true });
+        fs.writeFileSync(
+          path.join(META_DIR, `${TARGET}-store-listing.json`),
+          JSON.stringify(
+            { target: TARGET, version: parsedBase.version, ...storeListing },
+            null,
+            2,
+          ),
+        );
+      } catch (err) {
+        console.warn("[aegis-ext] failed to write store-listing meta:", err);
+      }
     },
   };
 }

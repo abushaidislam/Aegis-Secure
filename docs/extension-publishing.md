@@ -1,5 +1,31 @@
 # Aegis Extension — Publishing & Distribution
 
+## Store listing config (single source of truth)
+
+All URLs and justification strings the CWS / AMO forms ask for live in
+**`extension/store-listing.config.ts`**. Change a domain or policy URL there
+and every build picks it up — the manifest's `homepage_url`, the generated
+`dist-ext-meta/<target>-store-listing.json`, and this document all read the
+same values.
+
+Override any field at build time via env:
+
+| Field | Env var | Fallback |
+| --- | --- | --- |
+| Homepage | `VITE_EXT_HOMEPAGE_URL` | `VITE_APP_URL` |
+| Privacy policy | `VITE_EXT_PRIVACY_URL` | `<VITE_APP_URL>/privacy` |
+| Terms | `VITE_EXT_TERMS_URL` | `<VITE_APP_URL>/terms` |
+| Support page | `VITE_EXT_SUPPORT_URL` | `<VITE_APP_URL>/support` |
+| Support email | `VITE_EXT_SUPPORT_EMAIL` | `support@aegis.local` |
+| Source code | `VITE_EXT_SOURCE_URL` | *(empty — omit on AMO if unset)* |
+| Single purpose | `VITE_EXT_SINGLE_PURPOSE` | see config |
+| Category | `VITE_EXT_CATEGORY` | Productivity / Password Managers |
+| Reviewer notes | `VITE_EXT_REVIEWER_NOTES` | see config |
+
+After each `bun run build:ext[:firefox]`, the resolved values are dumped to
+`dist-ext-meta/<chrome|firefox>-store-listing.json` — copy fields straight
+from there into the store submission form.
+
 ## Version 0.2.0 (PR 3)
 
 **Security:**
@@ -21,19 +47,18 @@
 1. `bun run package:ext:chrome`
 2. Open https://chrome.google.com/webstore/devconsole (one-time $5 fee).
 3. **New item** → upload `public/aegis-extension-chrome.zip`.
-4. Store listing:
+4. Store listing — every field below is pre-resolved in
+   `dist-ext-meta/chrome-store-listing.json`; copy from there instead of retyping:
    - **Description:** copy from `extension/manifest.json` (`description`) and expand.
-   - **Category:** *Productivity → Password Managers*.
+   - **Category:** `storeListing.category`.
    - **Icons:** 128×128 auto-picked from `icons/icon-128.png`.
    - **Screenshots:** 1280×800 or 640×400 (min 1, max 5) — capture popup + fill-in-page flows.
-   - **Privacy policy URL:** required. Use `<APP_URL>/privacy` (add page to web app if missing).
-5. **Permissions justification:**
-   - `storage` → holds the HMAC pairing key and clipboard-clear alarms.
-   - `activeTab` → read current tab URL to rank matching accounts.
-   - `scripting` → auto-fill the focused OTP input on user click.
-   - `alarms` → auto-clear clipboard 30 s after copy.
-   - `externally_connectable` → only the two Aegis app origins (see manifest).
-6. **Single-purpose statement:** "Auto-fills time-based one-time passcodes (TOTP) from the user's Aegis vault."
+   - **Homepage URL:** `storeListing.homepageUrl`.
+   - **Privacy policy URL:** `storeListing.privacyPolicyUrl` (required).
+   - **Terms URL:** `storeListing.termsUrl`.
+   - **Support URL / email:** `storeListing.supportUrl` / `storeListing.supportEmail`.
+5. **Permissions justification:** copy from `storeListing.permissionJustifications` — one line per permission (`storage`, `activeTab`, `scripting`, `alarms`, `externally_connectable`).
+6. **Single-purpose statement:** `storeListing.singlePurpose`.
 7. Submit for review (typically 1–3 business days).
 
 ## Firefox Add-ons (AMO) submission
@@ -41,7 +66,7 @@
 1. `bun run package:ext:firefox`
 2. Open https://addons.mozilla.org/developers/ (free account).
 3. **Submit a new add-on** → upload `public/aegis-extension-firefox.zip`.
-4. Same listing content as CWS.
+4. Listing content: copy from `dist-ext-meta/firefox-store-listing.json` (same fields as CWS, plus `storeListing.sourceCodeUrl` if set and `storeListing.reviewerNotes` for the reviewer form).
 5. `browser_specific_settings.gecko.id` is baked in as `aegis@lovable.app` (override with `GECKO_ID=…`).
 6. Firefox requires `strict_min_version: "128.0"` (MV3 stability threshold).
 

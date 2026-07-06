@@ -1,0 +1,20 @@
+{
+  "target": "chrome",
+  "version": "0.2.0",
+  "homepageUrl": "https://hug-machine-maker.lovable.app",
+  "privacyPolicyUrl": "https://hug-machine-maker.lovable.app/privacy",
+  "termsUrl": "https://hug-machine-maker.lovable.app/terms",
+  "supportUrl": "https://hug-machine-maker.lovable.app/support",
+  "supportEmail": "support@aegis.local",
+  "sourceCodeUrl": "",
+  "singlePurpose": "Auto-fills time-based one-time passcodes (TOTP) from the user's Aegis vault.",
+  "category": "Productivity / Password Managers",
+  "permissionJustifications": {
+    "storage": "Holds the HMAC pairing key and clipboard-clear alarm state locally.",
+    "activeTab": "Reads the current tab's URL to rank matching TOTP accounts on demand.",
+    "scripting": "Injects the OTP value into the focused input after the user clicks Fill.",
+    "alarms": "Auto-clears the clipboard 30 seconds after the user copies a code.",
+    "externally_connectable": "Only the Aegis app origins (see manifest.externally_connectable.matches) may send messages."
+  },
+  "reviewerNotes": "Build: `bun install && bun run build:ext` (Chrome) or `bun run build:ext:firefox`.\nThe extension is fully client-side; no test account required for the popup UI.\nTo exercise autofill end-to-end, create a free account at the homepage URL, add a TOTP entry, then open any login form."
+}
