@@ -411,22 +411,35 @@ export function AccountCard({
     if (!deleting) setConfirmOpen(false);
   });
 
+  const isHotp = account.otp_type === "hotp";
   const period = account.period;
   const elapsed = Math.floor(now / 1000) % period;
-  const remaining = period - elapsed;
-  const progress = elapsed / period;
+  // HOTP has no clock — the ring becomes a static ring while a Refresh
+  // button drives the counter instead. Set remaining/progress to safe
+  // idle values so nothing else in the render tree needs to branch.
+  const remaining = isHotp ? period : period - elapsed;
+  const progress = isHotp ? 0 : elapsed / period;
+
+  const [hotpBusy, setHotpBusy] = useState(false);
+  const [hotpCounter, setHotpCounter] = useState<number>(account.counter ?? 0);
+  useEffect(() => {
+    if (isHotp) setHotpCounter(account.counter ?? 0);
+  }, [account.counter, isHotp]);
+
+  const codeAccount = isHotp ? { ...account, counter: hotpCounter } : account;
 
   const code = useMemo(() => {
     try {
-      return generateCode(account, now);
+      return generateCode(codeAccount, now);
     } catch {
       return "------";
     }
-  }, [account, now]);
+  }, [codeAccount, now]);
 
   // Peek at the next code in the last few seconds so the user can wait
-  // for a fresh one instead of copying a code about to expire.
-  const showNext = remaining <= 5;
+  // for a fresh one instead of copying a code about to expire. HOTP
+  // doesn't roll on its own, so the peek is disabled there.
+  const showNext = !isHotp && remaining <= 5;
   const nextCode = useMemo(() => {
     if (!showNext) return "";
     try {
@@ -435,6 +448,26 @@ export function AccountCard({
       return "";
     }
   }, [account, now, period, showNext]);
+
+  const refreshHotp = async () => {
+    if (!isHotp || hotpBusy) return;
+    const key = getVaultKey();
+    if (!key) {
+      toast.error("Unlock your vault to refresh HOTP codes.");
+      return;
+    }
+    setHotpBusy(true);
+    try {
+      const { counter, queued } = await advanceHotpCounter(key, account.id, hotpCounter);
+      setHotpCounter(counter);
+      if (typeof navigator.vibrate === "function") navigator.vibrate(6);
+      if (queued) toast.message("Next code · will sync when online");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not advance counter.");
+    } finally {
+      setHotpBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!copied) return;
