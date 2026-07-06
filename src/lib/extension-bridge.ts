@@ -160,9 +160,10 @@ async function sha256Hex(input: string): Promise<string> {
 }
 
 async function hmacHex(keyB64: string, msg: string): Promise<string> {
+  const rawKey = b64ToBytes(keyB64);
   const key = await crypto.subtle.importKey(
     "raw",
-    b64ToBytes(keyB64),
+    rawKey.buffer.slice(rawKey.byteOffset, rawKey.byteOffset + rawKey.byteLength),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
