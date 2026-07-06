@@ -13,7 +13,8 @@ import fs from "node:fs";
 
 const ROOT = path.resolve(__dirname);
 const PROJECT_ROOT = path.resolve(__dirname, "..");
-const OUT_DIR = path.resolve(PROJECT_ROOT, "dist-ext");
+const TARGET_DIR = (process.env.TARGET ?? "chrome").toLowerCase() === "firefox" ? "dist-ext-firefox" : "dist-ext";
+const OUT_DIR = path.resolve(PROJECT_ROOT, TARGET_DIR);
 
 // Read the same VITE_* env the web app uses so we bake the correct
 // Supabase URL into the manifest's CSP `connect-src`.
