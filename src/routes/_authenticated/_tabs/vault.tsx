@@ -1707,20 +1707,11 @@ function BulkTagSheet({
       >
         <div className="mb-3 flex items-start justify-between">
           <div>
-            <div
-              className="text-[18px]"
-              style={{
-                fontFamily: "'Playfair Display', serif",
-                fontWeight: 600,
-                letterSpacing: "-0.01em",
-                color: CHARCOAL,
-              }}
-            >
-              Add tag
-            </div>
-            <div className="mt-1 text-[12.5px]" style={{ color: MUTED }}>
+            <div style={typeSheetTitleLg}>Add tag</div>
+            <div className="mt-1" style={{ ...typeSubLabel, fontSize: 12.5 }}>
               Pick a tag to add to every selected account.
             </div>
+
           </div>
           <motion.button
             whileTap={{ scale: 0.9 }}
