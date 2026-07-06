@@ -1410,16 +1410,8 @@ export function AccountCard({
                     </AnimatePresence>
 
 
-                    {/* Close */}
-                    <motion.button
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => setDetailsOpen(false)}
-                      className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full"
-                      style={{ background: "rgb(var(--aegis-ink-rgb) / 0.06)", color: CHARCOAL }}
-                      aria-label="Close"
-                    >
-                      <X className="h-4 w-4" strokeWidth={1.8} />
-                    </motion.button>
+
+
                   </motion.div>
                 </motion.div>
               )}
