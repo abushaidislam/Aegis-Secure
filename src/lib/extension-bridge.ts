@@ -88,7 +88,7 @@ export function getLocalSyncSeq(): number {
 
 const PAIRING_LS_PREFIX = "aegis:ext:pairing:";
 
-function pairingCache = new Map<string, string>();
+const pairingCache = new Map<string, string>();
 
 function readPairing(extId: string): string | null {
   if (pairingCache.has(extId)) return pairingCache.get(extId)!;
