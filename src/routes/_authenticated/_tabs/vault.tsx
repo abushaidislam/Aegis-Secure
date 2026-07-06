@@ -1432,8 +1432,9 @@ function TagManagerSheet({
                           onClick={() => doDelete(tag)}
                           className="rounded-full px-2.5 py-1 text-[11px] disabled:opacity-60"
                           style={{
-                            background: "rgba(178,58,42,0.08)",
-                            color: "#b23a2a",
+                            background: "rgb(var(--aegis-danger-rgb) / 0.08)",
+                            color: "var(--aegis-danger)",
+
                             fontWeight: 600,
                           }}
                         >
@@ -1678,8 +1679,9 @@ function BulkIconBtn({
       aria-label={label}
       className="flex h-9 w-9 items-center justify-center rounded-full transition-opacity disabled:opacity-40"
       style={{
-        background: danger ? "rgba(178,58,42,0.10)" : "rgb(var(--aegis-ink-rgb) / 0.06)",
-        color: danger ? "#b23a2a" : CHARCOAL,
+        background: danger ? "rgb(var(--aegis-danger-rgb) / 0.10)" : "rgb(var(--aegis-ink-rgb) / 0.06)",
+        color: danger ? "var(--aegis-danger)" : CHARCOAL,
+
       }}
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} /> : children}

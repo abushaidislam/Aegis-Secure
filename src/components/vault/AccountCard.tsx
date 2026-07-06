@@ -24,13 +24,11 @@ import {
   type DecryptedAccount,
 } from "@/lib/vault-accounts";
 import { getVaultKey } from "@/lib/vault-session";
-import { BORDER, CHARCOAL, CREAM_SOFT, MUTED, soft } from "@/components/aegis/chrome";
+import { BORDER, CHARCOAL, CREAM_SOFT, DANGER, FAV, MUTED, soft } from "@/components/aegis/chrome";
 import { logoUrlFor, domainFromIssuer } from "@/lib/issuer-domain";
 import { useHideCodes } from "@/lib/vault-privacy";
 import { TagChip, TagInput } from "@/components/vault/tags";
 
-const DANGER = "#b23a2a";
-const FAV = "#c99a2b";
 
 // Shared edit-mode motion. iOS-style ease with a slightly longer collapse
 // than expand so exit feels intentional, not abrupt. Opacity resolves a hair
@@ -1417,9 +1415,10 @@ export function AccountCard({
                             disabled={!onDelete}
                             className="flex items-center justify-center gap-2 rounded-[14px] px-3 py-3 text-[13px] disabled:opacity-50"
                             style={{
-                              background: "rgba(178,58,42,0.06)",
+                              background: "rgb(var(--aegis-danger-rgb) / 0.06)",
                               color: DANGER,
-                              border: `1px solid rgba(178,58,42,0.25)`,
+                              border: `1px solid rgb(var(--aegis-danger-rgb) / 0.25)`,
+
                               fontWeight: 600,
                             }}
                           >
