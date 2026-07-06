@@ -44,6 +44,16 @@ import { AccountCard } from "@/components/vault/AccountCard";
 import { PRESET_TAGS, TagChip } from "@/components/vault/tags";
 import { ExportPassphraseSheet } from "@/components/vault/ExportPassphraseSheet";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Shield,
   Plus,
   Loader2,
@@ -107,6 +117,7 @@ function VaultPage() {
   const [bulkTagOpen, setBulkTagOpen] = useState(false);
   const [bulkExportOpen, setBulkExportOpen] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [pendingTagCount, setPendingTagCount] = useState<number>(
     () => (typeof window === "undefined" ? 0 : listQueuedTagUpdates().length),
   );
@@ -702,11 +713,41 @@ function VaultPage() {
             selectAllVisible((filtered ?? accounts).map((a) => a.id))
           }
           onCancel={exitSelection}
-          onDelete={runBulkDelete}
+          onDelete={() => setBulkDeleteConfirm(true)}
           onTag={() => setBulkTagOpen(true)}
           onExport={() => setBulkExportOpen(true)}
         />
       )}
+
+      <AlertDialog
+        open={bulkDeleteConfirm}
+        onOpenChange={(o) => !bulkBusy && setBulkDeleteConfirm(o)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {selectedIds.size} account{selectedIds.size === 1 ? "" : "s"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the selected account{selectedIds.size === 1 ? "" : "s"} and their secrets from your vault. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkBusy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={bulkBusy}
+              onClick={async (e) => {
+                e.preventDefault();
+                setBulkDeleteConfirm(false);
+                await runBulkDelete();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkBusy ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {bulkTagOpen && (
         <BulkTagSheet
