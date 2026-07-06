@@ -102,8 +102,8 @@ Baseline biggest chunks (from `perf/baseline.json`):
 `@zxing/browser` 1.07 MB · `@tanstack/react-router` 656 KB · `esm` 458 KB
 · `index` 450 KB · `vault_.recovery` 419 KB · `jspdf` 477 KB.
 
-- [ ] Dynamic-import `@zxing/browser` inside `ScanTab` only
-- [ ] Dynamic-import `jspdf` inside the recovery route only
+- [x] Dynamic-import `@zxing/browser` inside `ScanTab` + importer routes only
+- [x] Dynamic-import `jspdf` inside the recovery route only
 - [ ] Manual chunk-split for the router runtime
 - [ ] **Exit target:** main entry ≤ 250 KB gzipped, first vault paint on 3G ≤ 2.5s, Lighthouse PWA 90+
 
