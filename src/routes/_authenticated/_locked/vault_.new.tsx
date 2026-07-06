@@ -9,6 +9,7 @@ import {
   isValidBase32Secret,
   parseOtpauthUri,
   type Algorithm,
+  type OtpType,
 } from "@/lib/vault-accounts";
 import { TagInput } from "@/components/vault/tags";
 import { ScanTab } from "@/components/vault/ScanTab";
