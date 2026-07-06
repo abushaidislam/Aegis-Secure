@@ -10,9 +10,10 @@ import {
 import {
   deleteAccount,
   flushPendingTagUpdates,
-  listAccountsWithCache,
+  readCachedAccountsOnly,
   setAccountFavorite,
   setAccountTags,
+  syncAccountsFromServer,
   type DecryptedAccount,
 } from "@/lib/vault-accounts";
 import {
@@ -152,27 +153,83 @@ function VaultPage() {
     return () => window.clearInterval(id);
   }, []);
 
+  // Phase 6.2: cache-first paint, then background hydrate from the
+  // server. Cache resolves synchronously enough on IndexedDB that the
+  // vault renders instantly on repeat visits; the server round-trip
+  // updates in place when it lands. On offline we simply skip the
+  // network hop and lean on the cache.
   useEffect(() => {
     let cancelled = false;
     const key = getVaultKey();
     if (!key) return;
     setError(null);
-    listAccountsWithCache(key, user.id)
-      .then(({ accounts: list, source: src }) => {
+
+    // 1) Paint from cache immediately.
+    void (async () => {
+      try {
+        const cached = await readCachedAccountsOnly(key, user.id);
         if (cancelled) return;
-        setAccounts(list);
-        setSource(src);
-        setRetrying(false);
-      })
-      .catch((err: unknown) => {
+        if (cached) {
+          setAccounts(cached);
+          setSource("cache");
+        }
+      } catch {
+        // Cache read is best-effort — the sync step below still runs.
+      }
+
+      // 2) If online, hydrate from the server and swap in the fresh list.
+      if (!online) {
+        // Offline with no cache = truly empty state.
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Failed to load vault.");
+        setAccounts((prev) => prev ?? []);
+        setSource((prev) => prev ?? "empty");
         setRetrying(false);
-      });
+        return;
+      }
+
+      try {
+        const fresh = await syncAccountsFromServer(key, user.id);
+        if (cancelled) return;
+        setAccounts(fresh);
+        setSource("network");
+        setRetrying(false);
+      } catch (err) {
+        if (cancelled) return;
+        // Sync failed but a cache paint may already be on screen —
+        // surface a soft error only when there's nothing to show.
+        setAccounts((prev) => {
+          if (prev) return prev;
+          setError(err instanceof Error ? err.message : "Failed to load vault.");
+          return [];
+        });
+        setSource((prev) => prev ?? "cache");
+        setRetrying(false);
+      }
+    })();
+
     return () => {
       cancelled = true;
     };
   }, [unlocked, user.id, online, reloadKey]);
+
+  // Invalidate on focus / visibility change — a returning user should
+  // see fresh codes without a manual refresh.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onFocus = () => {
+      if (!navigator.onLine) return;
+      setReloadKey((k) => k + 1);
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") onFocus();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
 
   const retry = useCallback(() => {
     setRetrying(true);
