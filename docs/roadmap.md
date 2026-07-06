@@ -18,8 +18,12 @@ post-launch. Tick `- [x]` as each task lands.
 manifest, service worker, guarded registration, protocol handler, share
 target, install prompt behind `feature_flags.pwa_install_prompt`,
 encrypted IndexedDB vault mirror with cache-first paint, delta sync,
-optimistic favorite window, focus/visibility invalidation). Currently
-on **Phase 6.3 — route-level code splitting**.
+optimistic favorite window, focus/visibility invalidation).
+**Phase 6.3 partially shipped** — `@zxing/browser` + `jspdf` now
+dynamic-imported at call sites; router manual chunk-split + bundle-size
+exit target still pending. **Offline export/restore + cache recovery
+integration tests landed** (16 tests, `src/lib/offline-recovery.test.ts`).
+Currently on **Phase 6.3 tail + 6.4 (Offline UX affordances)**.
 
 ---
 
