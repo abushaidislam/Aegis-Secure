@@ -427,28 +427,25 @@ function ProfilePage() {
 
         <SectionLabel>Appearance</SectionLabel>
         <SettingsGroup>
-          <ThemeRow
-            icon={<Monitor className="h-4 w-4" strokeWidth={1.8} />}
-            title="System"
-            description="Follow your device."
-            active={themePref === "system"}
-            onClick={() => chooseTheme("system")}
-          />
-          <ThemeRow
-            icon={<Sun className="h-4 w-4" strokeWidth={1.8} />}
-            title="Light"
-            description="Warm cream, always."
-            active={themePref === "light"}
-            onClick={() => chooseTheme("light")}
-          />
-          <ThemeRow
-            icon={<Moon className="h-4 w-4" strokeWidth={1.8} />}
-            title="Dark"
-            description="Easy on the eyes."
-            active={themePref === "dark"}
-            onClick={() => chooseTheme("dark")}
+          <SettingsRow
+            icon={
+              themePref === "dark" ? (
+                <Moon className="h-4 w-4" strokeWidth={1.8} />
+              ) : themePref === "light" ? (
+                <Sun className="h-4 w-4" strokeWidth={1.8} />
+              ) : (
+                <Monitor className="h-4 w-4" strokeWidth={1.8} />
+              )
+            }
+            title="Theme"
+            value={
+              themePref === "system" ? "System" : themePref === "light" ? "Light" : "Dark"
+            }
+            onClick={() => setThemeSheet(true)}
+            chevron
           />
         </SettingsGroup>
+
 
 
         <SectionLabel>Session</SectionLabel>
