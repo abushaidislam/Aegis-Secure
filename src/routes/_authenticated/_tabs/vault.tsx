@@ -1096,32 +1096,22 @@ function TagFilterRow({
       {/* Label row */}
       <div className="mb-1.5 flex items-center justify-between px-0.5">
         <div className="flex items-center gap-2">
-          <span
-            className="text-[9.5px] uppercase"
-            style={{
-              color: MUTED,
-              fontFamily: "'JetBrains Mono', monospace",
-              letterSpacing: "0.22em",
-              fontWeight: 600,
-            }}
-          >
-            Filter
-          </span>
+          <span style={typeEyebrow}>Filter</span>
           {activeCount > 0 && (
             <span
-              className="rounded-full px-1.5 py-0.5 text-[10px]"
+              className="rounded-full px-1.5 py-0.5"
               style={{
+                ...typeBadge,
                 background: CHARCOAL,
-                color: CREAM_SOFT,
                 fontWeight: 700,
-                lineHeight: 1,
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: "var(--font-mono)",
                 letterSpacing: "0.06em",
               }}
             >
               {activeCount}
             </span>
           )}
+
         </div>
         <div className="flex items-center gap-1">
           {activeCount > 0 && (
