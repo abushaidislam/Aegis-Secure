@@ -129,6 +129,35 @@ function VaultPage() {
     setPendingTagCount(listQueuedTagUpdates().length);
   }, []);
 
+  // Phase 7.2 — DnD reorder. Server flush is debounced per-group so a
+  // fast series of drags collapses into one batched write.
+  const reorderTimersRef = useRef<Record<string, number>>({});
+  const handleReorder = useCallback((group: "fav" | "other", orderedIds: string[]) => {
+    setAccounts((prev) => {
+      if (!prev) return prev;
+      const byId = new Map(prev.map((a) => [a.id, a]));
+      const reordered = orderedIds
+        .map((id, i) => {
+          const acc = byId.get(id);
+          return acc ? { ...acc, sort_order: i } : null;
+        })
+        .filter((a): a is DecryptedAccount => a !== null);
+      const orderedSet = new Set(orderedIds);
+      const untouched = prev.filter((a) => !orderedSet.has(a.id));
+      // Favorites always render first; recombine in that order.
+      return group === "fav" ? [...reordered, ...untouched] : [...untouched, ...reordered];
+    });
+
+    const timers = reorderTimersRef.current;
+    if (timers[group]) window.clearTimeout(timers[group]);
+    timers[group] = window.setTimeout(() => {
+      void reorderAccounts(orderedIds).catch((err) => {
+        setError(err instanceof Error ? err.message : "Could not save the new order.");
+      });
+      delete timers[group];
+    }, 400);
+  }, []);
+
   const handleDetailsChanged = useCallback(
     (id: string, patch: { issuer: string; label: string }) => {
       setAccounts((prev) =>
