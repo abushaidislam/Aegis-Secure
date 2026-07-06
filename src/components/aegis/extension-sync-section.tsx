@@ -1,25 +1,89 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Puzzle, Download } from "lucide-react";
+import { Loader2, Puzzle, Chrome, Globe, Flame, ChevronDown, ExternalLink, CheckCircle2 } from "lucide-react";
 import { SectionLabel, SettingsGroup, SettingsRow } from "@/components/aegis/settings";
 import { supabase } from "@/integrations/supabase/client";
 import { getVaultKey, isVaultUnlocked, useVaultUnlocked } from "@/lib/vault-session";
 import { readCachedAccountsOnly, syncAccountsFromServer } from "@/lib/vault-accounts";
 import { syncVaultToExtension, isExtensionInstalled } from "@/lib/extension-bridge";
+import { MUTED, CHARCOAL, BORDER } from "@/components/aegis/chrome";
 
 /**
- * Pushes the unlocked vault to the Aegis browser extension so it can
- * autofill TOTP codes. Auto-detects the extension via a DOM marker
- * planted by the extension's `announce.js` content script — no ID
- * configuration required from the user.
+ * Extension section for the Security page.
+ *
+ * Before the extension is detected: shows three enabled install actions —
+ * Chrome, Edge (both use the Chrome zip), and Firefox — plus a
+ * collapsible "How to install" panel with the load-unpacked steps.
+ *
+ * After detection: shows a single "Sync to browser extension" row that
+ * pushes the unlocked vault via `syncVaultToExtension`.
  */
+
+const CHROME_ZIP = "/aegis-extension-chrome.zip";
+const FIREFOX_ZIP = "/aegis-extension-firefox.zip";
+
+async function downloadZip(url: string, filename: string): Promise<void> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+  const blob = await res.blob();
+  const a = document.createElement("a");
+  const href = URL.createObjectURL(blob);
+  a.href = href;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(href), 1_000);
+}
+
+type BrowserKey = "chrome" | "edge" | "firefox";
+
+const BROWSERS: Array<{
+  key: BrowserKey;
+  label: string;
+  hint: string;
+  zip: string;
+  filename: string;
+  extensionsUrl: string;
+  icon: React.ReactNode;
+}> = [
+  {
+    key: "chrome",
+    label: "Install for Chrome",
+    hint: "Also works in Brave, Arc, Opera",
+    zip: CHROME_ZIP,
+    filename: "aegis-extension-chrome.zip",
+    extensionsUrl: "chrome://extensions",
+    icon: <Chrome className="h-4 w-4" strokeWidth={1.8} />,
+  },
+  {
+    key: "edge",
+    label: "Install for Microsoft Edge",
+    hint: "Uses the Chromium build",
+    zip: CHROME_ZIP,
+    filename: "aegis-extension-chrome.zip",
+    extensionsUrl: "edge://extensions",
+    icon: <Globe className="h-4 w-4" strokeWidth={1.8} />,
+  },
+  {
+    key: "firefox",
+    label: "Install for Firefox",
+    hint: "MV3 build, Firefox 128+",
+    zip: FIREFOX_ZIP,
+    filename: "aegis-extension-firefox.zip",
+    extensionsUrl: "about:debugging#/runtime/this-firefox",
+    icon: <Flame className="h-4 w-4" strokeWidth={1.8} />,
+  },
+];
+
 export function ExtensionSyncSection() {
   const [busy, setBusy] = useState(false);
+  const [downloading, setDownloading] = useState<BrowserKey | null>(null);
+  const [downloadedFor, setDownloadedFor] = useState<Set<BrowserKey>>(new Set());
   const [installed, setInstalled] = useState<boolean>(() => isExtensionInstalled());
+  const [showHelp, setShowHelp] = useState(false);
   const unlocked = useVaultUnlocked();
 
-  // Poll briefly on mount in case the announce script sets the marker
-  // slightly after React hydrates.
   useEffect(() => {
     if (installed) return;
     let n = 0;
@@ -38,6 +102,21 @@ export function ExtensionSyncSection() {
       window.removeEventListener("aegis:extension-ready", onReady);
     };
   }, [installed]);
+
+  async function handleDownload(browser: (typeof BROWSERS)[number]) {
+    if (downloading) return;
+    setDownloading(browser.key);
+    try {
+      await downloadZip(browser.zip, browser.filename);
+      setDownloadedFor((prev) => new Set(prev).add(browser.key));
+      setShowHelp(true);
+      toast.success(`Downloaded ${browser.filename}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Download failed");
+    } finally {
+      setDownloading(null);
+    }
+  }
 
   async function handleSync() {
     if (!isVaultUnlocked()) {
@@ -70,7 +149,7 @@ export function ExtensionSyncSection() {
           `Synced ${res.accountCount} account${res.accountCount === 1 ? "" : "s"} to extension`,
         );
       } else if (res.reason === "no_extension") {
-        toast.error("Chrome extension APIs unavailable in this browser");
+        toast.error("Browser extension APIs unavailable here");
       } else if (res.reason === "no_id") {
         toast.error("Aegis extension not detected — install it first");
       } else {
@@ -83,35 +162,98 @@ export function ExtensionSyncSection() {
     }
   }
 
-  const disabled = busy || !installed || !unlocked;
-  const description = !installed
-    ? "Install the Aegis browser extension, then come back to sync."
-    : !unlocked
-      ? "Unlock your vault first, then sync accounts to the extension."
-      : "Send unlocked accounts to the Aegis extension so it can autofill codes. Auto-clears after 5 min of inactivity.";
-
   return (
     <>
       <SectionLabel>Browser extension</SectionLabel>
       <SettingsGroup>
-        <SettingsRow
-          icon={
-            busy ? (
-              <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.8} />
-            ) : installed ? (
-              <Puzzle className="h-4 w-4" strokeWidth={1.8} />
-            ) : (
-              <Download className="h-4 w-4" strokeWidth={1.8} />
-            )
-          }
-          title={installed ? "Sync to browser extension" : "Install browser extension"}
-          description={description}
-          badge={installed ? "Detected" : undefined}
-          onClick={disabled ? undefined : handleSync}
-          disabled={disabled}
-          chevron
-        />
+        {installed ? (
+          <SettingsRow
+            icon={
+              busy ? (
+                <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.8} />
+              ) : (
+                <Puzzle className="h-4 w-4" strokeWidth={1.8} />
+              )
+            }
+            title="Sync to browser extension"
+            description={
+              !unlocked
+                ? "Unlock your vault first, then sync accounts to the extension."
+                : "Send unlocked accounts to the Aegis extension so it can autofill codes. Auto-clears after 5 min of inactivity."
+            }
+            badge="Detected"
+            onClick={busy || !unlocked ? undefined : handleSync}
+            disabled={busy || !unlocked}
+            chevron
+          />
+        ) : (
+          BROWSERS.map((b) => {
+            const isBusy = downloading === b.key;
+            const done = downloadedFor.has(b.key);
+            return (
+              <SettingsRow
+                key={b.key}
+                icon={
+                  isBusy ? (
+                    <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.8} />
+                  ) : done ? (
+                    <CheckCircle2 className="h-4 w-4" strokeWidth={1.8} />
+                  ) : (
+                    b.icon
+                  )
+                }
+                title={b.label}
+                description={done ? `Downloaded — now load unpacked in ${b.extensionsUrl}` : b.hint}
+                badge={done ? "Downloaded" : undefined}
+                onClick={downloading ? undefined : () => void handleDownload(b)}
+                disabled={!!downloading && !isBusy}
+                chevron
+              />
+            );
+          })
+        )}
       </SettingsGroup>
+
+      {!installed && (
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={() => setShowHelp((v) => !v)}
+            className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[13px]"
+            style={{ color: MUTED }}
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <ChevronDown
+                className="h-3.5 w-3.5 transition-transform"
+                style={{ transform: showHelp ? "rotate(0deg)" : "rotate(-90deg)" }}
+                strokeWidth={2}
+              />
+              How to install
+            </span>
+            <ExternalLink className="h-3 w-3" strokeWidth={2} />
+          </button>
+          {showHelp && (
+            <ol
+              className="mt-1 space-y-1.5 rounded-lg border px-4 py-3 text-[12.5px] leading-relaxed"
+              style={{ borderColor: BORDER, color: CHARCOAL }}
+            >
+              <li>1. Download the zip above for your browser.</li>
+              <li>2. Unzip the file to a folder you'll keep.</li>
+              <li>
+                3. Open <code className="rounded bg-black/5 px-1 py-0.5 text-[11.5px]">chrome://extensions</code>{" "}
+                (or <code className="rounded bg-black/5 px-1 py-0.5 text-[11.5px]">edge://extensions</code>,{" "}
+                <code className="rounded bg-black/5 px-1 py-0.5 text-[11.5px]">about:debugging</code> for Firefox).
+              </li>
+              <li>4. Enable <strong style={{ color: CHARCOAL }}>Developer mode</strong> (top-right).</li>
+              <li>
+                5. Click <strong style={{ color: CHARCOAL }}>Load unpacked</strong> (Chrome/Edge) or{" "}
+                <strong style={{ color: CHARCOAL }}>Load Temporary Add-on</strong> (Firefox) and select the unzipped folder.
+              </li>
+              <li>6. Return to this page — the sync option will appear automatically.</li>
+            </ol>
+          )}
+        </div>
+      )}
     </>
   );
 }
