@@ -1521,7 +1521,7 @@ function SearchField({ value, onChange }: { value: string; onChange: (v: string)
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search accounts"
-        className="flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-[color:rgba(95,95,93,0.7)]"
+        className="flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-[color:var(--aegis-placeholder)]"
         style={{ color: CHARCOAL }}
       />
       {value && (
