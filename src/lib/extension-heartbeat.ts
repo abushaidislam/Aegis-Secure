@@ -38,6 +38,24 @@ const MIN_RESYNC_INTERVAL_MS = 5_000;
 let lastResyncAt = 0;
 let inFlight = false;
 
+/**
+ * Opt-in debug logger. Enable in DevTools:
+ *   localStorage.setItem("aegis:debug:heartbeat", "1"); location.reload();
+ * Disable:
+ *   localStorage.removeItem("aegis:debug:heartbeat");
+ * See docs/extension-heartbeat-test.md for the full manual checklist.
+ */
+function hbDebug(): boolean {
+  try {
+    return typeof localStorage !== "undefined" && localStorage.getItem("aegis:debug:heartbeat") === "1";
+  } catch {
+    return false;
+  }
+}
+function hbLog(...args: unknown[]): void {
+  if (hbDebug()) console.log("[aegis-hb]", ...args);
+}
+
 async function currentUserId(): Promise<string | null> {
   try {
     const { data } = await supabase.auth.getUser();
@@ -47,41 +65,60 @@ async function currentUserId(): Promise<string | null> {
   }
 }
 
-async function resyncIfPossible(): Promise<void> {
-  if (inFlight) return;
-  if (Date.now() - lastResyncAt < MIN_RESYNC_INTERVAL_MS) return;
-  if (!isVaultUnlocked()) return;
+async function resyncIfPossible(reason: string): Promise<void> {
+  if (inFlight) { hbLog("resync skip: in-flight"); return; }
+  if (Date.now() - lastResyncAt < MIN_RESYNC_INTERVAL_MS) {
+    hbLog("resync skip: throttled", { sinceLastMs: Date.now() - lastResyncAt });
+    return;
+  }
+  if (!isVaultUnlocked()) { hbLog("resync skip: vault locked"); return; }
   const dek = getVaultKey();
-  if (!dek) return;
+  if (!dek) { hbLog("resync skip: no DEK"); return; }
   const userId = await currentUserId();
-  if (!userId) return;
+  if (!userId) { hbLog("resync skip: no user"); return; }
 
+  hbLog("resync start", { reason });
   inFlight = true;
   try {
     let accounts = await readCachedAccountsOnly(dek, userId);
     if (!accounts || accounts.length === 0) {
       accounts = await syncAccountsFromServer(dek, userId);
     }
-    if (!accounts || accounts.length === 0) return;
-    await syncVaultToExtension({ userId, accounts });
+    if (!accounts || accounts.length === 0) { hbLog("resync skip: no accounts"); return; }
+    const res = await syncVaultToExtension({ userId, accounts });
     lastResyncAt = Date.now();
-  } catch {
-    /* swallow — heartbeat retries on next tick */
+    hbLog("resync ok", res);
+  } catch (e) {
+    hbLog("resync error", e);
   } finally {
     inFlight = false;
   }
 }
 
 async function tick(): Promise<void> {
-  if (!isExtensionInstalled()) return;
-  if (!isVaultUnlocked()) return;
+  if (!isExtensionInstalled()) { hbLog("tick skip: extension not installed"); return; }
+  if (!isVaultUnlocked()) { hbLog("tick skip: vault locked"); return; }
 
   const state = await pingExtensionState();
-  if (!state.ok) return;
+  if (!state.ok) { hbLog("tick: ping failed", state); return; }
 
   const localSeq = getLocalSyncSeq();
   const needsResync = !state.unlocked || state.syncSeq < localSeq || state.syncSeq === 0;
-  if (needsResync) await resyncIfPossible();
+  hbLog("tick", {
+    extUnlocked: state.unlocked,
+    remoteSeq: state.syncSeq,
+    localSeq,
+    accountCount: state.accountCount,
+    needsResync,
+  });
+  if (needsResync) {
+    const reason = !state.unlocked
+      ? "ext_locked"
+      : state.syncSeq === 0
+        ? "seq_zero"
+        : "seq_mismatch";
+    await resyncIfPossible(reason);
+  }
 }
 
 /**

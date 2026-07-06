@@ -75,6 +75,15 @@ export type Response =
 const IDLE_LOCK_MS = 5 * 60 * 1000;
 const CLIPBOARD_CLEAR_MS = 30 * 1000;
 
+/**
+ * Verbose SW logging for heartbeat / eviction / lock testing.
+ * See docs/extension-heartbeat-test.md. Flip to false to silence.
+ */
+const SW_DEBUG = true;
+function swLog(...args: unknown[]): void {
+  if (SW_DEBUG) console.log("[aegis-sw]", ...args);
+}
+
 // Held in the SW's globalThis. MV3 will evict this when the worker is
 // suspended (~30 s of idleness) — that's a feature, not a bug: the vault
 // re-locks itself when nobody's looking.
@@ -193,6 +202,7 @@ function handle(msg: Message, sender: chrome.runtime.MessageSender): Response {
     case "GET_STATE": {
       const unlockedNow = isUnlocked();
       touch();
+      swLog("GET_STATE", { unlocked: unlockedNow, seq: unlockedNow ? unlocked!.syncSeq : 0, count: unlockedNow ? unlocked!.accounts.length : 0 });
       return {
         ok: true,
         unlocked: unlockedNow,
@@ -208,15 +218,17 @@ function handle(msg: Message, sender: chrome.runtime.MessageSender): Response {
     }
 
     case "LOCK":
+      swLog("LOCK requested");
       unlocked = null;
       return { ok: true };
 
     case "SYNC_VAULT": {
       if (typeof msg.userId !== "string" || msg.userId.length === 0 || msg.userId.length > MAX_USERID_LEN) {
+        swLog("SYNC_VAULT reject: bad_user_id");
         return { ok: false, error: "bad_user_id" };
       }
-      if (!Array.isArray(msg.accounts)) return { ok: false, error: "bad_payload" };
-      if (msg.accounts.length > MAX_ACCOUNTS) return { ok: false, error: "too_many_accounts" };
+      if (!Array.isArray(msg.accounts)) { swLog("SYNC_VAULT reject: bad_payload"); return { ok: false, error: "bad_payload" }; }
+      if (msg.accounts.length > MAX_ACCOUNTS) { swLog("SYNC_VAULT reject: too_many_accounts", msg.accounts.length); return { ok: false, error: "too_many_accounts" }; }
       // Optional syncSeq: must be a finite non-negative integer if present.
       // The web app increments this per push so a heartbeat GET_STATE can
       // detect that the extension is running with a stale vault.
@@ -228,6 +240,7 @@ function handle(msg: Message, sender: chrome.runtime.MessageSender): Response {
           msg.syncSeq < 0 ||
           !Number.isInteger(msg.syncSeq)
         ) {
+          swLog("SYNC_VAULT reject: bad_sync_seq", msg.syncSeq);
           return { ok: false, error: "bad_sync_seq" };
         }
         seq = msg.syncSeq;
@@ -236,7 +249,7 @@ function handle(msg: Message, sender: chrome.runtime.MessageSender): Response {
       // never store a partially-corrupt vault.
       const cleaned: ExtAccount[] = [];
       for (const raw of msg.accounts) {
-        if (!validateAccount(raw)) return { ok: false, error: "bad_account_shape" };
+        if (!validateAccount(raw)) { swLog("SYNC_VAULT reject: bad_account_shape"); return { ok: false, error: "bad_account_shape" }; }
         cleaned.push(raw);
       }
       const ttl = Math.min(Math.max(msg.ttlMs ?? IDLE_LOCK_MS, 30_000), IDLE_LOCK_MS);
@@ -248,6 +261,7 @@ function handle(msg: Message, sender: chrome.runtime.MessageSender): Response {
         syncedAt: now,
         syncSeq: seq,
       };
+      swLog("SYNC_VAULT ok", { seq, count: cleaned.length, ttlMs: ttl });
       return { ok: true, accountCount: cleaned.length, syncSeq: seq, syncedAt: now };
     }
 
@@ -311,7 +325,10 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "aegis-keepalive") {
     void chrome.storage.local.get("__aegis_touch");
     // Also GC the unlocked vault if idle.
-    if (unlocked && Date.now() > unlocked.expiresAt) unlocked = null;
+    if (unlocked && Date.now() > unlocked.expiresAt) {
+      swLog("TTL expired, clearing unlocked vault");
+      unlocked = null;
+    }
     return;
   }
   if (alarm.name.startsWith("clip-clear-")) {
@@ -340,6 +357,7 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
 chrome.runtime.onMessageExternal.addListener((msg: Message, sender, sendResponse) => {
   const origin = sender.origin ?? (sender.url ? new URL(sender.url).origin : undefined);
   if (!originAllowed(origin)) {
+    swLog("external reject: forbidden_origin", origin);
     sendResponse({ ok: false, error: "forbidden_origin" });
     return;
   }
@@ -347,12 +365,14 @@ chrome.runtime.onMessageExternal.addListener((msg: Message, sender, sendResponse
   // (that path is popup/content-script only, to keep code emission tied
   // to a user action inside the extension surface).
   if (msg.type !== "SYNC_VAULT" && msg.type !== "GET_STATE" && msg.type !== "PING" && msg.type !== "LOCK") {
+    swLog("external reject: forbidden_message", msg.type);
     sendResponse({ ok: false, error: "forbidden_message" });
     return;
   }
   // Rate-limit SYNC_VAULT per origin to make a hostile script that lands
   // on an allow-listed origin unable to spam the SW with vault swaps.
   if (msg.type === "SYNC_VAULT" && !checkRate(origin!)) {
+    swLog("SYNC_VAULT rate_limited", origin);
     sendResponse({ ok: false, error: "rate_limited" });
     return;
   }
