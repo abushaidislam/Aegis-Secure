@@ -101,6 +101,7 @@ interface OtpParams {
   algorithm?: number;
   digits?: number;
   type?: number; // 1=HOTP, 2=TOTP
+  counter?: number; // field 7 in google's proto (only meaningful for HOTP)
 }
 
 function decodeOtpParameters(reader: PbReader, end: number): OtpParams {
@@ -121,6 +122,7 @@ function decodeOtpParameters(reader: PbReader, end: number): OtpParams {
       if (field === 4) out.algorithm = v;
       else if (field === 5) out.digits = v;
       else if (field === 6) out.type = v;
+      else if (field === 7) out.counter = v;
     } else {
       reader.skip(wire);
     }
@@ -147,11 +149,12 @@ export function parseGoogleAuthMigrationUri(uri: string): ParsedOtpauth[] {
       const len = reader.varint();
       const sub = decodeOtpParameters(reader, reader.pos + len);
       if (!sub.secret || sub.secret.length === 0) continue;
-      if (sub.type !== undefined && sub.type !== 2) continue; // TOTP only
+      // Google migration wire uses type 1=HOTP, 2=TOTP. Everything else is
+      // treated as TOTP so a payload that adds a new type doesn't drop rows.
+      const isHotp = sub.type === 1;
       const secret = bytesToBase32(sub.secret);
       const rawName = sub.name?.trim() ?? "";
       const rawIssuer = sub.issuer?.trim() ?? "";
-      // Google often stores "Issuer:label" in name; split when issuer is empty
       let issuer = rawIssuer;
       let label = rawName;
       if (!issuer && rawName.includes(":")) {
@@ -166,6 +169,8 @@ export function parseGoogleAuthMigrationUri(uri: string): ParsedOtpauth[] {
         algorithm: ALGO_MAP[sub.algorithm ?? 1] ?? "SHA1",
         digits: DIGITS_MAP[sub.digits ?? 1] ?? 6,
         period: 30,
+        otp_type: isHotp ? "hotp" : "totp",
+        ...(isHotp ? { counter: sub.counter ?? 0 } : {}),
       });
     } else {
       reader.skip(wire);
@@ -182,7 +187,13 @@ export function parseAegisJson(json: unknown): ParsedOtpauth[] {
         type?: string;
         name?: string;
         issuer?: string;
-        info?: { secret?: string; algo?: string; digits?: number; period?: number };
+        info?: {
+          secret?: string;
+          algo?: string;
+          digits?: number;
+          period?: number;
+          counter?: number;
+        };
       }>;
     };
     header?: { slots?: unknown };
@@ -194,16 +205,20 @@ export function parseAegisJson(json: unknown): ParsedOtpauth[] {
   }
   const out: ParsedOtpauth[] = [];
   for (const e of root.db.entries) {
-    if ((e.type ?? "").toLowerCase() !== "totp") continue;
+    const type = (e.type ?? "").toLowerCase();
+    if (!["totp", "hotp", "steam"].includes(type)) continue;
     const secret = e.info?.secret;
     if (!secret) continue;
+    const otp_type = type as "totp" | "hotp" | "steam";
     out.push({
       issuer: (e.issuer || e.name || "Unknown").trim(),
       label: (e.name || "").trim(),
       secret: secret.replace(/\s+/g, "").toUpperCase(),
-      algorithm: normalizeAlgo(e.info?.algo),
-      digits: e.info?.digits ?? 6,
-      period: e.info?.period ?? 30,
+      algorithm: otp_type === "steam" ? "SHA1" : normalizeAlgo(e.info?.algo),
+      digits: otp_type === "steam" ? 5 : e.info?.digits ?? 6,
+      period: otp_type === "steam" ? 30 : e.info?.period ?? 30,
+      otp_type,
+      ...(otp_type === "hotp" ? { counter: e.info?.counter ?? 0 } : {}),
     });
   }
   return out;
@@ -222,6 +237,8 @@ export function parse2FASJson(json: unknown): ParsedOtpauth[] {
         digits?: number;
         period?: number;
         tokenType?: string;
+        counter?: number;
+        source?: string;
       };
     }>;
     servicesEncrypted?: string;
@@ -237,15 +254,18 @@ export function parse2FASJson(json: unknown): ParsedOtpauth[] {
   const out: ParsedOtpauth[] = [];
   for (const s of root.services) {
     const type = (s.otp?.tokenType ?? "TOTP").toUpperCase();
-    if (type !== "TOTP") continue;
+    if (!["TOTP", "HOTP", "STEAM"].includes(type)) continue;
     if (!s.secret) continue;
+    const otp_type = type.toLowerCase() as "totp" | "hotp" | "steam";
     out.push({
       issuer: (s.otp?.issuer || s.name || "Unknown").trim(),
       label: (s.otp?.account || "").trim(),
       secret: s.secret.replace(/\s+/g, "").toUpperCase(),
-      algorithm: normalizeAlgo(s.otp?.algorithm),
-      digits: s.otp?.digits ?? 6,
-      period: s.otp?.period ?? 30,
+      algorithm: otp_type === "steam" ? "SHA1" : normalizeAlgo(s.otp?.algorithm),
+      digits: otp_type === "steam" ? 5 : s.otp?.digits ?? 6,
+      period: otp_type === "steam" ? 30 : s.otp?.period ?? 30,
+      otp_type,
+      ...(otp_type === "hotp" ? { counter: s.otp?.counter ?? 0 } : {}),
     });
   }
   return out;
@@ -353,14 +373,19 @@ export async function importFromAvf(
   passphrase: string,
 ): Promise<ImportResult> {
   const accounts = await decryptExportedFile(file, passphrase);
-  const entries: ParsedOtpauth[] = accounts.map((a) => ({
-    issuer: (a.issuer || a.label || "Unknown").trim(),
-    label: (a.label || "").trim(),
-    secret: a.secret.replace(/\s+/g, "").toUpperCase(),
-    algorithm: normalizeAlgo(a.algorithm),
-    digits: a.digits ?? 6,
-    period: a.period ?? 30,
-  }));
+  const entries: ParsedOtpauth[] = accounts.map((a) => {
+    const otp_type = (a.otp_type ?? "totp") as "totp" | "hotp" | "steam";
+    return {
+      issuer: (a.issuer || a.label || "Unknown").trim(),
+      label: (a.label || "").trim(),
+      secret: a.secret.replace(/\s+/g, "").toUpperCase(),
+      algorithm: otp_type === "steam" ? "SHA1" : normalizeAlgo(a.algorithm),
+      digits: otp_type === "steam" ? 5 : a.digits ?? 6,
+      period: otp_type === "steam" ? 30 : a.period ?? 30,
+      otp_type,
+      ...(otp_type === "hotp" ? { counter: a.counter ?? 0 } : {}),
+    };
+  });
   return { source: "avf", entries, skipped: 0 };
 }
 

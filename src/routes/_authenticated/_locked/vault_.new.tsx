@@ -9,6 +9,7 @@ import {
   isValidBase32Secret,
   parseOtpauthUri,
   type Algorithm,
+  type OtpType,
 } from "@/lib/vault-accounts";
 import { TagInput } from "@/components/vault/tags";
 import { ScanTab } from "@/components/vault/ScanTab";
@@ -75,6 +76,8 @@ function NewAccountPage() {
       digits?: number;
       period?: number;
       tags?: string[];
+      otp_type?: OtpType;
+      counter?: number;
     }): Promise<boolean> => {
       const key = getVaultKey();
       if (!key) {
@@ -341,15 +344,19 @@ function ManualTab({
     digits: number;
     period: number;
     tags: string[];
+    otp_type: OtpType;
+    counter?: number;
   }) => void;
   saving: boolean;
 }) {
   const [issuer, setIssuer] = useState("");
   const [label, setLabel] = useState("");
   const [secret, setSecret] = useState("");
+  const [otpType, setOtpType] = useState<OtpType>("totp");
   const [algorithm, setAlgorithm] = useState<Algorithm>("SHA1");
   const [digits, setDigits] = useState(6);
   const [period, setPeriod] = useState(30);
+  const [counter, setCounter] = useState(0);
   const [tags, setTags] = useState<string[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [localErr, setLocalErr] = useState<string | null>(null);
@@ -363,98 +370,160 @@ function ManualTab({
     if (!issuer.trim()) return setLocalErr("Add an issuer, like 'GitHub'.");
     if (!isValidBase32Secret(secret))
       return setLocalErr("Secret must be base32 (letters A–Z and digits 2–7).");
-    onSubmit({ issuer, label, secret, algorithm, digits, period, tags });
+    // Steam forces its canonical shape; addAccount does the same server-side
+    // but we mirror it here so the visible form values match what's saved.
+    const effAlgo: Algorithm = otpType === "steam" ? "SHA1" : algorithm;
+    const effDigits = otpType === "steam" ? 5 : digits;
+    const effPeriod = otpType === "steam" ? 30 : otpType === "hotp" ? 30 : period;
+    onSubmit({
+      issuer,
+      label,
+      secret,
+      algorithm: effAlgo,
+      digits: effDigits,
+      period: effPeriod,
+      tags,
+      otp_type: otpType,
+      ...(otpType === "hotp" ? { counter: Math.max(0, Math.floor(counter)) } : {}),
+    });
   };
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-1">
-      <SectionLabel>Account</SectionLabel>
-      <SettingsGroup>
-        <FieldRow
-          label="Issuer"
-          value={issuer}
-          onChange={setIssuer}
-          placeholder="GitHub"
-          autoFocus
-        />
-        <FieldRow label="Account" value={label} onChange={setLabel} placeholder="you@example.com" />
-      </SettingsGroup>
+      <SectionLabel>Code type</SectionLabel>
+      <TypePicker value={otpType} onChange={setOtpType} />
 
-      <SectionLabel>Secret</SectionLabel>
-      <SettingsGroup>
-        <FieldRow
-          label="Secret key"
-          value={secret}
-          onChange={(v) => setSecret(v.toUpperCase().replace(/\s+/g, ""))}
-          placeholder="JBSWY3DPEHPK3PXP"
-          mono
-          icon={<KeyRound className="h-3.5 w-3.5" strokeWidth={1.8} />}
-          valid={secretValid}
-          invalid={secret.length > 0 && !secretValid}
-        />
-      </SettingsGroup>
-      <p className="px-1 pt-1.5 text-[11.5px]" style={{ color: MUTED }}>
-        Base32 only — letters A–Z and digits 2–7. Spaces are removed.
-      </p>
+      <div className="pt-3">
+        <SectionLabel>Account</SectionLabel>
+        <SettingsGroup>
+          <FieldRow
+            label="Issuer"
+            value={issuer}
+            onChange={setIssuer}
+            placeholder={otpType === "steam" ? "Steam" : "GitHub"}
+            autoFocus
+          />
+          <FieldRow
+            label="Account"
+            value={label}
+            onChange={setLabel}
+            placeholder="you@example.com"
+          />
+        </SettingsGroup>
+      </div>
+
+      <div className="pt-3">
+        <SectionLabel>Secret</SectionLabel>
+        <SettingsGroup>
+          <FieldRow
+            label="Secret key"
+            value={secret}
+            onChange={(v) => setSecret(v.toUpperCase().replace(/\s+/g, ""))}
+            placeholder="JBSWY3DPEHPK3PXP"
+            mono
+            icon={<KeyRound className="h-3.5 w-3.5" strokeWidth={1.8} />}
+            valid={secretValid}
+            invalid={secret.length > 0 && !secretValid}
+          />
+        </SettingsGroup>
+        <p className="px-1 pt-1.5 text-[11.5px]" style={{ color: MUTED }}>
+          {otpType === "steam"
+            ? "Paste the base32 shared secret from Steam. Codes are 5 characters."
+            : otpType === "hotp"
+              ? "Counter-based. Tap the refresh button on the code to reveal the next value."
+              : "Base32 only — letters A–Z and digits 2–7. Spaces are removed."}
+        </p>
+      </div>
 
       <div className="pt-3">
         <SectionLabel>Tags · optional</SectionLabel>
         <TagInput value={tags} onChange={setTags} placeholder="work, personal, finance…" />
       </div>
 
-
-      <button
-        type="button"
-        onClick={() => setShowAdvanced((v) => !v)}
-        className="mt-4 flex items-center justify-between rounded-[12px] px-3.5 py-2.5"
-        style={{
-          background: "transparent",
-          border: `1px dashed ${BORDER}`,
-          color: CHARCOAL,
-        }}
-      >
-        <span className="text-[12.5px]" style={{ fontWeight: 600, letterSpacing: "-0.005em" }}>
-          Advanced options
-        </span>
-        <motion.span animate={{ rotate: showAdvanced ? 180 : 0 }} transition={{ duration: 0.2 }}>
-          <ChevronDown className="h-4 w-4" strokeWidth={1.8} style={{ color: MUTED }} />
-        </motion.span>
-      </button>
-
-      <AnimatePresence initial={false}>
-        {showAdvanced && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.24, ease: [0.4, 0, 0.2, 1] }}
-            className="overflow-hidden"
+      {otpType !== "steam" && (
+        <>
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((v) => !v)}
+            className="mt-4 flex items-center justify-between rounded-[12px] px-3.5 py-2.5"
+            style={{
+              background: "transparent",
+              border: `1px dashed ${BORDER}`,
+              color: CHARCOAL,
+            }}
           >
-            <div className="pt-2">
-              <SettingsGroup>
-                <SelectRow
-                  label="Algorithm"
-                  value={algorithm}
-                  onChange={(v) => setAlgorithm(v as Algorithm)}
-                  options={["SHA1", "SHA256", "SHA512"]}
-                />
-                <SelectRow
-                  label="Digits"
-                  value={String(digits)}
-                  onChange={(v) => setDigits(Number(v))}
-                  options={["6", "7", "8"]}
-                />
-                <SelectRow
-                  label="Period"
-                  value={String(period)}
-                  onChange={(v) => setPeriod(Number(v))}
-                  options={["30", "60"]}
-                />
-              </SettingsGroup>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <span
+              className="text-[12.5px]"
+              style={{ fontWeight: 600, letterSpacing: "-0.005em" }}
+            >
+              Advanced options
+            </span>
+            <motion.span
+              animate={{ rotate: showAdvanced ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className="h-4 w-4" strokeWidth={1.8} style={{ color: MUTED }} />
+            </motion.span>
+          </button>
+
+          <AnimatePresence initial={false}>
+            {showAdvanced && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.24, ease: [0.4, 0, 0.2, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="pt-2">
+                  <SettingsGroup>
+                    <SelectRow
+                      label="Algorithm"
+                      value={algorithm}
+                      onChange={(v) => setAlgorithm(v as Algorithm)}
+                      options={["SHA1", "SHA256", "SHA512"]}
+                    />
+                    <SelectRow
+                      label="Digits"
+                      value={String(digits)}
+                      onChange={(v) => setDigits(Number(v))}
+                      options={["6", "7", "8"]}
+                    />
+                    {otpType === "totp" && (
+                      <SelectRow
+                        label="Period"
+                        value={String(period)}
+                        onChange={(v) => setPeriod(Number(v))}
+                        options={["30", "60"]}
+                      />
+                    )}
+                    {otpType === "hotp" && (
+                      <label className="flex items-center gap-3 px-4 py-3">
+                        <span
+                          className="w-[76px] shrink-0 text-[12px]"
+                          style={{ color: MUTED, fontWeight: 500 }}
+                        >
+                          Counter
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={counter}
+                          onChange={(e) =>
+                            setCounter(Math.max(0, Math.floor(Number(e.target.value) || 0)))
+                          }
+                          className="min-w-0 flex-1 bg-transparent text-[14.5px] outline-none"
+                          style={{ color: CHARCOAL, fontWeight: 500 }}
+                        />
+                      </label>
+                    )}
+                  </SettingsGroup>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
 
       {localErr && (
         <div className="pt-3">
@@ -468,6 +537,60 @@ function ManualTab({
         </PrimaryButton>
       </div>
     </form>
+  );
+}
+
+function TypePicker({
+  value,
+  onChange,
+}: {
+  value: OtpType;
+  onChange: (v: OtpType) => void;
+}) {
+  const options: { id: OtpType; label: string; hint: string }[] = [
+    { id: "totp", label: "TOTP", hint: "Time-based · default" },
+    { id: "hotp", label: "HOTP", hint: "Counter-based" },
+    { id: "steam", label: "Steam", hint: "5-char Steam Guard" },
+  ];
+  return (
+    <div
+      className="grid grid-cols-3 gap-1.5 rounded-[14px] p-1.5"
+      style={{
+        background: CREAM_SOFT,
+        border: `1px solid ${BORDER}`,
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+      }}
+    >
+      {options.map((o) => {
+        const active = value === o.id;
+        return (
+          <button
+            key={o.id}
+            type="button"
+            onClick={() => onChange(o.id)}
+            className="relative flex flex-col items-center rounded-[10px] px-2 py-2 text-[11.5px] transition-colors"
+            style={{
+              background: active ? "#ffffff" : "transparent",
+              border: active ? `1px solid ${BORDER}` : "1px solid transparent",
+              color: active ? CHARCOAL : MUTED,
+              fontWeight: active ? 600 : 500,
+              boxShadow: active
+                ? "0 1px 2px rgba(28,28,28,0.06), 0 4px 12px -6px rgba(28,28,28,0.12)"
+                : undefined,
+              letterSpacing: "-0.005em",
+            }}
+          >
+            <span className="text-[12.5px]">{o.label}</span>
+            <span
+              className="mt-0.5 text-[10.5px] leading-tight"
+              style={{ color: active ? MUTED : "rgba(95,95,93,0.7)" }}
+            >
+              {o.hint}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

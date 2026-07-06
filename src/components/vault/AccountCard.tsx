@@ -13,14 +13,17 @@ import {
   Clock3,
   Pencil,
   MousePointerClick,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
+  advanceHotpCounter,
   generateCode,
   setAccountTags,
   updateAccountDetails,
   type DecryptedAccount,
 } from "@/lib/vault-accounts";
+import { getVaultKey } from "@/lib/vault-session";
 import { BORDER, CHARCOAL, CREAM_SOFT, MUTED, soft } from "@/components/aegis/chrome";
 import { logoUrlFor, domainFromIssuer } from "@/lib/issuer-domain";
 import { useHideCodes } from "@/lib/vault-privacy";
@@ -408,22 +411,35 @@ export function AccountCard({
     if (!deleting) setConfirmOpen(false);
   });
 
+  const isHotp = account.otp_type === "hotp";
   const period = account.period;
   const elapsed = Math.floor(now / 1000) % period;
-  const remaining = period - elapsed;
-  const progress = elapsed / period;
+  // HOTP has no clock — the ring becomes a static ring while a Refresh
+  // button drives the counter instead. Set remaining/progress to safe
+  // idle values so nothing else in the render tree needs to branch.
+  const remaining = isHotp ? period : period - elapsed;
+  const progress = isHotp ? 0 : elapsed / period;
+
+  const [hotpBusy, setHotpBusy] = useState(false);
+  const [hotpCounter, setHotpCounter] = useState<number>(account.counter ?? 0);
+  useEffect(() => {
+    if (isHotp) setHotpCounter(account.counter ?? 0);
+  }, [account.counter, isHotp]);
+
+  const codeAccount = isHotp ? { ...account, counter: hotpCounter } : account;
 
   const code = useMemo(() => {
     try {
-      return generateCode(account, now);
+      return generateCode(codeAccount, now);
     } catch {
       return "------";
     }
-  }, [account, now]);
+  }, [codeAccount, now]);
 
   // Peek at the next code in the last few seconds so the user can wait
-  // for a fresh one instead of copying a code about to expire.
-  const showNext = remaining <= 5;
+  // for a fresh one instead of copying a code about to expire. HOTP
+  // doesn't roll on its own, so the peek is disabled there.
+  const showNext = !isHotp && remaining <= 5;
   const nextCode = useMemo(() => {
     if (!showNext) return "";
     try {
@@ -432,6 +448,26 @@ export function AccountCard({
       return "";
     }
   }, [account, now, period, showNext]);
+
+  const refreshHotp = async () => {
+    if (!isHotp || hotpBusy) return;
+    const key = getVaultKey();
+    if (!key) {
+      toast.error("Unlock your vault to refresh HOTP codes.");
+      return;
+    }
+    setHotpBusy(true);
+    try {
+      const { counter, queued } = await advanceHotpCounter(key, account.id, hotpCounter);
+      setHotpCounter(counter);
+      if (typeof navigator.vibrate === "function") navigator.vibrate(6);
+      if (queued) toast.message("Next code · will sync when online");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not advance counter.");
+    } finally {
+      setHotpBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!copied) return;
@@ -636,7 +672,11 @@ export function AccountCard({
             </motion.span>
           )}
 
-          <RingTimer progress={progress} remaining={remaining} warn={warn} />
+          {isHotp ? (
+            <HotpRefreshButton onClick={refreshHotp} busy={hotpBusy} counter={hotpCounter} />
+          ) : (
+            <RingTimer progress={progress} remaining={remaining} warn={warn} />
+          )}
         </div>
 
         <div className="flex items-baseline justify-between gap-3 pl-[52px]">
@@ -960,7 +1000,15 @@ export function AccountCard({
                           </motion.span>
                         </motion.span>
                       )}
-                      <RingTimer progress={progress} remaining={remaining} warn={warn} />
+                      {isHotp ? (
+                        <HotpRefreshButton
+                          onClick={refreshHotp}
+                          busy={hotpBusy}
+                          counter={hotpCounter}
+                        />
+                      ) : (
+                        <RingTimer progress={progress} remaining={remaining} warn={warn} />
+                      )}
                     </div>
 
                     {/* Code display (revealed or dotted) — tap to toggle */}
@@ -1547,6 +1595,46 @@ export function AccountCard({
           document.body,
         )}
     </>
+  );
+}
+
+function HotpRefreshButton({
+  onClick,
+  busy,
+  counter,
+}: {
+  onClick: () => void;
+  busy: boolean;
+  counter: number;
+}) {
+  const size = 28;
+  return (
+    <motion.button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      whileTap={{ scale: 0.9 }}
+      aria-label={`Next HOTP code (counter ${counter})`}
+      title={`Counter: ${counter}`}
+      disabled={busy}
+      className="relative flex shrink-0 items-center justify-center rounded-full"
+      style={{
+        width: size,
+        height: size,
+        background: CREAM_SOFT,
+        border: `1px solid ${BORDER}`,
+        color: CHARCOAL,
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+      }}
+    >
+      {busy ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.9} />
+      ) : (
+        <RefreshCw className="h-3.5 w-3.5" strokeWidth={1.9} />
+      )}
+    </motion.button>
   );
 }
 

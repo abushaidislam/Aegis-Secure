@@ -25,6 +25,8 @@ export interface ExportedAccount {
   algorithm: "SHA1" | "SHA256" | "SHA512";
   digits: number;
   period: number;
+  otp_type?: "totp" | "hotp" | "steam";
+  counter?: number;
 }
 
 export interface EncryptedExportFile {
@@ -94,6 +96,8 @@ export async function buildEncryptedExport(
       algorithm: a.algorithm,
       digits: a.digits,
       period: a.period,
+      otp_type: a.otp_type,
+      ...(a.otp_type === "hotp" ? { counter: a.counter ?? 0 } : {}),
     })),
   };
   const salt = randomBytes(16);

@@ -36,9 +36,16 @@ import {
 } from "@/lib/vault-outbox";
 
 const ACCOUNT_SELECT =
-  "id, issuer, label, icon_slug, algorithm, digits, period, sort_order, is_favorite, tags, secret_ciphertext, secret_iv, updated_at";
+  "id, issuer, label, icon_slug, algorithm, digits, period, sort_order, is_favorite, tags, secret_ciphertext, secret_iv, otp_type, counter_ciphertext, counter_iv, updated_at";
 
 export type Algorithm = "SHA1" | "SHA256" | "SHA512";
+export type OtpType = "totp" | "hotp" | "steam";
+
+// Steam Guard uses a fixed 26-char alphabet, 5-char output, 30s period,
+// SHA1 HMAC on the standard 8-byte counter block. Digits stored as 5 for
+// display consistency; algorithm/period stay 'SHA1'/30.
+const STEAM_ALPHABET = "23456789BCDFGHJKMNPQRTVWXY";
+const STEAM_PERIOD = 30;
 
 export interface VaultAccountRecord {
   id: string;
@@ -53,6 +60,13 @@ export interface VaultAccountRecord {
   tags: string[];
   secret_ciphertext: unknown;
   secret_iv: unknown;
+  // Phase 7.4: OTP variant discriminator (server sees the type but never
+  // the HOTP counter — that lives in the encrypted counter_ciphertext).
+  // Optional because rows cached before the 7.4 migration lack these; read
+  // paths default to 'totp'.
+  otp_type?: OtpType;
+  counter_ciphertext?: unknown | null;
+  counter_iv?: unknown | null;
   // Phase 6.2: server-side row version. Drives diff sync (`updated_at >
   // last_sync`) and the server-wins-on-tie merge rule.
   updated_at: string;
@@ -69,6 +83,8 @@ export interface DecryptedAccount {
   is_favorite: boolean;
   tags: string[];
   secret: string; // base32
+  otp_type: OtpType;
+  counter?: number; // HOTP only; TOTP/Steam ignore
 }
 
 export interface ParsedOtpauth {
@@ -78,6 +94,8 @@ export interface ParsedOtpauth {
   algorithm: Algorithm;
   digits: number;
   period: number;
+  otp_type?: OtpType;
+  counter?: number;
 }
 
 const BASE32_RE = /^[A-Z2-7]+=*$/i;
@@ -92,32 +110,105 @@ export function isValidBase32Secret(s: string): boolean {
 }
 
 export function parseOtpauthUri(uri: string): ParsedOtpauth {
-  const totp = OTPAuth.URI.parse(uri);
-  if (!(totp instanceof OTPAuth.TOTP)) {
-    throw new Error("Only TOTP codes are supported.");
+  // Steam Guard is often published as `otpauth://steam/...` — otpauth's
+  // parser rejects it, so detect it up-front and parse via the URL API.
+  if (/^otpauth:\/\/steam\//i.test(uri)) {
+    const u = new URL(uri);
+    const secret = (u.searchParams.get("secret") || "").trim();
+    if (!secret) throw new Error("Steam otpauth URI is missing 'secret'.");
+    const rawLabel = decodeURIComponent(u.pathname.replace(/^\/+/, ""));
+    const issuer = (u.searchParams.get("issuer") || "Steam").trim();
+    let label = rawLabel;
+    if (label.includes(":")) label = label.split(":").slice(1).join(":").trim();
+    return {
+      issuer,
+      label,
+      secret: normalizeBase32(secret),
+      algorithm: "SHA1",
+      digits: 5,
+      period: STEAM_PERIOD,
+      otp_type: "steam",
+    };
   }
-  const algorithm = (totp.algorithm.toUpperCase() as Algorithm) ?? "SHA1";
+
+  const parsed = OTPAuth.URI.parse(uri);
+  if (parsed instanceof OTPAuth.HOTP) {
+    const algorithm = (parsed.algorithm.toUpperCase() as Algorithm) ?? "SHA1";
+    return {
+      issuer: (parsed.issuer || "").trim(),
+      label: (parsed.label || "").trim(),
+      secret: parsed.secret.base32,
+      algorithm: (["SHA1", "SHA256", "SHA512"].includes(algorithm)
+        ? algorithm
+        : "SHA1") as Algorithm,
+      digits: parsed.digits ?? 6,
+      period: 30,
+      otp_type: "hotp",
+      counter: Number(parsed.counter ?? 0),
+    };
+  }
+  if (!(parsed instanceof OTPAuth.TOTP)) {
+    throw new Error("Only TOTP, HOTP, and Steam codes are supported.");
+  }
+  const algorithm = (parsed.algorithm.toUpperCase() as Algorithm) ?? "SHA1";
   return {
-    issuer: (totp.issuer || "").trim(),
-    label: (totp.label || "").trim(),
-    secret: totp.secret.base32,
-    algorithm: (["SHA1", "SHA256", "SHA512"].includes(algorithm) ? algorithm : "SHA1") as Algorithm,
-    digits: totp.digits ?? 6,
-    period: totp.period ?? 30,
+    issuer: (parsed.issuer || "").trim(),
+    label: (parsed.label || "").trim(),
+    secret: parsed.secret.base32,
+    algorithm: (["SHA1", "SHA256", "SHA512"].includes(algorithm)
+      ? algorithm
+      : "SHA1") as Algorithm,
+    digits: parsed.digits ?? 6,
+    period: parsed.period ?? 30,
+    otp_type: "totp",
   };
 }
 
+function generateSteamCode(secretBase32: string, at: number): string {
+  // Steam Guard = HOTP over T=floor(now/30) with a 26-char alphabet mapping.
+  // We reuse OTPAuth's HOTP with digits=10 (holds the full 31-bit truncated
+  // value) then convert to the Steam alphabet via divmod. Sync + deterministic.
+  const hotp = new OTPAuth.HOTP({
+    algorithm: "SHA1",
+    digits: 10,
+    secret: OTPAuth.Secret.fromBase32(secretBase32),
+  });
+  const T = Math.floor(at / 1000 / STEAM_PERIOD);
+  let value = Number.parseInt(hotp.generate({ counter: T }), 10);
+  let out = "";
+  for (let i = 0; i < 5; i++) {
+    out += STEAM_ALPHABET[value % STEAM_ALPHABET.length];
+    value = Math.floor(value / STEAM_ALPHABET.length);
+  }
+  return out;
+}
+
 export function generateCode(account: DecryptedAccount, at: number = Date.now()): string {
+  const clean = normalizeBase32(account.secret);
+  if (account.otp_type === "steam") {
+    return generateSteamCode(clean, at);
+  }
+  if (account.otp_type === "hotp") {
+    const hotp = new OTPAuth.HOTP({
+      issuer: account.issuer,
+      label: account.label,
+      algorithm: account.algorithm,
+      digits: account.digits,
+      secret: OTPAuth.Secret.fromBase32(clean),
+    });
+    return hotp.generate({ counter: account.counter ?? 0 });
+  }
   const totp = new OTPAuth.TOTP({
     issuer: account.issuer,
     label: account.label,
     algorithm: account.algorithm,
     digits: account.digits,
     period: account.period,
-    secret: OTPAuth.Secret.fromBase32(normalizeBase32(account.secret)),
+    secret: OTPAuth.Secret.fromBase32(clean),
   });
   return totp.generate({ timestamp: at });
 }
+
 
 export async function addAccount(
   dek: CryptoKey,
@@ -131,19 +222,35 @@ export async function addAccount(
     period?: number;
     icon_slug?: string | null;
     tags?: string[];
+    otp_type?: OtpType;
+    counter?: number;
   },
 ): Promise<{ queued: boolean }> {
   const clean = normalizeBase32(input.secret);
   if (!isValidBase32Secret(clean)) throw new Error("Invalid secret. Must be base32.");
 
+  const otp_type: OtpType = input.otp_type ?? "totp";
+  // Steam has fixed shape; ignore any overrides so we can't store a
+  // mis-configured row that generateSteamCode would then misinterpret.
+  const algorithm: Algorithm = otp_type === "steam" ? "SHA1" : input.algorithm ?? "SHA1";
+  const digits = otp_type === "steam" ? 5 : input.digits ?? 6;
+  const period = otp_type === "steam" ? 30 : otp_type === "hotp" ? 30 : input.period ?? 30;
+
   const { ciphertext, iv } = await encryptSecret(dek, clean);
   const tags = normalizeTagList(input.tags ?? []);
   const issuer = input.issuer.trim();
   const label = input.label.trim();
-  const algorithm = input.algorithm ?? "SHA1";
-  const digits = input.digits ?? 6;
-  const period = input.period ?? 30;
   const icon_slug = input.icon_slug ?? null;
+
+  // HOTP counter is encrypted client-side — server never sees the value.
+  let counterCiphertextHex: string | null = null;
+  let counterIvHex: string | null = null;
+  if (otp_type === "hotp") {
+    const startCounter = Math.max(0, Math.floor(input.counter ?? 0));
+    const enc = await encryptSecret(dek, String(startCounter));
+    counterCiphertextHex = toByteaHex(enc.ciphertext);
+    counterIvHex = toByteaHex(enc.iv);
+  }
 
   const insertRow = {
     user_id: userId,
@@ -156,6 +263,9 @@ export async function addAccount(
     tags,
     secret_ciphertext: toByteaHex(ciphertext),
     secret_iv: toByteaHex(iv),
+    otp_type,
+    counter_ciphertext: counterCiphertextHex,
+    counter_iv: counterIvHex,
   };
 
   const enqueueOfflineCreate = async () => {
@@ -175,6 +285,9 @@ export async function addAccount(
       is_favorite: false,
       secret_ciphertext_hex: toByteaHex(ciphertext),
       secret_iv_hex: toByteaHex(iv),
+      otp_type,
+      counter_ciphertext_hex: counterCiphertextHex,
+      counter_iv_hex: counterIvHex,
     };
     enqueueCreate(clientId, payload);
     const cachedRow: VaultAccountRecord = {
@@ -190,6 +303,9 @@ export async function addAccount(
       tags,
       secret_ciphertext: toByteaHex(ciphertext),
       secret_iv: toByteaHex(iv),
+      otp_type,
+      counter_ciphertext: counterCiphertextHex,
+      counter_iv: counterIvHex,
       updated_at: new Date().toISOString(),
     };
     await upsertVaultCache(cachedRow);
@@ -217,6 +333,64 @@ export async function addAccount(
     throw err;
   }
 }
+
+/**
+ * Advance the HOTP counter for an account and persist the new (encrypted)
+ * value. Server never sees the counter in plaintext. Returns the new
+ * counter number so the caller can re-render immediately.
+ *
+ * Offline: patches the local cache only; the change survives a reload but
+ * won't reach the server until the user is online (HOTP counters aren't
+ * routed through the outbox — a stale server counter self-corrects on the
+ * next successful advance).
+ */
+export async function advanceHotpCounter(
+  dek: CryptoKey,
+  id: string,
+  currentCounter: number,
+): Promise<{ counter: number; queued: boolean }> {
+  const next = Math.max(0, Math.floor(currentCounter)) + 1;
+  const { ciphertext, iv } = await encryptSecret(dek, String(next));
+  const counter_ciphertext = toByteaHex(ciphertext);
+  const counter_iv = toByteaHex(iv);
+
+  const patchCache = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const rows = await readVaultCache(user.id);
+      const row = rows?.find((r) => r.id === id);
+      if (!row) return;
+      await upsertVaultCache({ ...row, counter_ciphertext, counter_iv });
+    } catch {
+      /* best-effort */
+    }
+  };
+
+  if (isOffline()) {
+    await patchCache();
+    return { counter: next, queued: true };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("vault_accounts")
+      .update({ counter_ciphertext, counter_iv })
+      .eq("id", id)
+      .select(ACCOUNT_SELECT)
+      .single();
+    if (error) throw error;
+    if (data) void upsertVaultCache(data as VaultAccountRecord);
+    return { counter: next, queued: false };
+  } catch (err) {
+    if (isLikelyNetworkError(err)) {
+      await patchCache();
+      return { counter: next, queued: true };
+    }
+    throw err;
+  }
+}
+
 
 function generateClientId(): string {
   const g = globalThis as { crypto?: { randomUUID?: () => string } };
@@ -486,6 +660,9 @@ export async function flushPendingOutbox(): Promise<number> {
           is_favorite: payload.is_favorite,
           secret_ciphertext: payload.secret_ciphertext_hex,
           secret_iv: payload.secret_iv_hex,
+          otp_type: payload.otp_type ?? "totp",
+          counter_ciphertext: payload.counter_ciphertext_hex ?? null,
+          counter_iv: payload.counter_iv_hex ?? null,
         })
         .select(ACCOUNT_SELECT)
         .single();
@@ -536,6 +713,23 @@ async function decryptRows(
   return Promise.all(
     rows.map(async (r) => {
       const secret = await decryptSecret(dek, toBytes(r.secret_ciphertext), toBytes(r.secret_iv));
+      const otp_type: OtpType = (r.otp_type ?? "totp") as OtpType;
+      let counter: number | undefined;
+      if (otp_type === "hotp" && r.counter_ciphertext && r.counter_iv) {
+        try {
+          const raw = await decryptSecret(
+            dek,
+            toBytes(r.counter_ciphertext),
+            toBytes(r.counter_iv),
+          );
+          const n = Number.parseInt(raw, 10);
+          if (Number.isFinite(n) && n >= 0) counter = n;
+        } catch {
+          // Corrupt counter — leave undefined so generateCode falls back to 0.
+        }
+      } else if (otp_type === "hotp") {
+        counter = 0;
+      }
       return {
         id: r.id,
         issuer: r.issuer,
@@ -547,6 +741,8 @@ async function decryptRows(
         is_favorite: r.is_favorite,
         tags: Array.isArray(r.tags) ? r.tags : [],
         secret,
+        otp_type,
+        counter,
       } satisfies DecryptedAccount;
     }),
   );

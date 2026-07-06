@@ -137,11 +137,12 @@ on reconnect. Lighthouse PWA ≥ 90, main bundle ≤ 250 KB gzipped.
 - [x] Bulk delete (parallel `deleteAccount`, respects offline outbox), bulk add-tag (preset picker, union into each row), bulk export subset to `.avf` via shared `ExportPassphraseSheet`
 - [x] DnD auto-disabled while in selection mode so drags never race the checkbox
 
-### 7.4 HOTP + Steam Guard support `[P1]`
-- [ ] Discriminated `type: 'totp' | 'hotp' | 'steam'` in `vault-crypto` + `vault-accounts`
-- [ ] HOTP counter in an encrypted field (server never sees it)
-- [ ] Steam Guard alphabet + 5-char format
-- [ ] Importer parsers accept HOTP + Steam Guard
+### 7.4 HOTP + Steam Guard support `[P1]` `[done]`
+- [x] Discriminated `otp_type: 'totp' | 'hotp' | 'steam'` on `vault_accounts` + `DecryptedAccount` / `ParsedOtpauth`; `addAccount` accepts the type and coerces Steam's fixed shape (SHA1 · 5 digits · 30s)
+- [x] HOTP counter stored in a per-row AES-GCM encrypted column pair (`counter_ciphertext` / `counter_iv`) — server only ever sees ciphertext; `advanceHotpCounter()` re-encrypts and PATCHes on each reveal, with an offline cache patch fallback
+- [x] Steam Guard 26-char alphabet + 5-char format via HOTP(digits=10) → divmod mapping; `generateCode` branches by type and stays sync
+- [x] Importer parsers accept HOTP + Steam: Google migration proto (type=1 + counter field 7), otpauth:// (HOTP scheme via `OTPAuth.HOTP`), `otpauth://steam/` URIs, Aegis/2FAS JSON, and the encrypted `.avf` export
+- [x] Add-account form ships a TOTP/HOTP/Steam picker (with HOTP counter input) and the AccountCard swaps the timer ring for a refresh button when the entry is HOTP
 
 **Exit criteria:** Tags, folders-via-tags, DnD reorder, bulk edit/delete,
 HOTP + Steam Guard all in the vault screen without a new route.
