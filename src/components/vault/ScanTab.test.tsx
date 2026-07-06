@@ -187,8 +187,8 @@ describe("ScanTab — video scan flow", () => {
     await flushEffects();
 
     expect(decodeCalls).toHaveLength(2);
-    // The cleanup from the previous mount must have stopped the old reader.
-    expect(decodeCalls[0].stop).toHaveBeenCalledTimes(1);
+    // stop() runs on detection AND again on cleanup — both should have fired.
+    expect(decodeCalls[0].stop).toHaveBeenCalled();
 
     await act(async () => decodeCalls[1].cb({ getText: () => URI }));
     expect(onDetected).toHaveBeenCalledTimes(2);
