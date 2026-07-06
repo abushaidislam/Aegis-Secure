@@ -708,6 +708,9 @@ function UnifiedAccountList({
   tagSuggestions,
   dndEnabled,
   onReorder,
+  selectionMode,
+  selectedIds,
+  onSelectToggle,
 }: {
   favoriteList: DecryptedAccount[];
   otherList: DecryptedAccount[];
@@ -720,6 +723,9 @@ function UnifiedAccountList({
   tagSuggestions: string[];
   dndEnabled: boolean;
   onReorder: (group: "fav" | "other", orderedIds: string[]) => void;
+  selectionMode: boolean;
+  selectedIds: Set<string>;
+  onSelectToggle: (id: string) => void;
 }) {
   const showBothLabels = favoriteList.length > 0 && otherList.length > 0;
 
@@ -744,7 +750,15 @@ function UnifiedAccountList({
   };
 
   const renderRow = (a: DecryptedAccount, opts: { withTopBorder: boolean }) => (
-    <SortableAccountRow key={a.id} id={a.id} enabled={dndEnabled} withTopBorder={opts.withTopBorder}>
+    <SortableAccountRow
+      key={a.id}
+      id={a.id}
+      enabled={dndEnabled}
+      withTopBorder={opts.withTopBorder}
+      selectionMode={selectionMode}
+      selected={selectedIds.has(a.id)}
+      onSelectToggle={onSelectToggle}
+    >
       <AccountCard
         account={a}
         now={now}
@@ -797,11 +811,17 @@ function SortableAccountRow({
   id,
   enabled,
   withTopBorder,
+  selectionMode,
+  selected,
+  onSelectToggle,
   children,
 }: {
   id: string;
   enabled: boolean;
   withTopBorder: boolean;
+  selectionMode: boolean;
+  selected: boolean;
+  onSelectToggle: (id: string) => void;
   children: React.ReactNode;
 }) {
   const {
@@ -817,10 +837,15 @@ function SortableAccountRow({
     transform: CSS.Transform.toString(transform),
     transition,
     borderTop: withTopBorder ? `1px solid ${BORDER}` : undefined,
-    background: isDragging ? "rgba(28,28,28,0.04)" : undefined,
+    background: isDragging
+      ? "rgba(28,28,28,0.04)"
+      : selectionMode && selected
+        ? "rgba(28,28,28,0.05)"
+        : undefined,
     zIndex: isDragging ? 5 : undefined,
     boxShadow: isDragging ? "0 6px 18px rgba(0,0,0,0.12)" : undefined,
     touchAction: enabled ? "manipulation" : undefined,
+    position: "relative",
   };
 
   return (
@@ -831,9 +856,37 @@ function SortableAccountRow({
       {...(enabled ? listeners : {})}
     >
       {children}
+      {selectionMode && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectToggle(id);
+          }}
+          aria-pressed={selected}
+          aria-label={selected ? "Deselect account" : "Select account"}
+          className="absolute inset-0 flex items-start justify-end p-3"
+          style={{
+            background: selected ? "rgba(28,28,28,0.04)" : "transparent",
+            cursor: "pointer",
+          }}
+        >
+          <span
+            className="flex h-6 w-6 items-center justify-center rounded-full"
+            style={{
+              background: selected ? CHARCOAL : "rgba(255,255,255,0.9)",
+              border: `1px solid ${selected ? CHARCOAL : BORDER}`,
+              color: selected ? "#f7f4ed" : "transparent",
+            }}
+          >
+            <Check className="h-3.5 w-3.5" strokeWidth={2.4} />
+          </span>
+        </button>
+      )}
     </div>
   );
 }
+
 
 
 function TagFilterRow({
