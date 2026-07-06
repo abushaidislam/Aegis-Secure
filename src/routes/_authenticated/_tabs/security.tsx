@@ -15,6 +15,7 @@ import {
   EyeOff,
   Fingerprint,
   Download,
+  Monitor,
 } from "lucide-react";
 
 import { Switch } from "@/components/ui/switch";
@@ -299,6 +300,16 @@ function SecurityPage() {
                 aria-label="Biometric unlock"
               />
             }
+          />
+          <SettingsRow
+            icon={<Monitor className="h-4 w-4" strokeWidth={1.8} />}
+            title={t("security.devices", "Devices")}
+            description={t(
+              "security.devices.description",
+              "See every device signed into your vault and sign any of them out.",
+            )}
+            onClick={() => navigate({ to: "/devices" })}
+            chevron
           />
         </SettingsGroup>
 

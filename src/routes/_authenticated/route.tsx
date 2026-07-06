@@ -1,8 +1,10 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { initAutoLockForUser, useActivityKeepAlive } from "@/lib/vault-session";
 import { initHideCodesForUser } from "@/lib/vault-privacy";
+import { recordDeviceSeen } from "@/lib/devices.functions";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -42,9 +44,14 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedShell() {
   const { user } = Route.useRouteContext();
   useActivityKeepAlive();
+  const heartbeat = useServerFn(recordDeviceSeen);
   useEffect(() => {
     initAutoLockForUser(user.id);
     initHideCodesForUser(user.id);
-  }, [user.id]);
+    // Phase 9.1: record this device session so it shows up in Security → Devices.
+    void heartbeat().catch(() => {
+      // Non-fatal; the vault still works if this fails (e.g. offline).
+    });
+  }, [user.id, heartbeat]);
   return <Outlet />;
 }

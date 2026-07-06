@@ -173,6 +173,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions_meta: {
+        Row: {
+          coarse_country: string | null
+          coarse_region: string | null
+          device_label: string
+          first_seen_at: string
+          last_seen_at: string
+          session_id: string
+          user_agent: string
+          user_id: string
+        }
+        Insert: {
+          coarse_country?: string | null
+          coarse_region?: string | null
+          device_label?: string
+          first_seen_at?: string
+          last_seen_at?: string
+          session_id: string
+          user_agent?: string
+          user_id: string
+        }
+        Update: {
+          coarse_country?: string | null
+          coarse_region?: string | null
+          device_label?: string
+          first_seen_at?: string
+          last_seen_at?: string
+          session_id?: string
+          user_agent?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       vault_accounts: {
         Row: {
           algorithm: string

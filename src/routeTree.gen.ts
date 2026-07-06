@@ -20,6 +20,7 @@ import { Route as AuthResetPasswordRouteImport } from './routes/auth.reset-passw
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedLockRouteImport } from './routes/_authenticated/lock'
+import { Route as AuthenticatedDevicesRouteImport } from './routes/_authenticated/devices'
 import { Route as AuthenticatedTabsRouteImport } from './routes/_authenticated/_tabs'
 import { Route as AuthenticatedLockedRouteRouteImport } from './routes/_authenticated/_locked/route'
 import { Route as AuthenticatedTabsVaultRouteImport } from './routes/_authenticated/_tabs/vault'
@@ -85,6 +86,11 @@ const AuthenticatedLockRoute = AuthenticatedLockRouteImport.update({
   path: '/lock',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDevicesRoute = AuthenticatedDevicesRouteImport.update({
+  id: '/devices',
+  path: '/devices',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTabsRoute = AuthenticatedTabsRouteImport.update({
   id: '/_tabs',
   getParentRoute: () => AuthenticatedRouteRoute,
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/devices': typeof AuthenticatedDevicesRoute
   '/lock': typeof AuthenticatedLockRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/devices': typeof AuthenticatedDevicesRoute
   '/lock': typeof AuthenticatedLockRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/_locked': typeof AuthenticatedLockedRouteRouteWithChildren
   '/_authenticated/_tabs': typeof AuthenticatedTabsRouteWithChildren
+  '/_authenticated/devices': typeof AuthenticatedDevicesRoute
   '/_authenticated/lock': typeof AuthenticatedLockRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/sitemap.xml'
+    | '/devices'
     | '/lock'
     | '/onboarding'
     | '/auth/callback'
@@ -212,6 +222,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/sitemap.xml'
+    | '/devices'
     | '/lock'
     | '/onboarding'
     | '/auth/callback'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/_authenticated/_locked'
     | '/_authenticated/_tabs'
+    | '/_authenticated/devices'
     | '/_authenticated/lock'
     | '/_authenticated/onboarding'
     | '/auth/callback'
@@ -337,6 +349,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLockRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/devices': {
+      id: '/_authenticated/devices'
+      path: '/devices'
+      fullPath: '/devices'
+      preLoaderRoute: typeof AuthenticatedDevicesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/_tabs': {
       id: '/_authenticated/_tabs'
       path: ''
@@ -433,6 +452,7 @@ const AuthenticatedTabsRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedLockedRouteRoute: typeof AuthenticatedLockedRouteRouteWithChildren
   AuthenticatedTabsRoute: typeof AuthenticatedTabsRouteWithChildren
+  AuthenticatedDevicesRoute: typeof AuthenticatedDevicesRoute
   AuthenticatedLockRoute: typeof AuthenticatedLockRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
 }
@@ -440,6 +460,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLockedRouteRoute: AuthenticatedLockedRouteRouteWithChildren,
   AuthenticatedTabsRoute: AuthenticatedTabsRouteWithChildren,
+  AuthenticatedDevicesRoute: AuthenticatedDevicesRoute,
   AuthenticatedLockRoute: AuthenticatedLockRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
 }
