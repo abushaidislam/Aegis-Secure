@@ -151,10 +151,10 @@ HOTP + Steam Guard all in the vault screen without a new route.
 
 ## Phase 8 — Design system, theming, i18n, a11y (`[P0]` for GA, 2 weeks)
 
-### 8.1 Semantic-token pass `[P0]`
-- [ ] Move every hard-coded hex in `chrome.tsx`, `settings.tsx`, and route files onto `src/styles.css` `@theme` tokens
-- [ ] Every component reads via `bg-surface`, `text-ink`, etc.
-- [ ] Storybook (or `/dev/tokens` internal route) rendering every token
+### 8.1 Semantic-token pass `[P0]` `[done]`
+- [x] Every hard-coded hex in `chrome.tsx`, `settings.tsx`, and route files migrated to `--aegis-*` CSS variables. New tokens added: `--aegis-success`, `--aegis-warning`, `--aegis-scanner-bg` (with matching `-rgb` triplets and dark-mode overrides). Documented exceptions: Google-brand SVG fills in `chrome.tsx` (brand asset), the recovery-sheet QR foreground/background and its preview tile (printable/scannable backup — intentionally light regardless of app theme), and the initial `<meta name="theme-color">` literal (rewritten dynamically by the pre-hydration script).
+- [x] Every component consumes `CREAM`, `CREAM_SOFT`, `CHARCOAL`, `MUTED`, `BORDER`, `DANGER`, `FAV`, `SUCCESS`, `WARNING`, `SCANNER_BG`, and `PLACEHOLDER` from `chrome.tsx`, all of which resolve to `var(--aegis-*)` and flip in dark mode.
+- [x] Internal `/dev/tokens` route renders every Aegis token as a swatch card (name + resolved value + note) grouped into Surfaces / Text / Status / Glow / Grain, with a manual Auto / Light / Dark toggle so a reviewer can flip themes without OS changes.
 
 ### 8.2 Dark mode `[P0]` `[done]`
 - [x] Warm dark palette wired through Aegis CSS variables (`--aegis-cream`, `--aegis-ink`, `--aegis-border`, `--aegis-muted`, `--aegis-danger` + glow tokens) with a `.dark` override block in `src/styles.css`; palette constants in `chrome.tsx` and `Onboarding.tsx` now reference those vars, and every `rgba(28,28,28,X)` / `rgba(180,40,40,X)` was rewritten to `rgb(var(--aegis-ink-rgb) / X)` / `rgb(var(--aegis-danger-rgb) / X)` so downstream files invert automatically

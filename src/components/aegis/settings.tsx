@@ -82,7 +82,7 @@ export function LargeTitle({ title, subtitle }: { title: string; subtitle?: stri
             "linear-gradient(to bottom, color-mix(in oklab, var(--aegis-cream) 96%, transparent) 0%, color-mix(in oklab, var(--aegis-cream) 92%, transparent) 55%, color-mix(in oklab, var(--aegis-cream) 55%, transparent) 82%, color-mix(in oklab, var(--aegis-cream) 0%, transparent) 100%)",
           backdropFilter: "blur(10px)",
           maskImage:
-            "linear-gradient(to bottom, #000 0%, #000 70%, rgba(0,0,0,0.6) 88%, transparent 100%)",
+            "linear-gradient(to bottom, rgb(var(--aegis-ink-rgb)) 0%, rgb(var(--aegis-ink-rgb)) 70%, rgb(var(--aegis-ink-rgb) / 0.6) 88%, transparent 100%)",
         }}
       />
     </div>

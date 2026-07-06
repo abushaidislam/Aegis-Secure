@@ -35,6 +35,9 @@ import {
   MUTED,
   Notice,
   PrimaryButton,
+  SCANNER_BG,
+  SUCCESS,
+  WARNING,
   soft,
 } from "@/components/aegis/chrome";
 import { typeBody, typeDisplay, typeMonoInline } from "@/components/aegis/typography";
@@ -705,7 +708,7 @@ function ScanTab({
         className="relative aspect-square w-full overflow-hidden rounded-[22px]"
         style={{
           border: `1px solid ${BORDER}`,
-          background: "#0a0a0a",
+          background: SCANNER_BG,
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 32px -18px rgb(var(--aegis-ink-rgb) / 0.35)",
         }}
       >
@@ -781,7 +784,7 @@ function ScanTab({
       >
         <span
           className="inline-flex h-1.5 w-1.5 rounded-full"
-          style={{ background: starting ? "#c9a24a" : "#4a8f5a" }}
+          style={{ background: starting ? WARNING : SUCCESS }}
         />
         <span>
           {starting

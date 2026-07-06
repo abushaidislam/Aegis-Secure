@@ -89,6 +89,9 @@ function RecoverySheetPage() {
         };
         setPayload(p);
         setAccounts(list);
+        // Recovery QR is a printable/backup asset — intentionally light
+        // background + dark foreground regardless of app theme so it stays
+        // scannable when printed or screenshotted.
         const dataUrl = await QRCode.toDataURL(JSON.stringify(p), {
           errorCorrectionLevel: "M",
           margin: 1,
@@ -283,6 +286,8 @@ function RecoverySheetPage() {
           >
             <div
               className="rounded-[16px] p-3"
+              // Tile matches the QR's printable light background so preview
+              // matches export; documented exception to the token rule.
               style={{ background: "#fbf7ee", border: `1px solid ${BORDER}` }}
             >
               <img src={qrDataUrl} alt="Recovery QR" width={196} height={196} className="block" />

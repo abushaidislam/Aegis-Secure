@@ -29,6 +29,8 @@ import {
   MUTED,
   Notice,
   PrimaryButton,
+  SUCCESS,
+  WARNING,
   soft,
 } from "@/components/aegis/chrome";
 import { typeBody, typeDisplay } from "@/components/aegis/typography";
@@ -640,11 +642,11 @@ function FieldRow({
       {valid && (
         <span
           className="h-1.5 w-1.5 shrink-0 rounded-full"
-          style={{ background: "#4a8f5a", boxShadow: "0 0 6px rgba(74,143,90,0.4)" }}
+          style={{ background: SUCCESS, boxShadow: "0 0 6px rgb(var(--aegis-success-rgb) / 0.4)" }}
         />
       )}
       {invalid && (
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "#c9a24a" }} />
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: WARNING }} />
       )}
     </label>
   );

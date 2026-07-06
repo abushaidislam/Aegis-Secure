@@ -1,371 +1,65 @@
-# Aegis — current plan
 
-Last updated: Phase 0 is now **fully complete** (audit deliverables + clean
-CI). Phase 1.1 admin/schema migrations and Phase 2 crypto version-lock +
-golden vectors also landed.
+## Phase 8.1 — Semantic-token pass
 
-## Phase 0 — Baseline audit ✅ CLOSED
+Goal: no hard-coded hex/rgba colors anywhere in `chrome.tsx`, `settings.tsx`, or route files (except third-party brand marks like Google logo). Every component consumes theme-aware CSS variables. Add an internal `/dev/tokens` route to visually verify every token in both light and dark modes.
 
-- `SECURITY.md` v0.1 published — zero-knowledge invariant, v1 crypto
-  params, RLS-only authz stance, coordinated-disclosure stub.
-- `docs/routing.md` published — 14 routes tabulated with SSR posture,
-  guard stack, data reads; plus the public/auth/locked map that the
-  Phase 1.2 RLS CI test will consume.
-- `perf/baseline.json` captured from a real `bun run build`:
-  - Typecheck: `bunx tsgo --noEmit` → **0 errors**.
-  - Lint: `bunx eslint .` → **0 errors, 10 warnings** (all
-    `react-refresh/only-export-components` in shadcn UI — expected).
-    Auto-fixed 1167 prettier formatting errors in the same pass.
-  - Build: **clean**. Biggest client chunks: `esm` 458 KB, `index`
-    450 KB, `vault_.recovery` 419 KB. Biggest server libs:
-    `@zxing/browser` 1.07 MB, `@tanstack/react-router` 656 KB,
-    `jspdf` 477 KB. Both are called out under `nextWins` for
-    Phase 6 code-splitting.
-- `@zxing/library@^0.22.0` locked as an explicit dep (was previously an
-  unresolved peer of `@zxing/browser`).
+### Scope of files to sweep
 
-**Exit criterion met:** clean typecheck ✅, zero-error lint ✅, clean
-build ✅, baseline snapshot ✅, security stub ✅, route-map doc ✅.
-Phase 0 is closed — Phase 1 backend hardening is where new PRs go.
+- `src/components/aegis/settings.tsx` — gradient overlay hex → ink-rgb var
+- `src/components/vault/ScanTab.tsx` — `#0a0a0a`, `#c9a24a` (warning), `#4a8f5a` (success)
+- `src/routes/__root.tsx` — `theme-color` meta will keep its literal (browser chrome only)
+- `src/routes/index.tsx` — CREAM/CHARCOAL constants → CSS vars
+- `src/routes/blog.aegis-vs-google-authenticator.tsx` — heaviest offender, ~30 hex sites
+- `src/routes/_authenticated/_locked/vault_.recovery.tsx` — QR fg/bg + tile bg
+- `src/routes/_authenticated/_locked/vault_.new.tsx` — status dots
+- `src/routes/_authenticated/_locked/vault_.import.tsx` — scanner overlay + status dot
+- `src/routes/_authenticated/_tabs/vault.tsx` — chip color
 
-## Phase 1.1 — Schema migrations (landed)
+Google brand SVG in `chrome.tsx` (EA4335 / 4285F4 / FBBC05 / 34A853) is a brand asset and stays literal — documented as an exception.
 
-- `profiles.role` (`'user' | 'admin'`, default `'user'`) with a
-  `prevent_role_self_promotion` trigger — role changes require the
-  `service_role` connection.
-- `public.is_admin(uuid)` security-definer helper, granted to
-  `authenticated` + `service_role` only.
-- `client_errors` table — anon + authenticated can INSERT, only admins
-  can SELECT. `purge_old_client_errors(days)` housekeeping fn.
-- `admin_audit` table — append-only: only `service_role` can INSERT,
-  only admins can SELECT; UPDATE/DELETE revoked from every role.
-- `vault_accounts` size caps: ciphertext ≤512 bytes, IV = 12 bytes,
-  issuer/label ≤200 chars, icon_slug ≤100 chars, plus a
-  `enforce_vault_accounts_per_user_limit` trigger capping each user at
-  500 accounts.
+### New semantic tokens (add to `src/styles.css`)
 
-## Phase 1 — Backend hardening ✅ CLOSED (this session)
+Two new status colors are needed (light + dark values):
 
-### 1.1 Remaining schema (just landed)
-- `vault_accounts.tags text[]` + GIN index + 20-tag-per-row cap.
-- `vault_accounts.is_favorite` + partial index on `(user_id, is_favorite) WHERE is_favorite` — favorites now sync across devices (the client-only `favorites.ts` cache will be swapped over in a Phase 3 UI PR).
-- `feature_flags` table: signed-in users can SELECT; only admins can INSERT/UPDATE/DELETE.
-- `announcements` table: signed-in users see rows where `expires_at IS NULL OR expires_at > now()`; only admins can write. `kind` constrained to `info|warning|success|critical`.
+```
+--aegis-success       (light: #4a8f5a  · dark: #6db97b)
+--aegis-success-rgb   (rgb triplet)
+--aegis-warning       (light: #c9a24a  · dark: #e6b04a)
+--aegis-warning-rgb   (rgb triplet)
+--aegis-scanner-bg    (light: #0a0a0a  · dark: #0a0a0a — scanner stays dark either way)
+```
 
-### 1.2 RLS
-- Admin-read policies on `client_errors` and `admin_audit` — landed with the tables. **No admin policy on `vault_accounts` — intentional.**
-- Per-user insert rate limit: `enforce_vault_accounts_insert_rate_limit` trigger caps each user at 60 new vault rows per minute.
-- CI test `tests/rls/anonymous-cannot-read.spec.mjs` — 9 green assertions: anon SELECT on every user/admin/auth-only table returns no rows, and anon INSERT on `vault_accounts` + `profiles` is rejected. Run with `node --test tests/rls/anonymous-cannot-read.spec.mjs`.
+Existing tokens already cover ink, cream, cream-soft, border, muted, danger, fav, placeholder — those are the target replacements everywhere else.
 
-### 1.3 Edge / server code
-- `src/start.ts` now registers `securityHeadersMiddleware` in front of the error middleware. Every server response gets a strict `Content-Security-Policy` (self + inline styles + `*.supabase.co` / `*.lovable.dev` connect), `Strict-Transport-Security` (2y + preload), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` locking camera/clipboard to self and denying geolocation/microphone/payment, and `Cross-Origin-Opener-Policy: same-origin`.
-- **Rate limit on `POST /auth/*`** is provided by Supabase Auth itself (configured platform-side) — we cannot intercept those calls from app code because they hit the Supabase Auth service directly, not our TanStack Start worker.
+### Replacement rules
 
-### 1.4 Backups & DR
-- `docs/dr.md` published — documents the PITR / snapshot posture (Lovable Cloud → Advanced settings owns backup config), RPO ≤ 5 min / RTO ≤ 60 min targets, quarterly restore drill checklist, and the zero-knowledge property (a full dump leaks no codes).
-- Enabling PITR + scheduling snapshot exports is a **platform-side action** the app cannot perform — the service-role key is not exposed to the app runtime. Left as a manual step for the operator.
+- `#f7f4ed` / `#fbf7ee` / `#fff` on cream surfaces → `var(--aegis-cream)` or `var(--aegis-cream-soft)`
+- `#1c1c1c` / `#1c1c1a` → `var(--aegis-ink)`
+- `#6b6b6b` / `#4a4a4a` / `#3a3a3a` → `var(--aegis-muted)`
+- `rgba(28,28,28, X)` → `rgb(var(--aegis-ink-rgb) / X)`
+- QR foreground/background → `var(--aegis-ink)` / `var(--aegis-cream-soft)` read via `getComputedStyle` at render time (QR lib needs literals)
+- Blog page: replace top-level constants (CREAM, CHARCOAL, MUTED) with CSS vars via a single `useTheme`-less helper — pure inline styles that reference the vars
 
-**Exit criterion met:** SECURITY.md promises are enforced in migrations + CI. Phase 1 is closed.
+### `/dev/tokens` route
 
+- New file: `src/routes/dev.tokens.tsx`
+- Not linked from nav; discoverable via URL only
+- Renders a grid of every `--aegis-*` token as a swatch card: name, resolved value, hex/rgb readout, contrast ratio hint against ink/cream
+- Includes a manual light/dark toggle at the top (adds/removes `.dark` on `<html>`) so a reviewer can flip modes without OS-level changes
+- Groups: Surfaces · Text · Status · Accents · Glow · Grain
 
+### Roadmap update
 
-### Phase 2 — Crypto version lock
-- `VAULT_CRYPTO_VERSION = 1` exported from `src/lib/vault-crypto.ts`
-  with an inline contract explaining what bumping it requires (KDF,
-  wrap shape, secret shape). v2 (Argon2id + AAD) documented as the
-  next migrator.
-- `tests/crypto/rfc6238.spec.mjs` — 18 RFC 6238 golden assertions
-  (SHA-1/256/512 × 6 canonical timestamps). Green.
-- `tests/crypto/vault-crypto.roundtrip.spec.mjs` — KDF determinism,
-  wrap/unwrap round-trip, wrong-passphrase rejection, tampered
-  ciphertext + IV rejection. Green.
-- Run both with `node --test tests/crypto/*.spec.mjs` (no vitest
-  dependency introduced).
+Mark 8.1 checkboxes done and note the Google brand SVG exception.
 
-### Accepted linter warnings
-Two Supabase linter warnings remain after the migration and are
-**intentional** — do not "fix" them:
-1. `client_errors` INSERT policy is `WITH CHECK (true)` because the
-   frontend needs to log errors from unauthenticated pages too. The
-   payload has no privileged content.
-2. `is_admin(uuid)` is a `SECURITY DEFINER` function granted to
-   `authenticated`. That grant is required for RLS policies on
-   `client_errors` and `admin_audit` to evaluate it. The function only
-   reads the caller's own `profiles` row.
+### Non-goals
 
-## Notes on the wider roadmap you shared
-
-That roadmap (Phases 0–7) was written before this session. Big items
-worth reconciling against reality before you plan the next PRs:
-
-- Phase 4 (auto-lock, change passphrase, delete account, avatar) is
-  already shipped — see the "shipped screens" section below. The
-  roadmap lists them as pending.
-- Phase 1.4 (Supabase PITR + weekly S3 dumps) is a platform-side task
-  that cannot be done from Lovable Cloud tooling — it needs the
-  Supabase dashboard directly.
-- Phase 1.3 CSP/HSTS headers and edge rate-limits on `POST /auth/*`
-  need to be added at the TanStack Start server middleware layer;
-  Supabase Auth has its own built-in rate limits for the auth
-  endpoints themselves.
-
-The next-up crypto work is the v2 migrator (Argon2id + AAD binding on
-`vault_accounts.secret_ciphertext`). Ship it behind
-`VAULT_CRYPTO_VERSION = 2` with a background re-encrypt.
-
----
-
-## Vault navigation (background — unchanged)
-
-Persistent bottom tab bar (Vault / Security / Profile) driven by
-`_authenticated/_tabs.tsx`; locked-vault gate at
-`_authenticated/_locked/route.tsx`. Add-account is the floating pill on
-the Vault screen, not a tab.
-
-## Shipped screens
-
-### Security tab
-- Change passphrase — bottom-sheet flow, `rewrapVaultKey` mints a fresh
-  KEK + salt + iv, DEK stays the same so `vault_accounts` is untouched.
-- Auto-lock timer — picker (1/5/15/30 min / never), mirrored to
-  `profiles.auto_lock_pref` for cross-device sync.
-- Biometric enroll/disable — clear success/failure notice, WebAuthn
-  removal explicitly verified.
-
-### Profile tab
-- Editable display name, persisted to `profiles`.
-- Avatar — client resize to 512×512 JPEG, private `avatars` bucket at
-  `user_id/avatar.jpg`, short-lived signed URLs, Choose/Remove sheet.
-- Delete account — `deleteMyAccount` server fn wipes `vault_accounts`,
-  `vault_meta`, `profiles`, avatar object, then removes the
-  `auth.users` row via the admin API.
-
-### Vault
-- Search + favorites.
-- Recovery sheet.
-- Copy code + auto-clear clipboard after 30 s (only if value unchanged).
-- Bulk import — Paste / File-or-image, auto-detects `otpauth://` lists,
-  `otpauth-migration://` (Google Authenticator protobuf), Aegis plain
-  JSON, and 2FAS JSON. Preview stage with per-row checkboxes.
-
-## Next feature candidates
-
-## Phase 3 — Vault UX depth ✅ CLOSED (this session)
-
-### 3.1 Favorites sync to DB (landed)
-- Removed the client-only `src/lib/favorites.ts` localStorage cache.
-- `DecryptedAccount.is_favorite` now flows from `vault_accounts.is_favorite`;
-  `setAccountFavorite(id, next)` in `vault-accounts.ts` writes through
-  Supabase with an optimistic-UI rollback on error.
-- `vault.tsx` derives the favorites `Set` from the loaded rows and re-orders
-  server-side (`.order("is_favorite", { ascending: false })`) so favorites
-  now roam across devices instead of being per-browser.
-
-### 3.2 Encrypted `.avf` export (landed)
-- `src/lib/vault-export.ts` — passphrase-wrapped JSON envelope
-  (`format: "aegis-vault-file"`, `version` pinned to `VAULT_CRYPTO_VERSION`).
-  KDF matches the live vault (PBKDF2-SHA256, 600k iterations, 16-byte salt);
-  payload sealed with AES-256-GCM under a KEK derived from a user-picked
-  export passphrase — never the vault passphrase, never the DEK on disk.
-- New Security-tab row "Encrypted export" → passphrase sheet with strength
-  meter, downloads `aegis-vault-<iso>.avf` as `application/json`.
-- `tests/crypto/vault-export.roundtrip.spec.mjs` — 4 green assertions:
-  round-trip, wrong-passphrase rejection, JSON stability, weak-passphrase
-  rejection. Run with
-  `node --import tsx --test tests/crypto/vault-export.roundtrip.spec.mjs`.
-
-### Bulk import (already shipped)
-- Paste + File-or-image importer already supports `otpauth://`,
-  `otpauth-migration://` (Google Authenticator protobuf), Aegis plain JSON,
-  and 2FAS JSON with a preview + per-row checkbox stage. Restoring an
-  `.avf` file inside the same importer is the natural Phase 5 follow-up.
-
-**Exit criterion met:** favorites persist server-side, export/restore-your-own-backup
-loop is possible end-to-end without trusting Lovable Cloud. Phase 3 is closed.
-
-## Phase 5 — `.avf` restore in the importer ✅ CLOSED (this session)
-
-- `src/lib/vault-import.ts` grew a new `"avf"` source: `isAvfJson()`
-  detects the `format: "aegis-vault-file"` envelope, and
-  `importFromAvf(file, passphrase)` calls `decryptExportedFile()` from
-  `vault-export.ts` and maps the decrypted accounts into the same
-  `ParsedOtpauth` shape the preview stage already consumes. Wrong
-  passphrases surface the friendly "Wrong export passphrase…" error
-  from Phase 3.2.
-- `vault_.import.tsx` gained a third stage `"avf"`: picking an `.avf`
-  file from the File tab (accept list now includes `.avf`) opens a
-  passphrase card with an autofocused password input, Enter-to-submit,
-  and a Decrypting… spinner. On success the flow drops into the normal
-  per-row preview + commit path — no other code changed.
-- File-tab hint copy now advertises "Aegis, 2FAS, or .avf backup" so
-  users can find the flow without reading docs.
-- Verified with `bunx tsgo --noEmit` (0 errors) and the Phase 3.2
-  round-trip suite (`node --import tsx --test
-  tests/crypto/vault-export.roundtrip.spec.mjs` → 4/4 green).
-
-**Exit criterion met:** a user can export from Security → Encrypted
-export and re-import the same `.avf` on a fresh device with only the
-export passphrase. Phase 5 is closed.
-
-## Phase 6 — Offline + PWA ✅ CLOSED (this session)
-
-Scope covered this pass: **6.1 service worker + manifest** and **6.2
-encrypted offline vault mirror**, plus **6.4 offline UX banner**. The
-6.3 code-splitting pass (dynamic-import `@zxing/browser` inside the
-scan components, `jspdf` inside the recovery route) is intentionally
-deferred — both are already lazy-loaded via route splitting, so the
-extra work is a [P1] follow-up rather than a Phase 6 blocker.
-
-### 6.1 Service worker + manifest (landed)
-- `vite-plugin-pwa@1.3.0` in `generateSW` mode with
-  `injectRegister: null`, `devOptions.enabled: false`, and
-  `outDir: 'dist/client'` so the SW + manifest ship inside the
-  TanStack client bundle instead of alongside the Nitro worker.
-- Runtime caching: **NetworkFirst** for HTML navigations
-  (`networkTimeoutSeconds: 3`, `aegis-html` cache, denylist for
-  `/~oauth`, `/api/*`, `/auth/callback`, `/auth/reset-password`
-  applied inside the `urlPattern` itself so those URLs never enter
-  the cache), **StaleWhileRevalidate** for Google Fonts CSS,
-  **CacheFirst** for `fonts.gstatic.com` files (1-year TTL,
-  immutable per URL). No `navigateFallback` — TanStack Start SSRs
-  every route, so there is no static `index.html` to fall back to;
-  each previously-visited URL is served from its own runtime
-  cache entry when offline. *(Fixed this session — the earlier
-  `navigateFallback: "/index.html"` pointed at a file the build
-  never emits.)*
-- Manifest at `/manifest.webmanifest`: `display: standalone`,
-  `start_url: /vault`, `theme_color: #f7f4ed`, matching cream
-  background, three icons (192, 512, 512-maskable) generated from
-  a single shield glyph, plus `apple-touch-icon.png` (180×180).
-- Guarded registration in `src/lib/pwa-register.ts` — refuses to
-  register (and unregisters any stale `/sw.js`) in **dev**, inside
-  an **iframe**, on any Lovable **preview host** (`id-preview--*`,
-  `preview--*`, `*.lovableproject.com`, `*.lovableproject-dev.com`,
-  `*.beta.lovable.dev`), or when the URL carries `?sw=off`. Called
-  once from `src/routes/__root.tsx` `RootComponent` useEffect.
-
-### 6.2 Encrypted offline vault mirror (landed)
-- New module `src/lib/vault-cache.ts` wrapping an IndexedDB store
-  (`aegis-vault` DB, `accounts` + `meta` object stores, `idb@8`).
-  Stores the **same `VaultAccountRecord` ciphertext + IV** that
-  Supabase holds — never plaintext, never the DEK. Decryption
-  still happens in memory after unlock via the existing
-  `decryptRows()` path.
-- **Owner isolation**: `meta.owner_user_id` is checked before any
-  read; a sign-out into a different account clears the store
-  before writing. `clearVaultCache()` is called from the
-  `RootComponent` auth listener on `SIGNED_OUT`.
-- New `listAccountsWithCache(dek, userId)` in `vault-accounts.ts`:
-  tries the network first, mirrors the fetched rows into
-  IndexedDB, and falls back to the cache on network error or
-  `navigator.onLine === false`. Returns `source: 'network' |
-  'cache' | 'empty'` so the UI can flag stale state.
-- Mutations keep the cache coherent — `addAccount`,
-  `setAccountFavorite`, `deleteAccount` all now
-  `.select().single()` the row and call
-  `upsertVaultCache` / `removeFromVaultCache`.
-
-### 6.4 Offline UX (fully landed this session)
-- Shared `useOnlineStatus()` hook in `src/lib/use-online.ts` —
-  SSR-safe, subscribes to `window` `online` / `offline` once,
-  reused by every screen that needs the signal.
-- `vault.tsx` — pill-shaped notice at the top of the vault when
-  offline or serving cache, now with a **Retry** button
-  (`RefreshCw` icon + spinner while re-loading). Retry bumps a
-  `reloadKey` that re-runs `listAccountsWithCache`, so a captive
-  Wi-Fi / dropped Supabase connection can be recovered without
-  navigating away.
-  - offline → *"You're offline — showing cached codes. Add or
-    edit is disabled."*
-  - back online but still on cache → *"Reconnecting — showing
-    cached codes."*
-- `vault_.new.tsx` — the Add-account screen now shows the same
-  offline pill and blocks `save()` with a friendly error when
-  `navigator.onLine === false`. QR scanning stays enabled because
-  decoding an `otpauth://` URI is fully local — only the write to
-  `vault_accounts` needs the network.
-- Deferred as **[P2]** for a follow-up PR: full write-outbox for
-  `addAccount` / `setAccountFavorite` / `deleteAccount` with
-  replay on reconnect. The favorite toggle already rolls back on
-  error and the Add screen is now gated, so the current gap is
-  UX polish, not data loss.
-
-### 6.3 Dynamic-import heavy libraries ✅ CLOSED (this session)
-- `jspdf` moved to `await import("jspdf")` inside `downloadPdf` in
-  `vault_.recovery.tsx`. Recovery-route chunk shrank **419 KB → 30 KB**;
-  the 399 KB `jspdf` chunk only loads when the user clicks Download.
-- `@zxing/browser` moved to `await import("@zxing/browser")` inside
-  every `BrowserQRCodeReader` call site in `vault_.import.tsx` and
-  `vault_.new.tsx` (image decode + live camera scan paths). Type-only
-  `IScannerControls` import kept for `useEffect` cleanup typing.
-  `vault_.import` chunk: **22 KB**; `vault_.new` chunk: **13 KB**.
-  The zxing bundle now only loads when a user opens the scanner or
-  picks an image file.
-- Verified `bunx tsgo --noEmit` clean and `bun run build` clean.
+- No visual redesign of any existing route — pure token migration
+- No changes to shadcn's `--color-*` OKLCH tokens (Aegis tokens live alongside)
+- Storybook is not being added; `/dev/tokens` fulfills the "render every token" requirement
 
 ### Verification
-- `bunx tsgo --noEmit` → **0 errors**.
-- Phase 6 exit criteria all green: installable PWA, cached codes
-  after unlock, retry-able offline banner, add-account gated when
-  offline, heavy libs off the initial paint.
 
-**Exit criterion met:** Phase 6 is fully closed.
-
-## Phase 7.1 — Tags UI ✅ CLOSED (this session)
-
-Column + GIN index already existed from Phase 1.1; only the client
-surface was missing. Landed this pass:
-
-- **Data layer** (`src/lib/vault-accounts.ts`) — `tags: string[]` on
-  `VaultAccountRecord` + `DecryptedAccount`, added to a shared
-  `ACCOUNT_SELECT` and the `INSERT` payload. New helper
-  `setAccountTags(id, tags)` returns the normalised list and refreshes
-  the IndexedDB mirror via `upsertVaultCache` — offline reads see the
-  latest tags immediately.
-- **Shared primitives** (`src/components/vault/tags.tsx`) —
-  `normalizeTag` / `normalizeTagList` (lowercase, dashify, dedupe, cap
-  at 20 to match the DB CHECK), deterministic `tagChipColors(tag)`
-  hashed off the tag name, `<TagChip>` + `<TagInput>` (Enter / comma /
-  Tab to commit, Backspace-on-empty to remove, live suggestions from
-  the current vault's tag pool).
-- **AccountCard** — up to 3 tag chips (with `+N` overflow pill) shown
-  under the label on the compact row; details sheet gets a Tags editor
-  that reuses `TagInput` and only surfaces a Save button when the
-  draft diverges. Updates propagate back to the vault page via a new
-  `onTagsChanged` callback so filters + suggestions stay coherent.
-- **Vault page** — horizontal tag-filter row above the search field
-  (chip per tag with `· count`, active state inverts to charcoal,
-  Clear pill appears once anything is selected). Combined with search
-  as a union across issuer / label / tags. Empty-state copy switches
-  between "no tag match" and "no query match".
-- **Tag manager sheet** — reachable from the "Manage" button on the
-  filter row. Lists every tag with its account count and offers
-  Rename (inline input; renaming to an existing tag merges) and
-  Delete (removes the tag from every account, keeps the accounts).
-  All bulk edits run through `setAccountTags` per row so the trigger
-  and cache invariants stay identical.
-- **Add-account form** (`vault_.new.tsx`) — new optional Tags section
-  above Advanced options; QR-scan flow accepts tags too via the
-  extended `save()` signature (empty by default).
-
-### Verification
-- `bunx tsgo --noEmit` → **0 errors**.
-- `bun run build` → **clean**.
-- Route-level chunks unchanged in size class (the tag primitives add
-  ~2 KB to the vault entry, well inside the Phase 6 budget).
-
-**Exit criterion met:** Phase 7.1 is closed. Next up in Phase 7:
-7.2 drag-and-drop reorder (writing to `sort_order`) and 7.3 bulk
-select / delete / tag.
-
-## Next feature candidates
-
-1. **Phase 7.2 / 7.3** — DnD reorder + bulk select/edit on the vault.
-2. **RLS CI test** — extend `tests/rls/` to walk every route in
-   `docs/routing.md`.
-3. **`VAULT_CRYPTO_VERSION = 2`** — Argon2id KDF + AAD binding
-   (`user_id || account_id`) with a background re-encrypt migrator.
-
-
-
-
+- `rg '#[0-9a-fA-F]{6}' src/routes src/components/aegis` returns only the Google brand SVG lines
+- Load `/dev/tokens` in both light and dark, confirm every swatch renders and flips
+- Spot-check blog, vault list, scanner, recovery QR in both modes via Playwright screenshot

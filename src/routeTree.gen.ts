@@ -13,6 +13,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DevTokensRouteImport } from './routes/dev.tokens'
 import { Route as BlogAegisVsGoogleAuthenticatorRouteImport } from './routes/blog.aegis-vs-google-authenticator'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth.reset-password'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -44,6 +45,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevTokensRoute = DevTokensRouteImport.update({
+  id: '/dev/tokens',
+  path: '/dev/tokens',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogAegisVsGoogleAuthenticatorRoute =
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/blog/aegis-vs-google-authenticator': typeof BlogAegisVsGoogleAuthenticatorRoute
+  '/dev/tokens': typeof DevTokensRoute
   '/profile': typeof AuthenticatedTabsProfileRoute
   '/security': typeof AuthenticatedTabsSecurityRoute
   '/vault': typeof AuthenticatedTabsVaultRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/blog/aegis-vs-google-authenticator': typeof BlogAegisVsGoogleAuthenticatorRoute
+  '/dev/tokens': typeof DevTokensRoute
   '/profile': typeof AuthenticatedTabsProfileRoute
   '/security': typeof AuthenticatedTabsSecurityRoute
   '/vault': typeof AuthenticatedTabsVaultRoute
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/blog/aegis-vs-google-authenticator': typeof BlogAegisVsGoogleAuthenticatorRoute
+  '/dev/tokens': typeof DevTokensRoute
   '/_authenticated/_tabs/profile': typeof AuthenticatedTabsProfileRoute
   '/_authenticated/_tabs/security': typeof AuthenticatedTabsSecurityRoute
   '/_authenticated/_tabs/vault': typeof AuthenticatedTabsVaultRoute
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/reset-password'
     | '/blog/aegis-vs-google-authenticator'
+    | '/dev/tokens'
     | '/profile'
     | '/security'
     | '/vault'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/reset-password'
     | '/blog/aegis-vs-google-authenticator'
+    | '/dev/tokens'
     | '/profile'
     | '/security'
     | '/vault'
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/reset-password'
     | '/blog/aegis-vs-google-authenticator'
+    | '/dev/tokens'
     | '/_authenticated/_tabs/profile'
     | '/_authenticated/_tabs/security'
     | '/_authenticated/_tabs/vault'
@@ -229,6 +241,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   BlogAegisVsGoogleAuthenticatorRoute: typeof BlogAegisVsGoogleAuthenticatorRoute
+  DevTokensRoute: typeof DevTokensRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -259,6 +272,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/tokens': {
+      id: '/dev/tokens'
+      path: '/dev/tokens'
+      fullPath: '/dev/tokens'
+      preLoaderRoute: typeof DevTokensRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/aegis-vs-google-authenticator': {
@@ -424,6 +444,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   BlogAegisVsGoogleAuthenticatorRoute: BlogAegisVsGoogleAuthenticatorRoute,
+  DevTokensRoute: DevTokensRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
