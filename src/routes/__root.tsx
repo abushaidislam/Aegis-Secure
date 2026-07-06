@@ -229,7 +229,7 @@ function RootComponent() {
           lockVault();
           void clearVaultCache();
         } else {
-          void syncThemeFromProfile();
+          void syncPrefsFromProfile();
         }
         router.invalidate();
         if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
