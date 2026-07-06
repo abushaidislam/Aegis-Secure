@@ -18,10 +18,21 @@
 
 import type { DecryptedAccount } from "@/lib/vault-accounts";
 
-/** Default extension IDs. Users can add their unpacked dev extension via override. */
-const AEGIS_EXTENSION_IDS: readonly string[] = [
-  "obmldhfkhjgmibnkbffjpblemdkdibip",
-];
+/**
+ * Read the extension's runtime ID from the DOM. The Aegis extension's
+ * `announce.js` content script stamps `data-aegis-extension-id` on
+ * <html> at document_start when it's installed, so any user who has
+ * the extension gets auto-detected — no hardcoded ID, no config.
+ */
+function discoverExtensionId(): string | null {
+  if (typeof document === "undefined") return null;
+  const id = document.documentElement?.dataset?.aegisExtensionId;
+  return id && id.length > 0 ? id : null;
+}
+
+export function isExtensionInstalled(): boolean {
+  return discoverExtensionId() !== null;
+}
 
 type SendResult =
   | { ok: true; accountCount: number }
