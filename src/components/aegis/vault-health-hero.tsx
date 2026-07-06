@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ShieldCheck, Lock } from "lucide-react";
 
-import { BORDER, CHARCOAL, CREAM_SOFT, DANGER, MUTED, soft } from "@/components/aegis/chrome";
+import { BORDER, CHARCOAL, CREAM, DANGER, MUTED, soft } from "@/components/aegis/chrome";
 import { getVaultKey, useVaultUnlocked } from "@/lib/vault-session";
 import { listAccounts } from "@/lib/vault-accounts";
 import { computeVaultHealth, type VaultHealthReport } from "@/lib/vault-health";
 import { HealthSheet } from "@/components/aegis/vault-health-section";
+
 
 /**
  * Vault health hero — a clean semi-circular gauge (Apple-style) that lives
