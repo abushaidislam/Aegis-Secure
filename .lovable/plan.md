@@ -1,65 +1,82 @@
+## Phase 8.3 — Localization
 
-## Phase 8.1 — Semantic-token pass
+Goal: ship the localization infrastructure and the user-facing picker so translations can land incrementally. Aegis becomes ready to serve `en, es, pt-BR, fr, de, ja, hi, bn` with a clean workflow for future PRs.
 
-Goal: no hard-coded hex/rgba colors anywhere in `chrome.tsx`, `settings.tsx`, or route files (except third-party brand marks like Google logo). Every component consumes theme-aware CSS variables. Add an internal `/dev/tokens` route to visually verify every token in both light and dark modes.
+### 1. Dependencies
 
-### Scope of files to sweep
+Add via `bun add`:
 
-- `src/components/aegis/settings.tsx` — gradient overlay hex → ink-rgb var
-- `src/components/vault/ScanTab.tsx` — `#0a0a0a`, `#c9a24a` (warning), `#4a8f5a` (success)
-- `src/routes/__root.tsx` — `theme-color` meta will keep its literal (browser chrome only)
-- `src/routes/index.tsx` — CREAM/CHARCOAL constants → CSS vars
-- `src/routes/blog.aegis-vs-google-authenticator.tsx` — heaviest offender, ~30 hex sites
-- `src/routes/_authenticated/_locked/vault_.recovery.tsx` — QR fg/bg + tile bg
-- `src/routes/_authenticated/_locked/vault_.new.tsx` — status dots
-- `src/routes/_authenticated/_locked/vault_.import.tsx` — scanner overlay + status dot
-- `src/routes/_authenticated/_tabs/vault.tsx` — chip color
+- Runtime: `@lingui/core`, `@lingui/react`, `@lingui/detect-locale`
+- Dev: `@lingui/cli`, `@lingui/vite-plugin`, `@lingui/babel-plugin-lingui-macro`, `babel-plugin-macros`
 
-Google brand SVG in `chrome.tsx` (EA4335 / 4285F4 / FBBC05 / 34A853) is a brand asset and stays literal — documented as an exception.
+### 2. Config files
 
-### New semantic tokens (add to `src/styles.css`)
+- `lingui.config.ts` — locales list, `sourceLocale: "en"`, catalogs in `src/locales/{locale}/messages.po`, format `po`.
+- `vite.config.ts` — register `@lingui/vite-plugin` alongside the existing plugins.
+- `package.json` scripts: `"i18n:extract": "lingui extract"`, `"i18n:compile": "lingui compile"`.
 
-Two new status colors are needed (light + dark values):
+### 3. Runtime wiring
 
+- `src/lib/i18n.ts` — `SUPPORTED_LOCALES` array with `{code, label, nativeLabel}` for the eight locales, `LOCALE_STORAGE_KEY = "aegis:locale"`, `getLocalePref()`, `setLocalePref()`, `activateLocale(code)` calling `i18n.load` + `i18n.activate`, and `detectInitialLocale()` (localStorage → `navigator.language` → `en`).
+- `src/routes/__root.tsx` — wrap the app in `<I18nProvider i18n={i18n}>`, activate detected locale before hydration (mirror of theme boot).
+- Auth sync in `__root.tsx`: on session, pull `profiles.locale` and, if present, re-activate + persist.
+
+### 4. Catalogs
+
+- Create `src/locales/{en,es,pt-BR,fr,de,ja,hi,bn}/messages.po` — empty scaffolds committed so `lingui compile` works out of the box; also `messages.ts` compiled outputs are gitignored and regenerated.
+- Seed the `en` catalog with the strings from step 6 so the app renders identically today.
+
+### 5. Database
+
+Migration `add profiles.locale`:
+
+```sql
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS locale text
+  CHECK (locale IN ('en','es','pt-BR','fr','de','ja','hi','bn'));
 ```
---aegis-success       (light: #4a8f5a  · dark: #6db97b)
---aegis-success-rgb   (rgb triplet)
---aegis-warning       (light: #c9a24a  · dark: #e6b04a)
---aegis-warning-rgb   (rgb triplet)
---aegis-scanner-bg    (light: #0a0a0a  · dark: #0a0a0a — scanner stays dark either way)
-```
 
-Existing tokens already cover ink, cream, cream-soft, border, muted, danger, fav, placeholder — those are the target replacements everywhere else.
+No new grants/policies (column on existing table already covered by RLS).
 
-### Replacement rules
+### 6. Wrap user-facing strings (initial pass)
 
-- `#f7f4ed` / `#fbf7ee` / `#fff` on cream surfaces → `var(--aegis-cream)` or `var(--aegis-cream-soft)`
-- `#1c1c1c` / `#1c1c1a` → `var(--aegis-ink)`
-- `#6b6b6b` / `#4a4a4a` / `#3a3a3a` → `var(--aegis-muted)`
-- `rgba(28,28,28, X)` → `rgb(var(--aegis-ink-rgb) / X)`
-- QR foreground/background → `var(--aegis-ink)` / `var(--aegis-cream-soft)` read via `getComputedStyle` at render time (QR lib needs literals)
-- Blog page: replace top-level constants (CREAM, CHARCOAL, MUTED) with CSS vars via a single `useTheme`-less helper — pure inline styles that reference the vars
+Convert strings to Lingui macros in the highest-traffic surfaces so the extractor produces a real catalog:
 
-### `/dev/tokens` route
+- `src/routes/auth.tsx`, `src/routes/auth.callback.tsx`, `src/routes/auth.reset-password.tsx`
+- `src/components/aegis/settings.tsx` (Profile → Appearance rows, Sign out, etc.)
+- `src/routes/_authenticated/_tabs/{profile,security,vault}.tsx` visible labels, section titles, empty states
+- `src/routes/_authenticated/_locked/vault_.{new,import,recovery}.tsx` primary CTAs, field labels, notices
+- `src/components/aegis/BottomTabs.tsx` tab labels
+- `src/components/onboarding/Onboarding.tsx` step copy
 
-- New file: `src/routes/dev.tokens.tsx`
-- Not linked from nav; discoverable via URL only
-- Renders a grid of every `--aegis-*` token as a swatch card: name, resolved value, hex/rgb readout, contrast ratio hint against ink/cream
-- Includes a manual light/dark toggle at the top (adds/removes `.dark` on `<html>`) so a reviewer can flip modes without OS-level changes
-- Groups: Surfaces · Text · Status · Accents · Glow · Grain
+Deep technical strings (dev/tokens, error stack helpers, log-only text) stay in English; blog route stays English (SEO route).
 
-### Roadmap update
+### 7. Locale picker (Profile → Language)
 
-Mark 8.1 checkboxes done and note the Google brand SVG exception.
+- New section in `src/components/aegis/settings.tsx` mirroring the Appearance section: rows for each of the eight locales (native label + English label), active checkmark, tap to switch.
+- On select: `activateLocale(code)` → `setLocalePref(code)` → upsert `profiles.locale`.
+
+### 8. String freeze policy
+
+- `docs/i18n.md` — new short doc: any PR touching visible copy runs `bun run i18n:extract`, commits the `.po` diff; CI check to be added in Phase 8.4.
+- Mention in `AGENTS.md` under a new "Localization" bullet.
+
+### 9. Verification
+
+- `bun run i18n:extract` produces a non-empty `en` catalog with the strings from step 6.
+- `bun run i18n:compile` succeeds for all eight locales.
+- Manual: switch locale in Profile → picker persists across reload, `profiles.locale` updated. English fallback works for locales with empty catalogs.
+- Typecheck + build clean.
 
 ### Non-goals
 
-- No visual redesign of any existing route — pure token migration
-- No changes to shadcn's `--color-*` OKLCH tokens (Aegis tokens live alongside)
-- Storybook is not being added; `/dev/tokens` fulfills the "render every token" requirement
+- Actual translated copy for es/pt-BR/fr/de/ja/hi/bn (empty catalogs, English fallback until translators land copy).
+- Right-to-left support (no RTL locales in the initial eight).
+- CI extractor check — deferred to Phase 8.4 alongside axe-core.
+- Localizing the marketing home page and blog route (SEO English-only for now).
 
-### Verification
+### Technical notes
 
-- `rg '#[0-9a-fA-F]{6}' src/routes src/components/aegis` returns only the Google brand SVG lines
-- Load `/dev/tokens` in both light and dark, confirm every swatch renders and flips
-- Spot-check blog, vault list, scanner, recovery QR in both modes via Playwright screenshot
+- Lingui macros require the Vite plugin; without it, `<Trans>` and `t\`\`` render literally. The plugin transforms at build time — no runtime cost.
+- `@lingui/detect-locale` handles `navigator.languages` fallback chain; we only accept it if it matches a supported locale, else `en`.
+- Pre-hydration locale activation is synchronous (catalog is bundled), so no flash of untranslated content.
