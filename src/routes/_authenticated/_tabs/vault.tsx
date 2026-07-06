@@ -771,22 +771,14 @@ function VaultPage() {
                     <Trash2 className="h-5 w-5" strokeWidth={1.8} />
                   </div>
                   <div className="min-w-0">
-                    <div
-                      id="bulk-delete-title"
-                      className="truncate text-[16px]"
-                      style={{
-                        fontFamily: "'Playfair Display', serif",
-                        fontWeight: 600,
-                        letterSpacing: "-0.01em",
-                        color: CHARCOAL,
-                      }}
-                    >
+                    <div id="bulk-delete-title" className="truncate" style={typeSheetTitleSm}>
                       Remove {selectedIds.size} account{selectedIds.size === 1 ? "" : "s"}?
                     </div>
-                    <div className="mt-0.5 truncate text-[12px]" style={{ color: MUTED }}>
+                    <div className="mt-0.5 truncate" style={{ ...typeSubLabel, fontSize: 12 }}>
                       Selected from your vault
                     </div>
                   </div>
+
                 </div>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
@@ -802,12 +794,13 @@ function VaultPage() {
 
               <p
                 id="bulk-delete-desc"
-                className="mb-4 text-[13px]"
-                style={{ color: MUTED, lineHeight: 1.55 }}
+                className="mb-4"
+                style={{ ...typeBody, fontSize: 13 }}
               >
                 The encrypted secrets will be deleted from your vault. You'll need the original QR
                 codes or setup keys to add them back. This can't be undone.
               </p>
+
 
               <div className="flex flex-col gap-2 pb-1">
                 <motion.button
