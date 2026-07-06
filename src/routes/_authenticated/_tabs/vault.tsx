@@ -41,8 +41,23 @@ import {
 } from "@/lib/vault-tag-queue";
 import { useOnlineStatus } from "@/lib/use-online";
 import { AccountCard } from "@/components/vault/AccountCard";
-import { TagChip } from "@/components/vault/tags";
-import { Shield, Plus, Loader2, Search, X, WifiOff, RefreshCw, Tags } from "lucide-react";
+import { PRESET_TAGS, TagChip } from "@/components/vault/tags";
+import { ExportPassphraseSheet } from "@/components/vault/ExportPassphraseSheet";
+import {
+  Shield,
+  Plus,
+  Loader2,
+  Search,
+  X,
+  WifiOff,
+  RefreshCw,
+  Tags,
+  CheckSquare,
+  Check,
+  Trash2,
+  Download,
+  Tag as TagIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   BORDER,
@@ -86,6 +101,12 @@ function VaultPage() {
   const [retrying, setRetrying] = useState(false);
   const [activeTags, setActiveTags] = useState<Set<string>>(() => new Set());
   const [tagManagerOpen, setTagManagerOpen] = useState(false);
+  // Phase 7.3 — bulk selection mode.
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [bulkTagOpen, setBulkTagOpen] = useState(false);
+  const [bulkExportOpen, setBulkExportOpen] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [pendingTagCount, setPendingTagCount] = useState<number>(
     () => (typeof window === "undefined" ? 0 : listQueuedTagUpdates().length),
   );
@@ -170,6 +191,95 @@ function VaultPage() {
     },
     [],
   );
+
+  // ---- Phase 7.3: bulk selection helpers ----
+  const enterSelection = useCallback((seedId?: string) => {
+    setSelectionMode(true);
+    if (seedId) setSelectedIds(new Set([seedId]));
+  }, []);
+  const exitSelection = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+    setBulkTagOpen(false);
+    setBulkExportOpen(false);
+  }, []);
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+  const selectAllVisible = useCallback((ids: string[]) => {
+    setSelectedIds(new Set(ids));
+  }, []);
+
+  const runBulkDelete = useCallback(async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setBulkBusy(true);
+    // Optimistic removal from the list.
+    setAccounts((prev) => (prev ? prev.filter((a) => !selectedIds.has(a.id)) : prev));
+    try {
+      const results = await Promise.allSettled(ids.map((id) => deleteAccount(id)));
+      const failures = results.filter((r) => r.status === "rejected").length;
+      const queued = results.filter(
+        (r) => r.status === "fulfilled" && r.value.queued,
+      ).length;
+      setPendingOutbox(pendingOutboxCount());
+      if (failures > 0) {
+        toast.error(`${failures} deletion${failures === 1 ? "" : "s"} failed — reloading.`);
+        setReloadKey((k) => k + 1);
+      } else if (queued > 0) {
+        toast(`Queued ${queued} deletion${queued === 1 ? "" : "s"} — will sync when online.`);
+      } else {
+        toast.success(`Deleted ${ids.length} account${ids.length === 1 ? "" : "s"}.`);
+      }
+    } finally {
+      setBulkBusy(false);
+      exitSelection();
+    }
+  }, [selectedIds, exitSelection]);
+
+  const runBulkAddTag = useCallback(
+    async (tag: string) => {
+      const ids = [...selectedIds];
+      if (ids.length === 0 || !tag) return;
+      setBulkBusy(true);
+      // Optimistic — union the tag into every selected account.
+      setAccounts((prev) =>
+        prev
+          ? prev.map((a) => {
+              if (!selectedIds.has(a.id)) return a;
+              const set = new Set(a.tags ?? []);
+              set.add(tag);
+              return { ...a, tags: [...set] };
+            })
+          : prev,
+      );
+      try {
+        const results = await Promise.allSettled(
+          ids.map(async (id) => {
+            const acc = accounts?.find((a) => a.id === id);
+            if (!acc) return;
+            const next = Array.from(new Set([...(acc.tags ?? []), tag]));
+            await setAccountTags(id, next);
+          }),
+        );
+        const failures = results.filter((r) => r.status === "rejected").length;
+        refreshPendingCount();
+        if (failures > 0) toast.error(`${failures} tag update${failures === 1 ? "" : "s"} failed.`);
+        else toast.success(`Tagged ${ids.length} account${ids.length === 1 ? "" : "s"} as “${tag}”.`);
+      } finally {
+        setBulkBusy(false);
+        setBulkTagOpen(false);
+        exitSelection();
+      }
+    },
+    [selectedIds, accounts, refreshPendingCount, exitSelection],
+  );
+
 
 
   const favorites = useMemo(() => {
@@ -489,12 +599,30 @@ function VaultPage() {
         </div>
       )}
 
+      {accounts && accounts.length > 0 && !selectionMode && (
+        <SearchField value={query} onChange={setQuery} />
+      )}
 
+      {accounts && accounts.length > 0 && !selectionMode && (
+        <div className="mb-1 mt-1 flex items-center justify-end">
+          <button
+            type="button"
+            onClick={() => enterSelection()}
+            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px] transition-colors"
+            style={{
+              background: "rgba(28,28,28,0.06)",
+              color: CHARCOAL,
+              fontWeight: 600,
+            }}
+            aria-label="Select multiple accounts"
+          >
+            <CheckSquare className="h-3.5 w-3.5" strokeWidth={1.8} />
+            Select
+          </button>
+        </div>
+      )}
 
-
-      {accounts && accounts.length > 0 && <SearchField value={query} onChange={setQuery} />}
-
-      {accounts && allTags.length > 0 && (
+      {accounts && allTags.length > 0 && !selectionMode && (
         <TagFilterRow
           tags={allTags}
           active={activeTags}
@@ -528,8 +656,11 @@ function VaultPage() {
             onTagsChanged={handleTagsChanged}
             onDetailsChanged={handleDetailsChanged}
             tagSuggestions={tagNames}
-            dndEnabled={online && !query.trim() && activeTags.size === 0}
+            dndEnabled={online && !query.trim() && activeTags.size === 0 && !selectionMode}
             onReorder={handleReorder}
+            selectionMode={selectionMode}
+            selectedIds={selectedIds}
+            onSelectToggle={toggleSelect}
           />
         )}
 
@@ -561,6 +692,40 @@ function VaultPage() {
           }}
         />
       )}
+
+      {selectionMode && accounts && (
+        <BulkActionsBar
+          count={selectedIds.size}
+          busy={bulkBusy}
+          onSelectAll={() =>
+            selectAllVisible((filtered ?? accounts).map((a) => a.id))
+          }
+          onCancel={exitSelection}
+          onDelete={runBulkDelete}
+          onTag={() => setBulkTagOpen(true)}
+          onExport={() => setBulkExportOpen(true)}
+        />
+      )}
+
+      {bulkTagOpen && (
+        <BulkTagSheet
+          onClose={() => setBulkTagOpen(false)}
+          onPick={(tag) => void runBulkAddTag(tag)}
+        />
+      )}
+
+      {bulkExportOpen && accounts && (
+        <ExportPassphraseSheet
+          accounts={accounts.filter((a) => selectedIds.has(a.id))}
+          onClose={() => setBulkExportOpen(false)}
+          onDone={(n) => {
+            setBulkExportOpen(false);
+            exitSelection();
+            toast.success(`Exported ${n} account${n === 1 ? "" : "s"}.`);
+          }}
+          title="Export selected"
+        />
+      )}
     </>
   );
 }
@@ -577,6 +742,9 @@ function UnifiedAccountList({
   tagSuggestions,
   dndEnabled,
   onReorder,
+  selectionMode,
+  selectedIds,
+  onSelectToggle,
 }: {
   favoriteList: DecryptedAccount[];
   otherList: DecryptedAccount[];
@@ -589,6 +757,9 @@ function UnifiedAccountList({
   tagSuggestions: string[];
   dndEnabled: boolean;
   onReorder: (group: "fav" | "other", orderedIds: string[]) => void;
+  selectionMode: boolean;
+  selectedIds: Set<string>;
+  onSelectToggle: (id: string) => void;
 }) {
   const showBothLabels = favoriteList.length > 0 && otherList.length > 0;
 
@@ -613,7 +784,15 @@ function UnifiedAccountList({
   };
 
   const renderRow = (a: DecryptedAccount, opts: { withTopBorder: boolean }) => (
-    <SortableAccountRow key={a.id} id={a.id} enabled={dndEnabled} withTopBorder={opts.withTopBorder}>
+    <SortableAccountRow
+      key={a.id}
+      id={a.id}
+      enabled={dndEnabled}
+      withTopBorder={opts.withTopBorder}
+      selectionMode={selectionMode}
+      selected={selectedIds.has(a.id)}
+      onSelectToggle={onSelectToggle}
+    >
       <AccountCard
         account={a}
         now={now}
@@ -666,11 +845,17 @@ function SortableAccountRow({
   id,
   enabled,
   withTopBorder,
+  selectionMode,
+  selected,
+  onSelectToggle,
   children,
 }: {
   id: string;
   enabled: boolean;
   withTopBorder: boolean;
+  selectionMode: boolean;
+  selected: boolean;
+  onSelectToggle: (id: string) => void;
   children: React.ReactNode;
 }) {
   const {
@@ -686,10 +871,15 @@ function SortableAccountRow({
     transform: CSS.Transform.toString(transform),
     transition,
     borderTop: withTopBorder ? `1px solid ${BORDER}` : undefined,
-    background: isDragging ? "rgba(28,28,28,0.04)" : undefined,
+    background: isDragging
+      ? "rgba(28,28,28,0.04)"
+      : selectionMode && selected
+        ? "rgba(28,28,28,0.05)"
+        : undefined,
     zIndex: isDragging ? 5 : undefined,
     boxShadow: isDragging ? "0 6px 18px rgba(0,0,0,0.12)" : undefined,
     touchAction: enabled ? "manipulation" : undefined,
+    position: "relative",
   };
 
   return (
@@ -700,9 +890,37 @@ function SortableAccountRow({
       {...(enabled ? listeners : {})}
     >
       {children}
+      {selectionMode && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectToggle(id);
+          }}
+          aria-pressed={selected}
+          aria-label={selected ? "Deselect account" : "Select account"}
+          className="absolute inset-0 flex items-start justify-end p-3"
+          style={{
+            background: selected ? "rgba(28,28,28,0.04)" : "transparent",
+            cursor: "pointer",
+          }}
+        >
+          <span
+            className="flex h-6 w-6 items-center justify-center rounded-full"
+            style={{
+              background: selected ? CHARCOAL : "rgba(255,255,255,0.9)",
+              border: `1px solid ${selected ? CHARCOAL : BORDER}`,
+              color: selected ? "#f7f4ed" : "transparent",
+            }}
+          >
+            <Check className="h-3.5 w-3.5" strokeWidth={2.4} />
+          </span>
+        </button>
+      )}
     </div>
   );
 }
+
 
 
 function TagFilterRow({
@@ -1198,3 +1416,189 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
     </motion.div>
   );
 }
+
+// -----------------------------------------------------------------------------
+// Phase 7.3 — Bulk selection UI
+// -----------------------------------------------------------------------------
+
+function BulkActionsBar({
+  count,
+  busy,
+  onSelectAll,
+  onCancel,
+  onDelete,
+  onTag,
+  onExport,
+}: {
+  count: number;
+  busy: boolean;
+  onSelectAll: () => void;
+  onCancel: () => void;
+  onDelete: () => void;
+  onTag: () => void;
+  onExport: () => void;
+}) {
+  const disabled = count === 0 || busy;
+  return (
+    <motion.div
+      initial={{ y: 60, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 60, opacity: 0 }}
+      transition={soft}
+      role="toolbar"
+      aria-label="Bulk actions"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[440px] px-3 pb-[max(12px,env(safe-area-inset-bottom))]"
+    >
+      <div
+        className="flex items-center gap-1.5 rounded-[18px] p-2"
+        style={{
+          background: CREAM_SOFT,
+          border: `1px solid ${BORDER}`,
+          boxShadow: "0 -8px 32px -12px rgba(0,0,0,0.25)",
+        }}
+      >
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex h-9 w-9 items-center justify-center rounded-full"
+          style={{ background: "rgba(28,28,28,0.06)", color: CHARCOAL }}
+          aria-label="Cancel selection"
+        >
+          <X className="h-4 w-4" strokeWidth={1.8} />
+        </button>
+        <div className="flex flex-1 items-center gap-2 px-1 text-[13px]" style={{ color: CHARCOAL }}>
+          <span style={{ fontWeight: 600 }}>{count}</span>
+          <span style={{ color: MUTED }}>selected</span>
+          <button
+            type="button"
+            onClick={onSelectAll}
+            className="ml-auto rounded-full px-2 py-0.5 text-[11px]"
+            style={{ background: "rgba(28,28,28,0.06)", color: CHARCOAL, fontWeight: 600 }}
+          >
+            All
+          </button>
+        </div>
+        <BulkIconBtn label="Add tag" onClick={onTag} disabled={disabled}>
+          <TagIcon className="h-4 w-4" strokeWidth={1.8} />
+        </BulkIconBtn>
+        <BulkIconBtn label="Export selected" onClick={onExport} disabled={disabled}>
+          <Download className="h-4 w-4" strokeWidth={1.8} />
+        </BulkIconBtn>
+        <BulkIconBtn
+          label="Delete selected"
+          onClick={onDelete}
+          disabled={disabled}
+          danger
+          loading={busy}
+        >
+          <Trash2 className="h-4 w-4" strokeWidth={1.8} />
+        </BulkIconBtn>
+      </div>
+    </motion.div>
+  );
+}
+
+function BulkIconBtn({
+  label,
+  onClick,
+  disabled,
+  danger,
+  loading,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+  loading?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      className="flex h-9 w-9 items-center justify-center rounded-full transition-opacity disabled:opacity-40"
+      style={{
+        background: danger ? "rgba(178,58,42,0.10)" : "rgba(28,28,28,0.06)",
+        color: danger ? "#b23a2a" : CHARCOAL,
+      }}
+    >
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} /> : children}
+    </button>
+  );
+}
+
+function BulkTagSheet({
+  onClose,
+  onPick,
+}: {
+  onClose: () => void;
+  onPick: (tag: string) => void;
+}) {
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.button
+        aria-label="Close"
+        onClick={onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0"
+        style={{ background: "rgba(28,28,28,0.35)", backdropFilter: "blur(4px)" }}
+      />
+      <motion.div
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 40, opacity: 0 }}
+        transition={soft}
+        className="relative z-10 mx-auto w-full max-w-[440px] rounded-t-[22px] px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[22px]"
+        style={{
+          background: CREAM_SOFT,
+          border: `1px solid ${BORDER}`,
+          boxShadow: "0 -12px 40px -12px rgba(0,0,0,0.25)",
+        }}
+      >
+        <div className="mb-3 flex items-start justify-between">
+          <div>
+            <div
+              className="text-[18px]"
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontWeight: 600,
+                letterSpacing: "-0.01em",
+                color: CHARCOAL,
+              }}
+            >
+              Add tag
+            </div>
+            <div className="mt-1 text-[12.5px]" style={{ color: MUTED }}>
+              Pick a tag to add to every selected account.
+            </div>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-full"
+            style={{ background: "rgba(28,28,28,0.06)", color: CHARCOAL }}
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" strokeWidth={1.8} />
+          </motion.button>
+        </div>
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {PRESET_TAGS.map((t) => (
+            <TagChip key={t} tag={t} onClick={() => onPick(t)} />
+          ))}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
