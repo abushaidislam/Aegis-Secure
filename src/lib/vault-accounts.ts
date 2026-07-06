@@ -25,10 +25,13 @@ import {
 } from "@/lib/vault-tag-queue";
 import {
   dequeueOutbox,
+  enqueueCreate,
   enqueueDelete,
+  enqueueFavorite,
   enqueueUpdateDetails,
   flushOutbox,
   outboxSize,
+  type CreatePayload,
 } from "@/lib/vault-outbox";
 
 const ACCOUNT_SELECT =
