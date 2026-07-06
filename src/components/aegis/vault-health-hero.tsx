@@ -121,13 +121,12 @@ export function VaultHealthHero() {
             ? `Vault health score ${report!.score} of 100, ${tone.label}. Tap to view details.`
             : "Open vault health"
         }
-        className="relative flex w-full flex-col items-center overflow-hidden rounded-[22px] px-4 pb-5 pt-6 focus-visible:outline-none focus-visible:ring-2"
+        className="relative flex w-full flex-col items-center overflow-hidden rounded-[16px] px-4 pb-5 pt-6 focus-visible:outline-none focus-visible:ring-2"
         style={{
-          background: CREAM_SOFT,
+          background: CREAM,
           border: `1px solid ${BORDER}`,
-          boxShadow:
-            "inset 0 1px 0 rgba(255,255,255,0.7), 0 10px 30px -22px rgba(0,0,0,0.35)",
         }}
+
       >
         {/* Section label */}
         <div className="mb-1 flex items-center gap-1.5">
@@ -235,7 +234,7 @@ export function VaultHealthHero() {
                   cx={indicator.x}
                   cy={indicator.y}
                   r={7}
-                  fill={CREAM_SOFT}
+                  fill={CREAM}
                   stroke={tone.color}
                   strokeWidth={2}
                 />
