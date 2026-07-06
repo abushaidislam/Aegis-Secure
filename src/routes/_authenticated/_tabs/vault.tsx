@@ -44,16 +44,6 @@ import { AccountCard } from "@/components/vault/AccountCard";
 import { PRESET_TAGS, TagChip } from "@/components/vault/tags";
 import { ExportPassphraseSheet } from "@/components/vault/ExportPassphraseSheet";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Shield,
   Plus,
   Loader2,
@@ -73,6 +63,7 @@ import {
   BORDER,
   CHARCOAL,
   CREAM_SOFT,
+  DANGER,
   IconChip,
   MUTED,
   Notice,
@@ -719,35 +710,144 @@ function VaultPage() {
         />
       )}
 
-      <AlertDialog
-        open={bulkDeleteConfirm}
-        onOpenChange={(o) => !bulkBusy && setBulkDeleteConfirm(o)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Delete {selectedIds.size} account{selectedIds.size === 1 ? "" : "s"}?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently removes the selected account{selectedIds.size === 1 ? "" : "s"} and their secrets from your vault. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={bulkBusy}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={bulkBusy}
-              onClick={async (e) => {
-                e.preventDefault();
-                setBulkDeleteConfirm(false);
-                await runBulkDelete();
+      <AnimatePresence>
+        {bulkDeleteConfirm && (
+          <motion.div
+            key="bulk-delete-sheet"
+            className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.button
+              aria-label="Close"
+              onClick={() => !bulkBusy && setBulkDeleteConfirm(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0"
+              style={{ background: "rgba(28,28,28,0.35)", backdropFilter: "blur(4px)" }}
+            />
+            <motion.div
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="bulk-delete-title"
+              aria-describedby="bulk-delete-desc"
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              transition={soft}
+              className="relative z-10 mx-auto w-full max-w-[440px] rounded-t-[22px] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:rounded-[22px] focus:outline-none"
+              style={{
+                background: CREAM_SOFT,
+                border: `1px solid ${BORDER}`,
+                boxShadow: "0 -12px 40px -12px rgba(0,0,0,0.25)",
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {bulkBusy ? "Deleting…" : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              <div
+                aria-hidden
+                className="mx-auto mb-3 h-[4px] w-10 rounded-full"
+                style={{ background: "rgba(28,28,28,0.15)" }}
+              />
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px]"
+                    style={{
+                      background: "hsl(6, 42%, 92%)",
+                      color: DANGER,
+                      border: `1px solid ${BORDER}`,
+                    }}
+                  >
+                    <Trash2 className="h-5 w-5" strokeWidth={1.8} />
+                  </div>
+                  <div className="min-w-0">
+                    <div
+                      id="bulk-delete-title"
+                      className="truncate text-[16px]"
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        fontWeight: 600,
+                        letterSpacing: "-0.01em",
+                        color: CHARCOAL,
+                      }}
+                    >
+                      Remove {selectedIds.size} account{selectedIds.size === 1 ? "" : "s"}?
+                    </div>
+                    <div className="mt-0.5 truncate text-[12px]" style={{ color: MUTED }}>
+                      Selected from your vault
+                    </div>
+                  </div>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => !bulkBusy && setBulkDeleteConfirm(false)}
+                  disabled={bulkBusy}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                  style={{ background: "rgba(28,28,28,0.06)", color: CHARCOAL }}
+                  aria-label="Close"
+                >
+                  <X className="h-4 w-4" strokeWidth={1.8} />
+                </motion.button>
+              </div>
+
+              <p
+                id="bulk-delete-desc"
+                className="mb-4 text-[13px]"
+                style={{ color: MUTED, lineHeight: 1.55 }}
+              >
+                The encrypted secrets will be deleted from your vault. You'll need the original QR
+                codes or setup keys to add them back. This can't be undone.
+              </p>
+
+              <div className="flex flex-col gap-2 pb-1">
+                <motion.button
+                  whileTap={{ scale: 0.99 }}
+                  onClick={async () => {
+                    setBulkDeleteConfirm(false);
+                    await runBulkDelete();
+                  }}
+                  disabled={bulkBusy}
+                  className="flex items-center justify-center gap-2 rounded-[14px] px-4 py-3.5 text-[14px]"
+                  style={{
+                    background: DANGER,
+                    color: "#fff",
+                    fontWeight: 600,
+                    letterSpacing: "-0.005em",
+                    opacity: bulkBusy ? 0.75 : 1,
+                  }}
+                >
+                  {bulkBusy ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Removing…
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4" strokeWidth={1.9} />
+                      Remove {selectedIds.size} account{selectedIds.size === 1 ? "" : "s"}
+                    </>
+                  )}
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.99 }}
+                  onClick={() => !bulkBusy && setBulkDeleteConfirm(false)}
+                  disabled={bulkBusy}
+                  className="rounded-[14px] px-4 py-3.5 text-[14px]"
+                  style={{
+                    background: "rgba(28,28,28,0.03)",
+                    color: CHARCOAL,
+                    border: `1px solid ${BORDER}`,
+                    fontWeight: 500,
+                  }}
+                >
+                  Cancel
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {bulkTagOpen && (
         <BulkTagSheet
