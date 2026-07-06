@@ -1416,3 +1416,189 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
     </motion.div>
   );
 }
+
+// -----------------------------------------------------------------------------
+// Phase 7.3 — Bulk selection UI
+// -----------------------------------------------------------------------------
+
+function BulkActionsBar({
+  count,
+  busy,
+  onSelectAll,
+  onCancel,
+  onDelete,
+  onTag,
+  onExport,
+}: {
+  count: number;
+  busy: boolean;
+  onSelectAll: () => void;
+  onCancel: () => void;
+  onDelete: () => void;
+  onTag: () => void;
+  onExport: () => void;
+}) {
+  const disabled = count === 0 || busy;
+  return (
+    <motion.div
+      initial={{ y: 60, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 60, opacity: 0 }}
+      transition={soft}
+      role="toolbar"
+      aria-label="Bulk actions"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[440px] px-3 pb-[max(12px,env(safe-area-inset-bottom))]"
+    >
+      <div
+        className="flex items-center gap-1.5 rounded-[18px] p-2"
+        style={{
+          background: CREAM_SOFT,
+          border: `1px solid ${BORDER}`,
+          boxShadow: "0 -8px 32px -12px rgba(0,0,0,0.25)",
+        }}
+      >
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex h-9 w-9 items-center justify-center rounded-full"
+          style={{ background: "rgba(28,28,28,0.06)", color: CHARCOAL }}
+          aria-label="Cancel selection"
+        >
+          <X className="h-4 w-4" strokeWidth={1.8} />
+        </button>
+        <div className="flex flex-1 items-center gap-2 px-1 text-[13px]" style={{ color: CHARCOAL }}>
+          <span style={{ fontWeight: 600 }}>{count}</span>
+          <span style={{ color: MUTED }}>selected</span>
+          <button
+            type="button"
+            onClick={onSelectAll}
+            className="ml-auto rounded-full px-2 py-0.5 text-[11px]"
+            style={{ background: "rgba(28,28,28,0.06)", color: CHARCOAL, fontWeight: 600 }}
+          >
+            All
+          </button>
+        </div>
+        <BulkIconBtn label="Add tag" onClick={onTag} disabled={disabled}>
+          <TagIcon className="h-4 w-4" strokeWidth={1.8} />
+        </BulkIconBtn>
+        <BulkIconBtn label="Export selected" onClick={onExport} disabled={disabled}>
+          <Download className="h-4 w-4" strokeWidth={1.8} />
+        </BulkIconBtn>
+        <BulkIconBtn
+          label="Delete selected"
+          onClick={onDelete}
+          disabled={disabled}
+          danger
+          loading={busy}
+        >
+          <Trash2 className="h-4 w-4" strokeWidth={1.8} />
+        </BulkIconBtn>
+      </div>
+    </motion.div>
+  );
+}
+
+function BulkIconBtn({
+  label,
+  onClick,
+  disabled,
+  danger,
+  loading,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+  loading?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      className="flex h-9 w-9 items-center justify-center rounded-full transition-opacity disabled:opacity-40"
+      style={{
+        background: danger ? "rgba(178,58,42,0.10)" : "rgba(28,28,28,0.06)",
+        color: danger ? "#b23a2a" : CHARCOAL,
+      }}
+    >
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} /> : children}
+    </button>
+  );
+}
+
+function BulkTagSheet({
+  onClose,
+  onPick,
+}: {
+  onClose: () => void;
+  onPick: (tag: string) => void;
+}) {
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.button
+        aria-label="Close"
+        onClick={onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0"
+        style={{ background: "rgba(28,28,28,0.35)", backdropFilter: "blur(4px)" }}
+      />
+      <motion.div
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 40, opacity: 0 }}
+        transition={soft}
+        className="relative z-10 mx-auto w-full max-w-[440px] rounded-t-[22px] px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[22px]"
+        style={{
+          background: CREAM_SOFT,
+          border: `1px solid ${BORDER}`,
+          boxShadow: "0 -12px 40px -12px rgba(0,0,0,0.25)",
+        }}
+      >
+        <div className="mb-3 flex items-start justify-between">
+          <div>
+            <div
+              className="text-[18px]"
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontWeight: 600,
+                letterSpacing: "-0.01em",
+                color: CHARCOAL,
+              }}
+            >
+              Add tag
+            </div>
+            <div className="mt-1 text-[12.5px]" style={{ color: MUTED }}>
+              Pick a tag to add to every selected account.
+            </div>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-full"
+            style={{ background: "rgba(28,28,28,0.06)", color: CHARCOAL }}
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" strokeWidth={1.8} />
+          </motion.button>
+        </div>
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {PRESET_TAGS.map((t) => (
+            <TagChip key={t} tag={t} onClick={() => onPick(t)} />
+          ))}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
