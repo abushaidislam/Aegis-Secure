@@ -697,6 +697,91 @@ function ThemeSheet({
   );
 }
 
+function LocaleSheet({
+  value,
+  onChoose,
+  onClose,
+}: {
+  value: LocalePref;
+  onChoose: (pref: LocalePref) => void;
+  onClose: () => void;
+}) {
+  type Row = { pref: LocalePref; title: string; description: string };
+  const rows: Row[] = [
+    { pref: "system", title: "System", description: "Follow your device." },
+    ...SUPPORTED_LOCALES.map((l) => ({
+      pref: l.code as LocalePref,
+      title: l.nativeLabel,
+      description: l.label,
+    })),
+  ];
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.button
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute inset-0"
+        style={{ background: "rgb(var(--aegis-ink-rgb) / 0.35)", backdropFilter: "blur(4px)" }}
+      />
+      <motion.div
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 40, opacity: 0 }}
+        transition={soft}
+        className="relative z-10 mx-auto w-full max-w-[440px] rounded-t-[22px] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:rounded-[22px]"
+        style={{
+          background: CREAM_SOFT,
+          border: `1px solid ${BORDER}`,
+          boxShadow: "0 -12px 40px -12px rgba(0,0,0,0.25)",
+        }}
+      >
+        <div
+          className="mx-auto mb-4 h-1 w-10 rounded-full"
+          style={{ background: "rgb(var(--aegis-ink-rgb) / 0.15)" }}
+        />
+        <div
+          className="mb-3 px-1 text-[11px] uppercase"
+          style={{ color: MUTED, letterSpacing: "0.14em", fontWeight: 600 }}
+        >
+          Language
+        </div>
+        <div
+          className="max-h-[60vh] overflow-y-auto overflow-x-hidden rounded-[16px]"
+          style={{ border: `1px solid ${BORDER}`, background: "rgb(var(--aegis-ink-rgb) / 0.02)" }}
+        >
+          {rows.map((opt, i) => (
+            <div key={String(opt.pref)}>
+              {i > 0 && <div style={{ height: 1, background: BORDER, marginLeft: 60 }} />}
+              <ThemeRow
+                icon={<Globe className="h-4 w-4" strokeWidth={1.8} />}
+                title={opt.title}
+                description={opt.description}
+                active={value === opt.pref}
+                onClick={() => onChoose(opt.pref)}
+              />
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={onClose}
+          className="mt-3 w-full rounded-[14px] px-4 py-3 text-[13.5px]"
+          style={{ color: MUTED, fontWeight: 500 }}
+        >
+          Cancel
+        </button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+
+
+
 
 function AvatarActionSheet({
   hasAvatar,
