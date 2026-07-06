@@ -121,10 +121,10 @@ on reconnect. Lighthouse PWA ≥ 90, main bundle ≤ 250 KB gzipped.
 
 **Problem** — competitive-analysis #6. The schema is there; the UI isn't.
 
-### 7.1 Tags UI `[P1]`
-- [ ] Tag chips on `AccountCard`
-- [ ] Tag filter on the search bar
-- [ ] Tag manager sheet (rename, merge, delete, colour)
+### 7.1 Tags UI `[P1]` `[done]`
+- [x] Tag chips on `AccountCard` (preset palette in `src/components/vault/tags.tsx`)
+- [x] Tag filter bar above the vault list with active-tag pills + clear
+- [x] Tag manager sheet (rename, merge, delete) with offline queue via `vault-tag-queue`
 
 ### 7.2 Drag-and-drop reorder `[P1]`
 - [ ] `@dnd-kit/core` on vault grid, writes existing `sort_order` column
