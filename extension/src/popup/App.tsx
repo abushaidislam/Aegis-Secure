@@ -69,7 +69,7 @@ declare const __AEGIS_APP_URL__: string;
 const APP_URL: string =
   typeof __AEGIS_APP_URL__ === "string" && __AEGIS_APP_URL__.length > 0
     ? __AEGIS_APP_URL__
-    : "https://hug-machine-maker.lovable.app";
+    : "https://aegis-syed.lovable.app";
 
 /**
  * Live TOTP row: fetches current code from SW, refreshes at each

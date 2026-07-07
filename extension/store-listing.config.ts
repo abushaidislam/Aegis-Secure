@@ -32,7 +32,7 @@ function readEnv(name: string, fallback: string): string {
   return fallback;
 }
 
-const APP_URL = readEnv("VITE_APP_URL", "https://hug-machine-maker.lovable.app");
+const APP_URL = readEnv("VITE_APP_URL", "https://aegis-syed.lovable.app");
 
 export interface StoreListingConfig {
   /** Public homepage of the app — used as `homepage_url` in the manifest. */

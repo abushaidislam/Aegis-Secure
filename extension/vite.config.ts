@@ -43,7 +43,7 @@ const SUPABASE_ORIGIN = SUPABASE_URL ? new URL(SUPABASE_URL).origin : "https://*
 // Set VITE_APP_URL in `.env` when you point the app at a custom domain;
 // the manifest allow-list, popup "Open vault" link, and SW origin regex
 // all pick up the new value on the next `bun run build:ext`.
-const APP_URL = readEnv("VITE_APP_URL", "https://hug-machine-maker.lovable.app");
+const APP_URL = readEnv("VITE_APP_URL", "https://aegis-syed.lovable.app");
 const APP_PREVIEW_URL = readEnv(
   "VITE_APP_PREVIEW_URL",
   "https://id-preview--04418077-cd09-40ce-bb05-4708ee844e27.lovable.app",
