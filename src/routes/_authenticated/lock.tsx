@@ -568,7 +568,11 @@ function LockPage() {
                     .eq("user_id", user.id);
                   if (metaRes.error) throw metaRes.error;
                   disableBiometric(user.id);
+                  disablePin(user.id);
                   setBioEnrolled(false);
+                  setPinEnrolled(false);
+                  setPinValue("");
+                  setUnlockMethod("passphrase");
                   setPassphrase("");
                   setConfirmPass("");
                   setHint("");
