@@ -298,7 +298,7 @@ function SecurityPage() {
             title="PIN quick unlock"
             description={
               pinEnrolled
-                ? "A 4–6 digit PIN unlocks this device. 5 wrong tries disables it."
+                ? "A 6-digit PIN unlocks this device. 5 wrong tries disables it."
                 : "Skip typing your passphrase — set a short PIN for this device."
             }
             onClick={() => {
