@@ -233,6 +233,10 @@ export function ExtensionSyncSection() {
         )}
       </SettingsGroup>
 
+      {installed && <ExtensionHealthGroup unlocked={unlocked} />}
+
+
+
       {!installed && (
         <div className="mt-2">
           <button
