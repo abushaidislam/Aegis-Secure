@@ -93,11 +93,22 @@ function MethodCard({
   onClick,
   disabled,
 }: {
-  variant: "pin" | "passphrase";
+  variant: "pin" | "pin-setup" | "passphrase";
   onClick: () => void;
   disabled?: boolean;
 }) {
-  const isPin = variant === "pin";
+  const isPin = variant === "pin" || variant === "pin-setup";
+  const isSetup = variant === "pin-setup";
+  const title = isSetup
+    ? "Set up a 6-digit PIN"
+    : isPin
+      ? "Unlock with 6-digit PIN"
+      : "Unlock with passphrase";
+  const subtitle = isSetup
+    ? "Faster next time — tap to enable in Security"
+    : isPin
+      ? "Faster on this device — tap to open the keypad"
+      : "Type your master passphrase";
   return (
     <motion.button
       type="button"
@@ -110,7 +121,7 @@ function MethodCard({
         borderColor: "rgb(var(--aegis-ink-rgb) / 0.14)",
         background: "rgb(var(--aegis-ink-rgb) / 0.02)",
       }}
-      aria-label={isPin ? "Switch to PIN unlock" : "Switch to passphrase unlock"}
+      aria-label={title}
     >
       <span
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[9px]"
@@ -118,7 +129,6 @@ function MethodCard({
         aria-hidden
       >
         {isPin ? (
-          // Mini 3×3 keypad glyph — reads instantly as "PIN".
           <span className="grid grid-cols-3 gap-[3px]">
             {Array.from({ length: 9 }).map((_, i) => (
               <span
@@ -137,10 +147,10 @@ function MethodCard({
           className="text-[13.5px] leading-tight"
           style={{ color: CHARCOAL, fontWeight: 500, letterSpacing: "-0.005em" }}
         >
-          {isPin ? "Unlock with 6-digit PIN" : "Unlock with passphrase"}
+          {title}
         </span>
         <span className="text-[11.5px] leading-tight" style={{ color: MUTED }}>
-          {isPin ? "Faster on this device — tap to open the keypad" : "Type your master passphrase"}
+          {subtitle}
         </span>
       </span>
       <ChevronRight
@@ -546,21 +556,31 @@ function LockPage() {
 
         {(isCreate || unlockMethod === "passphrase") && (
           <div className="flex flex-col gap-3">
-            {/* PIN shortcut sits ABOVE the passphrase field so the fast-path
-                is the first thing the user sees on this screen. */}
-            {!isCreate && pinEnrolled && (
+            {/* PIN shortcut sits ABOVE the passphrase field. Shown even when
+                the user hasn't enrolled a PIN yet — the "setup" variant
+                routes to Security so the option is always discoverable. */}
+            {!isCreate && (
               <MethodCard
-                variant="pin"
+                variant={pinEnrolled ? "pin" : "pin-setup"}
                 onClick={() => {
                   setNotice(null);
-                  setPassphrase("");
-                  setUnlockMethod("pin");
+                  if (pinEnrolled) {
+                    setPassphrase("");
+                    setUnlockMethod("pin");
+                  } else {
+                    // Not enrolled: send them to Security to set one up.
+                    // They'll need to unlock first, so hint that in the notice.
+                    setNotice({
+                      kind: "info",
+                      text: "Unlock with your passphrase first, then enable PIN in Security.",
+                    });
+                  }
                 }}
                 disabled={loading}
               />
             )}
 
-            {!isCreate && pinEnrolled && (
+            {!isCreate && (
               <div className="flex items-center gap-3">
                 <div
                   className="h-px flex-1"
