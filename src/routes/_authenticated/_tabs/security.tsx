@@ -451,27 +451,26 @@ function ChangePassphraseSheet({
         .eq("user_id", userId)
         .single();
       if (error) throw error;
-      if (data.kdf_algorithm !== KDF_ALGORITHM) {
-        throw new Error("Vault was created with a different key algorithm.");
-      }
+      const currentAlgo = data.kdf_algorithm;
+      const currentSalt = toBytes(data.kdf_salt);
+      const currentWrapped = toBytes(data.recovery_wrapped_key);
+      const currentIv = toBytes(data.recovery_wrapped_key_iv);
       // Verify current passphrase actually unwraps the DEK.
       try {
-        await unwrapVaultKey(
-          current,
-          toBytes(data.kdf_salt),
-          toBytes(data.recovery_wrapped_key),
-          toBytes(data.recovery_wrapped_key_iv),
-        );
+        await unwrapVaultKey(current, currentSalt, currentWrapped, currentIv, currentAlgo);
       } catch {
         throw new Error("Current passphrase is incorrect.");
       }
-      // Rotate: same DEK, new KEK + salt + iv.
+      // Rotate: same DEK, new KEK + salt + iv. Output always uses the
+      // current default KDF (Argon2id v2), so a v1 vault is upgraded as
+      // a side effect of any passphrase change.
       const { salt, wrappedKey, wrappedKeyIv, kdfAlgorithm } = await rewrapVaultKey(
         current,
         next,
-        toBytes(data.kdf_salt),
-        toBytes(data.recovery_wrapped_key),
-        toBytes(data.recovery_wrapped_key_iv),
+        currentSalt,
+        currentWrapped,
+        currentIv,
+        currentAlgo,
       );
       const trimmedHint = hint.trim() ? hint.trim() : null;
       const { error: upErr } = await supabase
@@ -486,7 +485,7 @@ function ChangePassphraseSheet({
         .eq("user_id", userId);
       if (upErr) throw upErr;
       // Re-unlock with the new passphrase so the in-memory DEK stays valid.
-      const freshDek = await unwrapVaultKey(next, salt, wrappedKey, wrappedKeyIv);
+      const freshDek = await unwrapVaultKey(next, salt, wrappedKey, wrappedKeyIv, kdfAlgorithm);
       setVaultKey(freshDek);
       onSaved(trimmedHint);
     } catch (e2) {
