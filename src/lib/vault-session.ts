@@ -23,7 +23,6 @@ let autoLockMs: number | null = DEFAULT_AUTO_LOCK_MS;
 let currentUserId: string | null = null;
 
 let dek: CryptoKey | null = null;
-let rawDek: Uint8Array | null = null;
 let lockTimer: number | null = null;
 const listeners = new Set<() => void>();
 const settingsListeners = new Set<() => void>();
@@ -135,12 +134,8 @@ function scheduleAutoLock() {
   }, autoLockMs);
 }
 
-export function setVaultKey(key: CryptoKey, raw?: Uint8Array | null) {
+export function setVaultKey(key: CryptoKey) {
   dek = key;
-  if (rawDek && rawDek !== raw) {
-    try { rawDek.fill(0); } catch { /* ignore */ }
-  }
-  rawDek = raw ?? null;
   scheduleAutoLock();
   emit();
 }
@@ -148,16 +143,6 @@ export function setVaultKey(key: CryptoKey, raw?: Uint8Array | null) {
 export function getVaultKey(): CryptoKey | null {
   if (dek) scheduleAutoLock();
   return dek;
-}
-
-/**
- * Returns the raw 32-byte DEK material if the vault is unlocked. Used by
- * PIN/biometric enrollment which needs to re-wrap the DEK under a
- * device-local key. Callers must NOT persist these bytes.
- */
-export function getVaultRawKey(): Uint8Array | null {
-  if (dek) scheduleAutoLock();
-  return rawDek;
 }
 
 export function isVaultUnlocked(): boolean {
@@ -170,13 +155,8 @@ export function lockVault() {
     lockTimer = null;
   }
   dek = null;
-  if (rawDek) {
-    try { rawDek.fill(0); } catch { /* ignore */ }
-    rawDek = null;
-  }
   emit();
 }
-
 
 export function subscribe(fn: () => void): () => void {
   listeners.add(fn);

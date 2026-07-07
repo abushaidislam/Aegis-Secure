@@ -19,9 +19,7 @@ import {
   isBiometricSupported,
   unlockWithBiometric,
 } from "@/lib/biometric";
-import { Lock, KeyRound, Sparkles, Fingerprint, LogOut, ChevronRight, ArrowLeft } from "lucide-react";
-import { isPinEnabled, unlockWithPin, PinUnlockError, disablePin } from "@/lib/pin-unlock";
-import { PinPad } from "@/components/aegis/PinPad";
+import { Lock, KeyRound, Sparkles, Fingerprint, LogOut } from "lucide-react";
 import {
   AegisScreen,
   BrandBar,
@@ -73,94 +71,11 @@ export const Route = createFileRoute("/_authenticated/lock")({
 
 
 type Mode = "loading" | "create" | "unlock";
-type UnlockMethod = "pin" | "passphrase";
 
 function safeRedirect(target: string | undefined): string {
   if (!target) return "/vault";
   if (target.startsWith("/") && !target.startsWith("//")) return target;
   return "/vault";
-}
-
-/**
- * Visual "switch unlock method" tile. Shows a small icon that hints at the
- * target method (a 3×3 dot grid for PIN, a key glyph for passphrase) plus a
- * short label. Tapping it flips `unlockMethod`, which surfaces either the
- * PinPad or the passphrase form. Keeps the fast paths one tap away and much
- * more discoverable than a plain text link.
- */
-function MethodCard({
-  variant,
-  onClick,
-  disabled,
-}: {
-  variant: "pin" | "pin-setup" | "passphrase";
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  const isPin = variant === "pin" || variant === "pin-setup";
-  const isSetup = variant === "pin-setup";
-  const title = isSetup
-    ? "Set up a 6-digit PIN"
-    : isPin
-      ? "Unlock with 6-digit PIN"
-      : "Unlock with passphrase";
-  const subtitle = isSetup
-    ? "Faster next time — tap to enable in Security"
-    : isPin
-      ? "Faster on this device — tap to open the keypad"
-      : "Type your master passphrase";
-  return (
-    <motion.button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      whileTap={{ scale: 0.985 }}
-      transition={soft}
-      className="group flex w-full items-center gap-3 rounded-[12px] border px-3.5 py-3 text-left transition-colors disabled:opacity-50"
-      style={{
-        borderColor: "rgb(var(--aegis-ink-rgb) / 0.14)",
-        background: "rgb(var(--aegis-ink-rgb) / 0.02)",
-      }}
-      aria-label={title}
-    >
-      <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[9px]"
-        style={{ background: CHARCOAL, color: CREAM_SOFT }}
-        aria-hidden
-      >
-        {isPin ? (
-          <span className="grid grid-cols-3 gap-[3px]">
-            {Array.from({ length: 9 }).map((_, i) => (
-              <span
-                key={i}
-                className="h-[3px] w-[3px] rounded-full"
-                style={{ background: CREAM_SOFT, opacity: 0.9 }}
-              />
-            ))}
-          </span>
-        ) : (
-          <KeyRound className="h-[18px] w-[18px]" strokeWidth={1.7} />
-        )}
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span
-          className="text-[13.5px] leading-tight"
-          style={{ color: CHARCOAL, fontWeight: 500, letterSpacing: "-0.005em" }}
-        >
-          {title}
-        </span>
-        <span className="text-[11.5px] leading-tight" style={{ color: MUTED }}>
-          {subtitle}
-        </span>
-      </span>
-      <ChevronRight
-        className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5"
-        strokeWidth={1.6}
-        style={{ color: MUTED }}
-        aria-hidden
-      />
-    </motion.button>
-  );
 }
 
 function LockPage() {
@@ -179,13 +94,6 @@ function LockPage() {
   const [bioEnrolled, setBioEnrolled] = useState(false);
   const [bioBusy, setBioBusy] = useState(false);
   const [bioAutoTried, setBioAutoTried] = useState(false);
-  const [pinEnrolled, setPinEnrolled] = useState<boolean>(() => isPinEnabled(user.id));
-  const [pinValue, setPinValue] = useState("");
-  const [pinBusy, setPinBusy] = useState(false);
-  const [pinShake, setPinShake] = useState(false);
-  // Always land on the passphrase view. The PIN shortcut card above the
-  // input lets the user switch to the PIN pad in one tap.
-  const [unlockMethod, setUnlockMethod] = useState<UnlockMethod>("passphrase");
 
   useEffect(() => {
     let cancelled = false;
@@ -226,17 +134,16 @@ function LockPage() {
     };
   }, [user.id]);
 
-  const maybeEnrollBiometric = async (dekBytes: Uint8Array) => {
+  const maybeEnrollBiometric = async (dek: CryptoKey) => {
     if (!isBiometricPending()) return;
     if (!(await isBiometricSupported())) return;
     try {
-      await enrollBiometric({ userId: user.id, userEmail: user.email ?? user.id, dekBytes });
+      await enrollBiometric({ userId: user.id, userEmail: user.email ?? user.id, dek });
       setBioEnrolled(true);
     } catch {
       // Silent: they can enable it later from Security settings.
     }
   };
-
 
   const consumeImportIntent = () => {
     try {
@@ -271,7 +178,7 @@ function LockPage() {
     }
     setLoading(true);
     try {
-      const { salt, wrappedKey, wrappedKeyIv, dek, rawDek, kdfAlgorithm } =
+      const { salt, wrappedKey, wrappedKeyIv, dek, kdfAlgorithm } =
         await createNewVaultKey(passphrase);
       const { error } = await supabase.from("vault_meta").insert({
         user_id: user.id,
@@ -282,10 +189,9 @@ function LockPage() {
         passphrase_hint: hint.trim() ? hint.trim() : null,
       });
       if (error) throw error;
-      setVaultKey(dek, rawDek);
-      await maybeEnrollBiometric(rawDek);
+      setVaultKey(dek);
+      await maybeEnrollBiometric(dek);
       routeAfterUnlock();
-
     } catch (err) {
       setNotice({
         kind: "error",
@@ -315,16 +221,15 @@ function LockPage() {
         throw new Error("Vault was created with a different key algorithm.");
       }
       try {
-        const { dek, rawDek } = await unwrapVaultKey(
+        const dek = await unwrapVaultKey(
           passphrase,
           toBytes(data.kdf_salt),
           toBytes(data.recovery_wrapped_key),
           toBytes(data.recovery_wrapped_key_iv),
         );
-        setVaultKey(dek, rawDek);
-        await maybeEnrollBiometric(rawDek);
+        setVaultKey(dek);
+        await maybeEnrollBiometric(dek);
         routeAfterUnlock();
-
       } catch (cryptoErr) {
         // WebCrypto throws OperationError with an empty message in Chrome
         // for a wrong key. Any unwrap/decrypt failure here means the
@@ -354,10 +259,9 @@ function LockPage() {
     setNotice(null);
     setBioBusy(true);
     try {
-      const { dek, rawDek } = await unlockWithBiometric(user.id);
-      setVaultKey(dek, rawDek);
+      const dek = await unlockWithBiometric(user.id);
+      setVaultKey(dek);
       routeAfterUnlock();
-
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Biometric unlock failed.";
       // If the stored blob is broken (e.g. cleared), drop it so user isn't stuck.
@@ -374,42 +278,9 @@ function LockPage() {
     }
   };
 
-  const handlePinComplete = async (pin: string) => {
-    if (pinBusy) return;
-    setNotice(null);
-    setPinBusy(true);
-    try {
-      const { dek, rawDek } = await unlockWithPin(user.id, pin);
-      setVaultKey(dek, rawDek);
-      routeAfterUnlock();
-
-    } catch (err) {
-      if (err instanceof PinUnlockError) {
-        setPinShake(true);
-        window.setTimeout(() => setPinShake(false), 500);
-        setPinValue("");
-        if (err.code === "locked-out") {
-          setPinEnrolled(false);
-          setUnlockMethod("passphrase");
-        }
-        setNotice({ kind: "error", text: err.message });
-      } else {
-        setNotice({
-          kind: "error",
-          text: err instanceof Error ? err.message : "PIN unlock failed.",
-        });
-      }
-    } finally {
-      setPinBusy(false);
-    }
-  };
-
-  // Auto-prompt biometric on entering unlock mode if enrolled — but skip
-  // when the user prefers PIN (typing 4-6 digits is often faster than
-  // waiting for a Face ID prompt).
+  // Auto-prompt biometric on entering unlock mode if enrolled.
   useEffect(() => {
     if (mode !== "unlock" || !bioAvailable || !bioEnrolled || bioAutoTried) return;
-    if (unlockMethod === "pin" && pinEnrolled) return;
     setBioAutoTried(true);
     // Small delay so the page paints before the OS prompt appears.
     const t = window.setTimeout(() => {
@@ -417,7 +288,7 @@ function LockPage() {
     }, 250);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, bioAvailable, bioEnrolled, bioAutoTried, unlockMethod, pinEnrolled]);
+  }, [mode, bioAvailable, bioEnrolled, bioAutoTried]);
 
   if (mode === "loading") {
     return (
@@ -449,19 +320,11 @@ function LockPage() {
                 transition={soft}
                 className="flex flex-col items-center gap-2"
               >
-                <Display>
-                  {isCreate
-                    ? "Set your master passphrase."
-                    : unlockMethod === "pin"
-                      ? "Enter your PIN."
-                      : "Welcome back."}
-                </Display>
+                <Display>{isCreate ? "Set your master passphrase." : "Welcome back."}</Display>
                 <Lede>
                   {isCreate
                     ? "This key never leaves your device. Aegis can't recover it — remember it well."
-                    : unlockMethod === "pin"
-                      ? "Quick unlock with your device PIN."
-                      : "Enter your master passphrase to unlock your codes."}
+                    : "Enter your master passphrase to unlock your codes."}
                 </Lede>
               </motion.div>
             </AnimatePresence>
@@ -479,58 +342,8 @@ function LockPage() {
           </div>
         </div>
 
-        {/* PIN quick-unlock: preferred on this device when enrolled. */}
-        {!isCreate && unlockMethod === "pin" && pinEnrolled && (
-          <div className="flex flex-col gap-4">
-            {/* Back to passphrase — sits at the top so the PIN section has
-                a clear "escape hatch" and no competing option below the pad. */}
-            <div className="flex items-center">
-              <motion.button
-                type="button"
-                onClick={() => {
-                  setNotice(null);
-                  setPinValue("");
-                  setUnlockMethod("passphrase");
-                }}
-                disabled={pinBusy}
-                whileTap={{ scale: 0.97 }}
-                transition={soft}
-                className="inline-flex items-center gap-1.5 rounded-[8px] px-2 py-1.5 text-[12.5px] transition-colors hover:bg-[rgb(var(--aegis-ink-rgb)/0.05)] disabled:opacity-50"
-                style={{ color: MUTED }}
-                aria-label="Back to passphrase unlock"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.8} />
-                <span>Passphrase</span>
-              </motion.button>
-            </div>
-
-            <div className="flex flex-col items-center gap-4">
-              <PinPad
-                value={pinValue}
-                onChange={setPinValue}
-                onComplete={handlePinComplete}
-                shake={pinShake}
-                disabled={pinBusy}
-              />
-              {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
-              {bioEnrolled && bioAvailable && (
-                <button
-                  type="button"
-                  onClick={handleBiometricUnlock}
-                  disabled={bioBusy}
-                  className="flex items-center gap-1.5 text-[12.5px] transition-opacity hover:opacity-100 disabled:opacity-50"
-                  style={{ color: MUTED, opacity: 0.85 }}
-                >
-                  <Fingerprint className="h-3.5 w-3.5" strokeWidth={1.6} />
-                  <span>Unlock with biometrics</span>
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Biometric FIRST when enrolled (passphrase path) — that's the fast path. */}
-        {!isCreate && unlockMethod === "passphrase" && bioEnrolled && bioAvailable && (
+        {/* Biometric FIRST when enrolled — that's the fast path. */}
+        {!isCreate && bioEnrolled && bioAvailable && (
           <motion.button
             type="button"
             onClick={handleBiometricUnlock}
@@ -557,7 +370,7 @@ function LockPage() {
           </motion.button>
         )}
 
-        {!isCreate && unlockMethod === "passphrase" && bioEnrolled && bioAvailable && (
+        {!isCreate && bioEnrolled && bioAvailable && (
           <div className="flex items-center gap-3">
             <div className="h-px flex-1" style={{ background: "rgb(var(--aegis-ink-rgb) / 0.1)" }} />
             <span className="text-[11px] uppercase tracking-[0.14em]" style={{ color: MUTED }}>
@@ -567,113 +380,63 @@ function LockPage() {
           </div>
         )}
 
-        {(isCreate || unlockMethod === "passphrase") && (
-          <div className="flex flex-col gap-3">
-            {/* PIN shortcut sits ABOVE the passphrase field. Shown even when
-                the user hasn't enrolled a PIN yet — the "setup" variant
-                routes to Security so the option is always discoverable. */}
-            {!isCreate && (
-              <MethodCard
-                variant={pinEnrolled ? "pin" : "pin-setup"}
-                onClick={() => {
-                  setNotice(null);
-                  if (pinEnrolled) {
-                    setPassphrase("");
-                    setUnlockMethod("pin");
-                  } else {
-                    // Not enrolled: send them to Security to set one up.
-                    // They'll need to unlock first, so hint that in the notice.
-                    setNotice({
-                      kind: "info",
-                      text: "Unlock with your passphrase first, then enable PIN in Security.",
-                    });
-                  }
-                }}
-                disabled={loading}
-              />
-            )}
+        <form onSubmit={isCreate ? handleCreate : handleUnlock} className="flex flex-col gap-2.5">
+          <PasswordField
+            value={passphrase}
+            onChange={setPassphrase}
+            autoComplete={isCreate ? "new-password" : "current-password"}
+            autoFocus={!bioEnrolled}
+            minLength={isCreate ? 10 : 1}
+            placeholder={isCreate ? "Create a memorable passphrase" : "Master passphrase"}
+            delay={0.05}
+          />
 
-            {!isCreate && (
-              <div className="flex items-center gap-3">
-                <div
-                  className="h-px flex-1"
-                  style={{ background: "rgb(var(--aegis-ink-rgb) / 0.1)" }}
-                />
-                <span
-                  className="text-[11px] uppercase tracking-[0.14em]"
-                  style={{ color: MUTED }}
-                >
-                  or type passphrase
-                </span>
-                <div
-                  className="h-px flex-1"
-                  style={{ background: "rgb(var(--aegis-ink-rgb) / 0.1)" }}
-                />
-              </div>
-            )}
-
-            <form
-              onSubmit={isCreate ? handleCreate : handleUnlock}
-              className="flex flex-col gap-2.5"
-            >
+          {isCreate && (
+            <>
+              <StrengthMeter value={passphrase} />
               <PasswordField
-                value={passphrase}
-                onChange={setPassphrase}
-                autoComplete={isCreate ? "new-password" : "current-password"}
-                autoFocus={!bioEnrolled && !pinEnrolled}
-                minLength={isCreate ? 10 : 1}
-                placeholder={isCreate ? "Create a memorable passphrase" : "Master passphrase"}
-                delay={0.05}
+                value={confirmPass}
+                onChange={setConfirmPass}
+                autoComplete="new-password"
+                minLength={10}
+                placeholder="Confirm passphrase"
+                delay={0.1}
               />
+              <Field icon={<KeyRound className="h-4 w-4" strokeWidth={1.6} />} delay={0.15}>
+                <input
+                  type="text"
+                  placeholder="Optional hint (never the passphrase)"
+                  value={hint}
+                  onChange={(e) => setHint(e.target.value)}
+                  className={inputClass}
+                  style={inputStyle}
+                  maxLength={80}
+                />
+              </Field>
+            </>
+          )}
 
-              {isCreate && (
-                <>
-                  <StrengthMeter value={passphrase} />
-                  <PasswordField
-                    value={confirmPass}
-                    onChange={setConfirmPass}
-                    autoComplete="new-password"
-                    minLength={10}
-                    placeholder="Confirm passphrase"
-                    delay={0.1}
-                  />
-                  <Field icon={<KeyRound className="h-4 w-4" strokeWidth={1.6} />} delay={0.15}>
-                    <input
-                      type="text"
-                      placeholder="Optional hint (never the passphrase)"
-                      value={hint}
-                      onChange={(e) => setHint(e.target.value)}
-                      className={inputClass}
-                      style={inputStyle}
-                      maxLength={80}
-                    />
-                  </Field>
-                </>
-              )}
+          {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
 
-              {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
-
-              <div className="pt-1">
-                <PrimaryButton
-                  type="submit"
-                  loading={loading}
-                  disabled={
-                    !passphrase ||
-                    (isCreate && (scoreStrength(passphrase) < 2 || passphrase !== confirmPass))
-                  }
-                >
-                  {isCreate ? "Create vault" : "Unlock"}
-                </PrimaryButton>
-              </div>
-
-              {isCreate && bioAvailable && isBiometricPending() && (
-                <p className="pt-1 text-center text-[11.5px]" style={{ color: MUTED }}>
-                  We'll set up Face ID / fingerprint right after your vault is created.
-                </p>
-              )}
-            </form>
+          <div className="pt-1">
+            <PrimaryButton
+              type="submit"
+              loading={loading}
+              disabled={
+                !passphrase ||
+                (isCreate && (scoreStrength(passphrase) < 2 || passphrase !== confirmPass))
+              }
+            >
+              {isCreate ? "Create vault" : "Unlock"}
+            </PrimaryButton>
           </div>
-        )}
+
+          {isCreate && bioAvailable && isBiometricPending() && (
+            <p className="pt-1 text-center text-[11.5px]" style={{ color: MUTED }}>
+              We'll set up Face ID / fingerprint right after your vault is created.
+            </p>
+          )}
+        </form>
 
         {isCreate ? (
           <p className="text-center text-[11.5px] leading-snug" style={{ color: MUTED }}>
@@ -702,11 +465,7 @@ function LockPage() {
                     .eq("user_id", user.id);
                   if (metaRes.error) throw metaRes.error;
                   disableBiometric(user.id);
-                  disablePin(user.id);
                   setBioEnrolled(false);
-                  setPinEnrolled(false);
-                  setPinValue("");
-                  setUnlockMethod("passphrase");
                   setPassphrase("");
                   setConfirmPass("");
                   setHint("");

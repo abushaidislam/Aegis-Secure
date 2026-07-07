@@ -15,16 +15,7 @@ import {
   EyeOff,
   Fingerprint,
   Download,
-  KeySquare,
 } from "lucide-react";
-import {
-  isPinEnabled as isPinEnabledFn,
-  enrollPin,
-  disablePin,
-  assessPinWeakness,
-  PIN_LENGTH,
-} from "@/lib/pin-unlock";
-import { PinPad } from "@/components/aegis/PinPad";
 
 import { DevicesSection } from "@/components/aegis/devices-section";
 import { ExtensionSyncSection } from "@/components/aegis/extension-sync-section";
@@ -51,7 +42,6 @@ import {
   AUTO_LOCK_OPTIONS,
   getAutoLockMs,
   getVaultKey,
-  getVaultRawKey,
   isVaultUnlocked,
   lockVault,
   setAutoLockMs,
@@ -129,8 +119,6 @@ function SecurityPage() {
   const [bioSupported, setBioSupported] = useState(false);
   const [bioEnrolled, setBioEnrolled] = useState<boolean>(() => isBiometricEnabled(user.id));
   const [bioBusy, setBioBusy] = useState(false);
-  const [pinEnrolled, setPinEnrolled] = useState<boolean>(() => isPinEnabledFn(user.id));
-  const [pinSetupOpen, setPinSetupOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -156,10 +144,9 @@ function SecurityPage() {
     setNotice(null);
     try {
       if (next) {
-        const dekBytes = getVaultRawKey();
-        if (!dekBytes) throw new Error("Vault is locked. Unlock first to enable biometrics.");
-        await enrollBiometric({ userId: user.id, userEmail: user.email ?? user.id, dekBytes });
-
+        const dek = getVaultKey();
+        if (!dek) throw new Error("Vault is locked. Unlock first to enable biometrics.");
+        await enrollBiometric({ userId: user.id, userEmail: user.email ?? user.id, dek });
         setBioEnrolled(true);
         setNotice({ kind: "info", text: "Biometric unlock enabled on this device." });
       } else {
@@ -295,47 +282,6 @@ function SecurityPage() {
               />
             }
           />
-          <SettingsRow
-            icon={<KeySquare className="h-4 w-4" strokeWidth={1.8} />}
-            title="PIN quick unlock"
-            description={
-              pinEnrolled
-                ? "A 6-digit PIN unlocks this device. 5 wrong tries disables it."
-                : "Skip typing your passphrase — set a short PIN for this device."
-            }
-            onClick={() => {
-              if (pinEnrolled) {
-                const ok = window.confirm(
-                  "Remove PIN unlock from this device?\n\nYou'll need your master passphrase to unlock next time.",
-                );
-                if (!ok) return;
-                disablePin(user.id);
-                setPinEnrolled(false);
-                setNotice({ kind: "info", text: "PIN unlock removed from this device." });
-              } else {
-                setPinSetupOpen(true);
-              }
-            }}
-            trailing={
-              <Switch
-                checked={pinEnrolled}
-                onCheckedChange={(v) => {
-                  if (v) {
-                    setPinSetupOpen(true);
-                  } else {
-                    disablePin(user.id);
-                    setPinEnrolled(false);
-                    setNotice({
-                      kind: "info",
-                      text: "PIN unlock removed from this device.",
-                    });
-                  }
-                }}
-                onClick={(e) => e.stopPropagation()}
-                aria-label="PIN quick unlock"
-              />
-            }
-          />
         </SettingsGroup>
 
         <SectionLabel>{t("security.section.devices", "Devices")}</SectionLabel>
@@ -460,17 +406,6 @@ function SecurityPage() {
             }}
           />
         )}
-        {pinSetupOpen && (
-          <PinSetupSheet
-            userId={user.id}
-            onClose={() => setPinSetupOpen(false)}
-            onDone={() => {
-              setPinSetupOpen(false);
-              setPinEnrolled(true);
-              setNotice({ kind: "info", text: "PIN unlock is enabled on this device." });
-            }}
-          />
-        )}
       </AnimatePresence>
     </>
   );
@@ -551,9 +486,8 @@ function ChangePassphraseSheet({
         .eq("user_id", userId);
       if (upErr) throw upErr;
       // Re-unlock with the new passphrase so the in-memory DEK stays valid.
-      const { dek: freshDek, rawDek: freshRaw } = await unwrapVaultKey(next, salt, wrappedKey, wrappedKeyIv);
-      setVaultKey(freshDek, freshRaw);
-
+      const freshDek = await unwrapVaultKey(next, salt, wrappedKey, wrappedKeyIv);
+      setVaultKey(freshDek);
       onSaved(trimmedHint);
     } catch (e2) {
       setErr(e2 instanceof Error ? e2.message : "Could not change passphrase.");
@@ -914,213 +848,3 @@ function ExportSheet({
     </motion.div>
   );
 }
-
-function PinSetupSheet({
-  userId,
-  onClose,
-  onDone,
-}: {
-  userId: string;
-  onClose: () => void;
-  onDone: () => void;
-}) {
-  const [step, setStep] = useState<"enter" | "confirm">("enter");
-  const [firstPin, setFirstPin] = useState("");
-  const [pin, setPin] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [shake, setShake] = useState(false);
-
-  const shakeAndClear = (message: string) => {
-    setErr(message);
-    setShake(true);
-    window.setTimeout(() => setShake(false), 500);
-    // Small delay so the user sees the 6th dot before it clears — matches
-    // iOS lock-screen feel.
-    window.setTimeout(() => setPin(""), 180);
-  };
-
-  // Fires when PinPad hits exactly PIN_LENGTH digits (auto) or when the user
-  // manually invokes it. Serialized behind `busy` so a fast double-tap on the
-  // final digit can't double-invoke enrollment.
-  const handleComplete = async (value: string) => {
-    if (busy) return;
-    if (value.length !== PIN_LENGTH) return;
-
-    if (step === "enter") {
-      // Validate strength *before* asking the user to type it again — no
-      // point wasting a confirm round on a rejected PIN.
-      const weakness = assessPinWeakness(value);
-      if (weakness) {
-        shakeAndClear(weakness);
-        return;
-      }
-      // Brief pause so the user sees all 6 dots filled before the transition.
-      setErr(null);
-      window.setTimeout(() => {
-        setFirstPin(value);
-        setPin("");
-        setStep("confirm");
-      }, 160);
-      return;
-    }
-
-    // confirm step
-    if (value !== firstPin) {
-      shakeAndClear("PINs don't match. Try again.");
-      return;
-    }
-    const dekBytes = getVaultRawKey();
-    if (!dekBytes) {
-      setErr("Vault is locked. Unlock first, then try again.");
-      return;
-    }
-    setBusy(true);
-    setErr(null);
-    try {
-      await enrollPin({ userId, pin: value, dekBytes });
-
-      onDone();
-    } catch (e) {
-      // Fall the user all the way back to step 1 — a save failure means the
-      // pair is untrusted; don't let them re-confirm the same PIN.
-      const message = e instanceof Error ? e.message : "Could not save PIN.";
-      setErr(message);
-      setShake(true);
-      window.setTimeout(() => setShake(false), 500);
-      window.setTimeout(() => {
-        setStep("enter");
-        setFirstPin("");
-        setPin("");
-      }, 180);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const title = step === "enter" ? "Create your PIN" : "Confirm your PIN";
-  const subtitle =
-    step === "enter"
-      ? "6 digits. Stays on this device — never synced, never leaves."
-      : "Enter the same 6 digits once more.";
-
-  return (
-    <motion.div
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <motion.button
-        aria-label="Close"
-        onClick={busy ? undefined : onClose}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="absolute inset-0"
-        style={{ background: "rgb(var(--aegis-ink-rgb) / 0.35)", backdropFilter: "blur(4px)" }}
-      />
-      <motion.div
-        initial={{ y: 40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 40, opacity: 0 }}
-        transition={soft}
-        className="relative z-10 mx-auto w-full max-w-[440px] rounded-t-[22px] px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[22px]"
-        style={{
-          background: CREAM_SOFT,
-          border: `1px solid ${BORDER}`,
-          boxShadow: "0 -12px 40px -12px rgba(0,0,0,0.25)",
-        }}
-      >
-        <div className="mb-4 flex items-start justify-between">
-          <div className="min-w-0">
-            <div
-              className="text-[11px] uppercase tracking-[0.14em]"
-              style={{ color: MUTED }}
-            >
-              Step {step === "enter" ? "1" : "2"} of 2
-            </div>
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={soft}
-              >
-                <div
-                  className="mt-1 text-[18px]"
-                  style={{
-                    fontFamily: "'Playfair Display', serif",
-                    fontWeight: 600,
-                    letterSpacing: "-0.01em",
-                    color: CHARCOAL,
-                  }}
-                >
-                  {title}
-                </div>
-                <div className="mt-1 text-[12.5px]" style={{ color: MUTED }}>
-                  {subtitle}
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={busy ? undefined : onClose}
-            disabled={busy}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full disabled:opacity-50"
-            style={{ background: "rgb(var(--aegis-ink-rgb) / 0.06)", color: CHARCOAL }}
-            aria-label="Close"
-          >
-            <X className="h-4 w-4" strokeWidth={1.8} />
-          </motion.button>
-        </div>
-
-        <div className="flex flex-col items-center gap-4 pb-2 pt-2">
-          <PinPad
-            value={pin}
-            onChange={(next) => {
-              if (err) setErr(null);
-              setPin(next);
-            }}
-            onComplete={handleComplete}
-            length={PIN_LENGTH}
-            shake={shake}
-            disabled={busy}
-          />
-
-          {err && (
-            <div className="w-full">
-              <Notice kind="error">{err}</Notice>
-            </div>
-          )}
-
-          {step === "confirm" && !busy && (
-            <button
-              type="button"
-              onClick={() => {
-                setStep("enter");
-                setPin("");
-                setFirstPin("");
-                setErr(null);
-              }}
-              className="text-[12.5px] underline underline-offset-2"
-              style={{ color: MUTED }}
-            >
-              Start over
-            </button>
-          )}
-
-          {busy && (
-            <p className="text-[12px]" style={{ color: MUTED }}>
-              Saving your PIN…
-            </p>
-          )}
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-
