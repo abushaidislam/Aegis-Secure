@@ -19,6 +19,8 @@ import {
 
 import { DevicesSection } from "@/components/aegis/devices-section";
 import { ExtensionSyncSection } from "@/components/aegis/extension-sync-section";
+import { ExtensionTrustSection } from "@/components/aegis/extension-trust-section";
+import { ApprovalSection } from "@/components/aegis/approval-section";
 import { SignInHistorySection } from "@/components/aegis/signin-history-section";
 import { VaultHealthHero } from "@/components/aegis/vault-health-hero";
 
