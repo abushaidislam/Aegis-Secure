@@ -480,22 +480,22 @@ function LockPage() {
               disabled={pinBusy}
             />
             {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
-            <div className="flex flex-col items-center gap-2 pt-1">
-              <TextLink
+            <div className="flex w-full flex-col gap-2 pt-1">
+              <MethodCard
+                variant="passphrase"
                 onClick={() => {
                   setNotice(null);
                   setPinValue("");
                   setUnlockMethod("passphrase");
                 }}
-              >
-                Use passphrase instead
-              </TextLink>
+                disabled={pinBusy}
+              />
               {bioEnrolled && bioAvailable && (
                 <button
                   type="button"
                   onClick={handleBiometricUnlock}
                   disabled={bioBusy}
-                  className="flex items-center gap-1.5 text-[12.5px] transition-opacity hover:opacity-100 disabled:opacity-50"
+                  className="mx-auto flex items-center gap-1.5 text-[12.5px] transition-opacity hover:opacity-100 disabled:opacity-50"
                   style={{ color: MUTED, opacity: 0.85 }}
                 >
                   <Fingerprint className="h-3.5 w-3.5" strokeWidth={1.6} />
