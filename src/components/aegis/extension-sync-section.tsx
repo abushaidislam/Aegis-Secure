@@ -280,3 +280,120 @@ export function ExtensionSyncSection() {
     </>
   );
 }
+
+/* -------------------------------------------------------------------- */
+/*  Extension health card                                                */
+/* -------------------------------------------------------------------- */
+
+function relTime(ts: number): string {
+  if (!ts) return "never";
+  const diff = Date.now() - ts;
+  if (diff < 5_000) return "just now";
+  if (diff < 60_000) return `${Math.round(diff / 1000)}s ago`;
+  if (diff < 3_600_000) return `${Math.round(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.round(diff / 3_600_000)}h ago`;
+  return `${Math.round(diff / 86_400_000)}d ago`;
+}
+
+function ExtensionHealthGroup({ unlocked }: { unlocked: boolean }) {
+  const [state, setState] = useState<ExtensionState | null>(null);
+  const [repairing, setRepairing] = useState(false);
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      const s = await pingExtensionState();
+      if (alive) setState(s);
+    };
+    void load();
+    const iv = setInterval(load, 10_000);
+    // Re-render every 15s so "relative time" strings stay fresh even when
+    // the underlying state hasn't changed.
+    const clock = setInterval(() => setTick((n) => n + 1), 15_000);
+    return () => {
+      alive = false;
+      clearInterval(iv);
+      clearInterval(clock);
+    };
+  }, []);
+
+  void tick; // referenced for eslint
+
+  const localSeq = getLocalSyncSeq();
+  const remoteSeq = state?.ok ? state.syncSeq : 0;
+  const stale = state?.ok && state.unlocked && remoteSeq < localSeq;
+
+  async function handleRepair() {
+    setRepairing(true);
+    try {
+      const cleared = clearExtensionPairing();
+      if (!cleared) {
+        toast.error("Extension not detected");
+        return;
+      }
+      toast.success("Pairing key cleared — next sync will re-pair");
+      // Force an immediate state refresh so the UI reflects the reset.
+      const s = await pingExtensionState();
+      setState(s);
+    } finally {
+      setRepairing(false);
+    }
+  }
+
+  const extUnlocked = state?.ok ? state.unlocked : false;
+  const accountCount = state?.ok ? state.accountCount : 0;
+  const syncedAt = state?.ok ? state.syncedAt : 0;
+
+  return (
+    <div className="mt-4">
+      <SectionLabel>Extension health</SectionLabel>
+      <SettingsGroup>
+        <SettingsRow
+          icon={<Activity className="h-4 w-4" strokeWidth={1.8} />}
+          title="Extension status"
+          description={
+            !state
+              ? "Checking…"
+              : !state.ok
+                ? "Couldn't reach extension"
+                : extUnlocked
+                  ? `Unlocked · ${accountCount} account${accountCount === 1 ? "" : "s"} · synced ${relTime(syncedAt)}`
+                  : "Locked — sync from this page to unlock it"
+          }
+          badge={extUnlocked ? "Unlocked" : "Locked"}
+        />
+        <SettingsRow
+          icon={<KeyRound className="h-4 w-4" strokeWidth={1.8} />}
+          title={stale ? "Sync counter (stale)" : "Sync counter"}
+          description={
+            stale
+              ? `Extension has seq ${remoteSeq}, this tab has ${localSeq}. A resync will bring it up to date.`
+              : `local seq ${localSeq} · extension seq ${remoteSeq}`
+          }
+          badge={stale ? "Stale" : undefined}
+        />
+        <SettingsRow
+          icon={
+            repairing ? (
+              <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.8} />
+            ) : (
+              <KeyRound className="h-4 w-4" strokeWidth={1.8} />
+            )
+          }
+          title="Re-pair extension"
+          description="Wipe the cached pairing key and reissue a handshake on the next sync. Use this only if syncs fail with signature errors."
+          onClick={repairing ? undefined : handleRepair}
+          disabled={repairing || !unlocked}
+          chevron
+        />
+        <SettingsRow
+          icon={<Keyboard className="h-4 w-4" strokeWidth={1.8} />}
+          title="Keyboard shortcut"
+          description="Ctrl + Shift + L (⌘ + Shift + L on Mac) autofills the top-matched OTP into the focused input on any tab."
+        />
+      </SettingsGroup>
+    </div>
+  );
+}
+
