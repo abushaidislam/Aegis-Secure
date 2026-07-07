@@ -44,10 +44,10 @@ export function PinPad({
   const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "back"];
 
   return (
-    <div className="flex flex-col items-center gap-8 select-none">
+    <div className="flex flex-col items-center gap-5 select-none sm:gap-8">
       {/* dots */}
       <motion.div
-        className="flex items-center gap-4"
+        className="flex items-center gap-3 sm:gap-4"
         animate={shake ? { x: [0, -8, 8, -6, 6, -3, 3, 0] } : { x: 0 }}
         transition={{ duration: 0.45 }}
       >
