@@ -122,6 +122,8 @@ function SecurityPage() {
   const [bioSupported, setBioSupported] = useState(false);
   const [bioEnrolled, setBioEnrolled] = useState<boolean>(() => isBiometricEnabled(user.id));
   const [bioBusy, setBioBusy] = useState(false);
+  const [pinEnrolled, setPinEnrolled] = useState<boolean>(() => isPinEnabledFn(user.id));
+  const [pinSetupOpen, setPinSetupOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
