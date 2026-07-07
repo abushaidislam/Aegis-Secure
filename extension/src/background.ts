@@ -70,6 +70,7 @@ export type Message =
       sig?: string;
     }
   | { type: "MATCH_HOST"; host: string }
+  | { type: "LIST_ACCOUNTS"; query?: string }
   | { type: "GET_CODE"; accountId: string }
   | { type: "CLIPBOARD_ARMED"; tabId: number; accountId: string };
 
