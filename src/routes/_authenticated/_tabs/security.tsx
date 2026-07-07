@@ -1024,41 +1024,63 @@ function PinSetupSheet({
         <div className="flex flex-col items-center gap-4 pb-2">
           <PinPad
             value={pin}
-            onChange={setPin}
+            onChange={(next) => {
+              // Clear stale error the moment the user starts typing again.
+              if (err) setErr(null);
+              setPin(next);
+            }}
             onComplete={handleComplete}
+            length={step === "confirm" && firstPin.length > 0 ? firstPin.length : 6}
             shake={shake}
             disabled={busy}
           />
+
           {err && (
             <div className="w-full">
               <Notice kind="error">{err}</Notice>
             </div>
           )}
-          {step === "enter" && pin.length >= 4 && pin.length < 6 && (
-            <button
-              type="button"
-              onClick={() => handleComplete(pin)}
-              disabled={busy}
-              className="text-[12.5px] underline underline-offset-2"
-              style={{ color: MUTED }}
-            >
-              Use this {pin.length}-digit PIN
-            </button>
+
+          {/* Enter step: explicit Continue button so 4/5-digit PINs work
+              without hunting for a link. 6-digit auto-continues via onComplete. */}
+          {step === "enter" && (
+            <div className="flex w-full flex-col items-center gap-2">
+              <PrimaryButton
+                type="button"
+                onClick={() => handleComplete(pin)}
+                disabled={busy || pin.length < 4}
+                loading={busy}
+              >
+                Continue
+              </PrimaryButton>
+              <p className="text-[11.5px]" style={{ color: MUTED }}>
+                {pin.length < 4
+                  ? "Choose 4 to 6 digits."
+                  : `${pin.length}-digit PIN — tap Continue or add more digits.`}
+              </p>
+            </div>
           )}
+
           {step === "confirm" && (
-            <button
-              type="button"
-              onClick={() => {
-                setStep("enter");
-                setPin("");
-                setFirstPin("");
-                setErr(null);
-              }}
-              className="text-[12.5px] underline underline-offset-2"
-              style={{ color: MUTED }}
-            >
-              Start over
-            </button>
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-[11.5px]" style={{ color: MUTED }}>
+                Re-enter your {firstPin.length}-digit PIN.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("enter");
+                  setPin("");
+                  setFirstPin("");
+                  setErr(null);
+                }}
+                disabled={busy}
+                className="text-[12.5px] underline underline-offset-2 disabled:opacity-50"
+                style={{ color: MUTED }}
+              >
+                Start over
+              </button>
+            </div>
           )}
         </div>
       </motion.div>
