@@ -183,9 +183,9 @@ function LockPage() {
   const [pinValue, setPinValue] = useState("");
   const [pinBusy, setPinBusy] = useState(false);
   const [pinShake, setPinShake] = useState(false);
-  const [unlockMethod, setUnlockMethod] = useState<UnlockMethod>(() =>
-    isPinEnabled(user.id) ? "pin" : "passphrase",
-  );
+  // Always land on the passphrase view. The PIN shortcut card above the
+  // input lets the user switch to the PIN pad in one tap.
+  const [unlockMethod, setUnlockMethod] = useState<UnlockMethod>("passphrase");
 
   useEffect(() => {
     let cancelled = false;
