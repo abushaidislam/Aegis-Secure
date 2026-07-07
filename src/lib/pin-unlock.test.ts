@@ -155,6 +155,8 @@ describe("lock → unlock → enroll (integration)", () => {
   it("after passphrase unlock, session exposes raw DEK for PIN enrollment", async () => {
     // Step 1: create a vault (as if onboarding).
     const created = await createNewVaultKey(PASSPHRASE);
+    // Snapshot the DEK bytes — the session zero-fills the buffer on lock.
+    const originalDek = new Uint8Array(created.rawDek);
     setVaultKey(created.dek, created.rawDek);
     expect(isVaultUnlocked()).toBe(true);
     expect(getVaultRawKey()).not.toBeNull();
@@ -180,7 +182,8 @@ describe("lock → unlock → enroll (integration)", () => {
     setVaultKey(unlocked.dek, unlocked.rawDek);
 
     // Same DEK bytes as the original create.
-    expect(bytesEqual(created.rawDek, unlocked.rawDek)).toBe(true);
+    expect(bytesEqual(originalDek, unlocked.rawDek)).toBe(true);
+
 
     // And it can decrypt data encrypted before the lock.
     const rt = await decryptSecret(getVaultKey()!, enc.ciphertext, enc.iv);
