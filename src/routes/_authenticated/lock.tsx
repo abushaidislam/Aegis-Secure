@@ -233,15 +233,16 @@ function LockPage() {
         throw new Error("Vault was created with a different key algorithm.");
       }
       try {
-        const dek = await unwrapVaultKey(
+        const { dek, rawDek } = await unwrapVaultKey(
           passphrase,
           toBytes(data.kdf_salt),
           toBytes(data.recovery_wrapped_key),
           toBytes(data.recovery_wrapped_key_iv),
         );
-        setVaultKey(dek);
-        await maybeEnrollBiometric(dek);
+        setVaultKey(dek, rawDek);
+        await maybeEnrollBiometric(rawDek);
         routeAfterUnlock();
+
       } catch (cryptoErr) {
         // WebCrypto throws OperationError with an empty message in Chrome
         // for a wrong key. Any unwrap/decrypt failure here means the
