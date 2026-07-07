@@ -89,18 +89,77 @@ const ALLOW_UNPACKED = envFlag("VITE_EXT_ALLOW_UNPACKED");
 let warnedUnpacked = false;
 let warnedUntrusted = false;
 
+const RUNTIME_TRUST_LS = "aegis:ext:trusted:v1";
+const runtimeTrustCache = new Set<string>();
+let runtimeTrustLoaded = false;
+
+function loadRuntimeTrust(): Set<string> {
+  if (runtimeTrustLoaded) return runtimeTrustCache;
+  runtimeTrustLoaded = true;
+  try {
+    const raw = typeof localStorage !== "undefined" ? localStorage.getItem(RUNTIME_TRUST_LS) : null;
+    if (!raw) return runtimeTrustCache;
+    const parsed = JSON.parse(raw) as unknown;
+    if (Array.isArray(parsed)) {
+      for (const id of parsed) if (typeof id === "string" && id.length > 0) runtimeTrustCache.add(id);
+    }
+  } catch {
+    /* corrupt localStorage — start empty */
+  }
+  return runtimeTrustCache;
+}
+
+function persistRuntimeTrust(): void {
+  try {
+    localStorage.setItem(RUNTIME_TRUST_LS, JSON.stringify([...runtimeTrustCache]));
+  } catch {
+    /* private browsing — trust survives the session only */
+  }
+}
+
 /**
- * Read the extension's runtime ID from the DOM and verify it is a
- * *trusted* Aegis extension before returning it. Any ID that isn't in
- * the published allowlist is refused — the caller sees "no extension
- * installed" and never sends vault data to the impersonator. Dev builds
- * can opt in via `VITE_EXT_ALLOW_UNPACKED=true`.
+ * Runtime trust API — user-facing "Trust this extension" flow. Adding an
+ * ID here requires an explicit user action from the Security page (the
+ * DOM attribute alone is never enough), so this is functionally the same
+ * safety model as Chrome's "Load unpacked" toggle: intentional trust,
+ * not passive discovery.
  */
-function discoverExtensionId(): string | null {
+export function isRuntimeTrusted(id: string): boolean {
+  return loadRuntimeTrust().has(id);
+}
+export function trustExtensionRuntime(id: string): void {
+  if (!id) return;
+  loadRuntimeTrust().add(id);
+  persistRuntimeTrust();
+}
+export function untrustExtensionRuntime(id: string): void {
+  loadRuntimeTrust().delete(id);
+  persistRuntimeTrust();
+}
+export function listRuntimeTrusted(): string[] {
+  return [...loadRuntimeTrust()];
+}
+
+/** The raw ID stamped on <html>, regardless of trust state. UI use only. */
+export function discoverExtensionIdUnverified(): string | null {
   if (typeof document === "undefined") return null;
   const id = document.documentElement?.dataset?.aegisExtensionId;
-  if (!id || id.length === 0) return null;
+  return id && id.length > 0 ? id : null;
+}
+
+/**
+ * Read the extension's runtime ID from the DOM and verify it is a
+ * *trusted* Aegis extension before returning it. Trust sources (any one):
+ *   1. Hardcoded published Chrome Web Store / Firefox Add-ons IDs
+ *   2. Build-time `VITE_EXT_TRUSTED_IDS`
+ *   3. User-added runtime trust (localStorage, via Security page UI)
+ *   4. Dev opt-in `VITE_EXT_ALLOW_UNPACKED=true`
+ */
+function discoverExtensionId(): string | null {
+  const id = discoverExtensionIdUnverified();
+  if (!id) return null;
   if (TRUSTED_EXTENSION_IDS.has(id)) return id;
+  if (isRuntimeTrusted(id)) return id;
   if (ALLOW_UNPACKED) {
     if (!warnedUnpacked && typeof console !== "undefined") {
       warnedUnpacked = true;
@@ -115,8 +174,8 @@ function discoverExtensionId(): string | null {
     warnedUntrusted = true;
     console.warn(
       `[aegis] Refusing to sync vault to extension id="${id}": not in the ` +
-        `trusted allowlist. If this is your own build, set VITE_EXT_TRUSTED_IDS ` +
-        `to include it (or VITE_EXT_ALLOW_UNPACKED=true for local development).`,
+        `trusted allowlist. Add it from the Security page (Extension trust), ` +
+        `set VITE_EXT_TRUSTED_IDS, or use VITE_EXT_ALLOW_UNPACKED=true for local dev.`,
     );
   }
   return null;
