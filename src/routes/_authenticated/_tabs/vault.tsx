@@ -103,7 +103,7 @@ export const Route = createFileRoute("/_authenticated/_tabs/vault")({
         property: "og:description",
         content: "End-to-end encrypted TOTP codes, unlocked only on your device.",
       },
-      { property: "og:url", content: "https://hug-machine-maker.lovable.app/vault" },
+      { property: "og:url", content: "https://aegis-syed.lovable.app/vault" },
     ],
   }),
   component: VaultPage,
