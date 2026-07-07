@@ -905,3 +905,164 @@ function ExportSheet({
     </motion.div>
   );
 }
+
+function PinSetupSheet({
+  userId,
+  onClose,
+  onDone,
+}: {
+  userId: string;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [step, setStep] = useState<"enter" | "confirm">("enter");
+  const [firstPin, setFirstPin] = useState("");
+  const [pin, setPin] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [shake, setShake] = useState(false);
+
+  const shakeAndReset = (message: string) => {
+    setErr(message);
+    setShake(true);
+    window.setTimeout(() => setShake(false), 500);
+    setPin("");
+  };
+
+  const handleComplete = async (value: string) => {
+    setErr(null);
+    if (step === "enter") {
+      if (value.length < 4) return;
+      setFirstPin(value);
+      setPin("");
+      setStep("confirm");
+      return;
+    }
+    // confirm step
+    if (value !== firstPin) {
+      shakeAndReset("PINs don't match. Try again.");
+      return;
+    }
+    const dek = getVaultKey();
+    if (!dek) {
+      setErr("Vault is locked. Unlock first.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await enrollPin({ userId, pin: value, dek });
+      onDone();
+    } catch (e) {
+      shakeAndReset(e instanceof Error ? e.message : "Could not save PIN.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const title = step === "enter" ? "Set a device PIN" : "Confirm your PIN";
+  const subtitle =
+    step === "enter"
+      ? "4–6 digits. Only this device — never synced, never leaves here."
+      : "Enter the same PIN once more to confirm.";
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.button
+        aria-label="Close"
+        onClick={onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0"
+        style={{ background: "rgb(var(--aegis-ink-rgb) / 0.35)", backdropFilter: "blur(4px)" }}
+      />
+      <motion.div
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 40, opacity: 0 }}
+        transition={soft}
+        className="relative z-10 mx-auto w-full max-w-[440px] rounded-t-[22px] px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[22px]"
+        style={{
+          background: CREAM_SOFT,
+          border: `1px solid ${BORDER}`,
+          boxShadow: "0 -12px 40px -12px rgba(0,0,0,0.25)",
+        }}
+      >
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <div
+              className="text-[18px]"
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontWeight: 600,
+                letterSpacing: "-0.01em",
+                color: CHARCOAL,
+              }}
+            >
+              {title}
+            </div>
+            <div className="mt-1 text-[12.5px]" style={{ color: MUTED }}>
+              {subtitle}
+            </div>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-full"
+            style={{ background: "rgb(var(--aegis-ink-rgb) / 0.06)", color: CHARCOAL }}
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" strokeWidth={1.8} />
+          </motion.button>
+        </div>
+
+        <div className="flex flex-col items-center gap-4 pb-2">
+          <PinPad
+            value={pin}
+            onChange={setPin}
+            onComplete={handleComplete}
+            shake={shake}
+            disabled={busy}
+          />
+          {err && (
+            <div className="w-full">
+              <Notice kind="error">{err}</Notice>
+            </div>
+          )}
+          {step === "enter" && pin.length >= 4 && pin.length < 6 && (
+            <button
+              type="button"
+              onClick={() => handleComplete(pin)}
+              disabled={busy}
+              className="text-[12.5px] underline underline-offset-2"
+              style={{ color: MUTED }}
+            >
+              Use this {pin.length}-digit PIN
+            </button>
+          )}
+          {step === "confirm" && (
+            <button
+              type="button"
+              onClick={() => {
+                setStep("enter");
+                setPin("");
+                setFirstPin("");
+                setErr(null);
+              }}
+              className="text-[12.5px] underline underline-offset-2"
+              style={{ color: MUTED }}
+            >
+              Start over
+            </button>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
