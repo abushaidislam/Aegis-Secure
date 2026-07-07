@@ -452,6 +452,17 @@ function SecurityPage() {
             }}
           />
         )}
+        {pinSetupOpen && (
+          <PinSetupSheet
+            userId={user.id}
+            onClose={() => setPinSetupOpen(false)}
+            onDone={() => {
+              setPinSetupOpen(false);
+              setPinEnrolled(true);
+              setNotice({ kind: "info", text: "PIN unlock is enabled on this device." });
+            }}
+          />
+        )}
       </AnimatePresence>
     </>
   );
