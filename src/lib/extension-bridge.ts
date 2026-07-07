@@ -47,23 +47,36 @@ const PUBLISHED_EXTENSION_IDS: readonly string[] = [
   //   "aegis@lovable.dev",                 // Firefox Add-ons
 ];
 
-function envList(name: string): string[] {
+function envRaw(name: string): string | undefined {
   try {
-    const raw = (import.meta as { env?: Record<string, string | undefined> }).env?.[name];
-    if (!raw) return [];
-    return raw.split(",").map((s) => s.trim()).filter(Boolean);
+    const viteEnv = (import.meta as { env?: Record<string, string | undefined> }).env;
+    const v = viteEnv?.[name];
+    if (v !== undefined && v !== "") return v;
   } catch {
-    return [];
+    /* import.meta.env unavailable */
   }
+  try {
+    // Fallback for node/test runtimes where import.meta.env isn't a proxy
+    // over process.env (vitest stubs process.env, not import.meta.env, on
+    // the node pool).
+    const g = globalThis as { process?: { env?: Record<string, string | undefined> } };
+    const v = g.process?.env?.[name];
+    if (v !== undefined && v !== "") return v;
+  } catch {
+    /* no process */
+  }
+  return undefined;
+}
+
+function envList(name: string): string[] {
+  const raw = envRaw(name);
+  if (!raw) return [];
+  return raw.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
 function envFlag(name: string): boolean {
-  try {
-    const raw = (import.meta as { env?: Record<string, string | undefined> }).env?.[name];
-    return raw === "true" || raw === "1";
-  } catch {
-    return false;
-  }
+  const raw = envRaw(name);
+  return raw === "true" || raw === "1";
 }
 
 const TRUSTED_EXTENSION_IDS: ReadonlySet<string> = new Set([
