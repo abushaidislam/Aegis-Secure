@@ -362,11 +362,19 @@ function LockPage() {
                 transition={soft}
                 className="flex flex-col items-center gap-2"
               >
-                <Display>{isCreate ? "Set your master passphrase." : "Welcome back."}</Display>
+                <Display>
+                  {isCreate
+                    ? "Set your master passphrase."
+                    : unlockMethod === "pin"
+                      ? "Enter your PIN."
+                      : "Welcome back."}
+                </Display>
                 <Lede>
                   {isCreate
                     ? "This key never leaves your device. Aegis can't recover it — remember it well."
-                    : "Enter your master passphrase to unlock your codes."}
+                    : unlockMethod === "pin"
+                      ? "Quick unlock with your device PIN."
+                      : "Enter your master passphrase to unlock your codes."}
                 </Lede>
               </motion.div>
             </AnimatePresence>
