@@ -426,6 +426,13 @@ function SecurityPage() {
             }}
           />
         )}
+        {cloudBackupOpen && (
+          <CloudBackupSheet
+            userId={user.id}
+            onClose={() => setCloudBackupOpen(false)}
+            onNotice={(n) => setNotice(n)}
+          />
+        )}
       </AnimatePresence>
     </>
   );
