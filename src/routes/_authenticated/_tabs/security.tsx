@@ -15,6 +15,10 @@ import {
   EyeOff,
   Fingerprint,
   Download,
+  Cloud,
+  CloudUpload,
+  Trash2,
+  RefreshCw,
 } from "lucide-react";
 
 import { DevicesSection } from "@/components/aegis/devices-section";
@@ -63,6 +67,14 @@ import {
 } from "@/lib/biometric";
 import { listAccounts } from "@/lib/vault-accounts";
 import { buildEncryptedExport, downloadExport } from "@/lib/vault-export";
+import {
+  deleteCloudBackup,
+  formatBackupSize,
+  listCloudBackups,
+  restoreCloudBackup,
+  uploadCloudBackup,
+  type CloudBackupEntry,
+} from "@/lib/vault-cloud-backup";
 
 export const Route = createFileRoute("/_authenticated/_tabs/security")({
   beforeLoad: ({ location }) => {
@@ -116,6 +128,7 @@ function SecurityPage() {
   const [autoLockOpen, setAutoLockOpen] = useState(false);
   const [changeOpen, setChangeOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [cloudBackupOpen, setCloudBackupOpen] = useState(false);
   const [bioSupported, setBioSupported] = useState(false);
   const [bioEnrolled, setBioEnrolled] = useState<boolean>(() => isBiometricEnabled(user.id));
   const [bioBusy, setBioBusy] = useState(false);
@@ -249,6 +262,13 @@ function SecurityPage() {
             title={t("security.encryptedExport", "Encrypted export")}
             description={t("security.encryptedExport.description", "Download a passphrase-protected .avf backup file")}
             onClick={() => setExportOpen(true)}
+            chevron
+          />
+          <SettingsRow
+            icon={<Cloud className="h-4 w-4" strokeWidth={1.8} />}
+            title={t("security.cloudBackup", "Encrypted cloud backup")}
+            description={t("security.cloudBackup.description", "Store passphrase-wrapped .avf files in your private cloud folder")}
+            onClick={() => setCloudBackupOpen(true)}
             chevron
           />
         </SettingsGroup>
@@ -404,6 +424,13 @@ function SecurityPage() {
                 text: `Encrypted export downloaded (${count} ${count === 1 ? "account" : "accounts"}).`,
               });
             }}
+          />
+        )}
+        {cloudBackupOpen && (
+          <CloudBackupSheet
+            userId={user.id}
+            onClose={() => setCloudBackupOpen(false)}
+            onNotice={(n) => setNotice(n)}
           />
         )}
       </AnimatePresence>
@@ -847,3 +874,329 @@ function ExportSheet({
     </motion.div>
   );
 }
+
+type NoticeKind = { kind: "error" | "info"; text: string };
+
+function CloudBackupSheet({
+  userId,
+  onClose,
+  onNotice,
+}: {
+  userId: string;
+  onClose: () => void;
+  onNotice: (n: NoticeKind) => void;
+}) {
+  const [entries, setEntries] = useState<CloudBackupEntry[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [listErr, setListErr] = useState<string | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [passphrase, setPassphrase] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [label, setLabel] = useState("manual");
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const [uploadErr, setUploadErr] = useState<string | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<CloudBackupEntry | null>(null);
+  const [restorePass, setRestorePass] = useState("");
+  const [restoreBusy, setRestoreBusy] = useState(false);
+  const [restoreErr, setRestoreErr] = useState<string | null>(null);
+  const [deletingPath, setDeletingPath] = useState<string | null>(null);
+
+  const refresh = async () => {
+    setLoading(true);
+    setListErr(null);
+    try {
+      const rows = await listCloudBackups(userId);
+      setEntries(rows);
+    } catch (e) {
+      setListErr(e instanceof Error ? e.message : "Could not load cloud backups.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  const canUpload =
+    passphrase.length >= 10 && scoreStrength(passphrase) >= 2 && passphrase === confirm;
+
+  const doUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUploadErr(null);
+    if (!canUpload) return;
+    const dek = getVaultKey();
+    if (!dek) {
+      setUploadErr("Vault is locked. Unlock first.");
+      return;
+    }
+    setUploadBusy(true);
+    try {
+      const accounts = await listAccounts(dek);
+      const entry = await uploadCloudBackup(userId, accounts, passphrase, { label });
+      setEntries((prev) => [entry, ...(prev ?? [])]);
+      setPassphrase("");
+      setConfirm("");
+      setUploadOpen(false);
+      onNotice({
+        kind: "info",
+        text: `Uploaded backup (${accounts.length} ${accounts.length === 1 ? "account" : "accounts"}).`,
+      });
+    } catch (err) {
+      setUploadErr(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setUploadBusy(false);
+    }
+  };
+
+  const doDelete = async (entry: CloudBackupEntry) => {
+    const ok = window.confirm(`Delete this cloud backup?\n\n${entry.fileName}`);
+    if (!ok) return;
+    setDeletingPath(entry.name);
+    try {
+      await deleteCloudBackup(entry.name);
+      setEntries((prev) => (prev ?? []).filter((e) => e.name !== entry.name));
+      onNotice({ kind: "info", text: "Backup deleted." });
+    } catch (err) {
+      onNotice({ kind: "error", text: err instanceof Error ? err.message : "Delete failed." });
+    } finally {
+      setDeletingPath(null);
+    }
+  };
+
+  const doRestore = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!restoreTarget) return;
+    setRestoreErr(null);
+    const dek = getVaultKey();
+    if (!dek) {
+      setRestoreErr("Vault is locked. Unlock first.");
+      return;
+    }
+    setRestoreBusy(true);
+    try {
+      const summary = await restoreCloudBackup(restoreTarget.name, restorePass, dek, userId);
+      setRestoreTarget(null);
+      setRestorePass("");
+      onClose();
+      onNotice({
+        kind: "info",
+        text: `Restored ${summary.restored} · skipped ${summary.skipped}${summary.failed ? ` · failed ${summary.failed}` : ""}.`,
+      });
+    } catch (err) {
+      setRestoreErr(err instanceof Error ? err.message : "Restore failed.");
+    } finally {
+      setRestoreBusy(false);
+    }
+  };
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.button
+        aria-label="Close"
+        onClick={onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0"
+        style={{ background: "rgb(var(--aegis-ink-rgb) / 0.35)", backdropFilter: "blur(4px)" }}
+      />
+      <motion.div
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 40, opacity: 0 }}
+        transition={soft}
+        className="relative z-10 mx-auto flex max-h-[85vh] w-full max-w-[480px] flex-col rounded-t-[22px] px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[22px]"
+        style={{
+          background: CREAM_SOFT,
+          border: `1px solid ${BORDER}`,
+          boxShadow: "0 -12px 40px -12px rgba(0,0,0,0.25)",
+        }}
+      >
+        <div className="mb-3 flex items-start justify-between">
+          <div>
+            <div
+              className="text-[18px]"
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontWeight: 600,
+                letterSpacing: "-0.01em",
+                color: CHARCOAL,
+              }}
+            >
+              Encrypted cloud backup
+            </div>
+            <div className="mt-1 text-[12.5px]" style={{ color: MUTED }}>
+              Same AES-256-GCM envelope as the .avf export. We never see the passphrase.
+            </div>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-full"
+            style={{ background: "rgb(var(--aegis-ink-rgb) / 0.06)", color: CHARCOAL }}
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" strokeWidth={1.8} />
+          </motion.button>
+        </div>
+
+        <div className="mb-3 flex gap-2">
+          <PrimaryButton onClick={() => setUploadOpen((v) => !v)}>
+            <CloudUpload className="mr-1.5 inline h-4 w-4" strokeWidth={1.8} />
+            {uploadOpen ? "Cancel" : "New backup"}
+          </PrimaryButton>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+            style={{ background: "rgb(var(--aegis-ink-rgb) / 0.06)", color: CHARCOAL }}
+            aria-label="Refresh"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} strokeWidth={1.8} />
+          </button>
+        </div>
+
+        {uploadOpen && (
+          <form onSubmit={doUpload} className="mb-4 flex flex-col gap-2.5">
+            <input
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="Label (e.g. before-cleanup)"
+              className="w-full rounded-xl border px-3 py-2 text-[13px] outline-none"
+              style={{ borderColor: BORDER, background: "white", color: CHARCOAL }}
+            />
+            <PasswordField
+              value={passphrase}
+              onChange={setPassphrase}
+              autoComplete="new-password"
+              minLength={10}
+              placeholder="Backup passphrase"
+            />
+            <StrengthMeter value={passphrase} />
+            <PasswordField
+              value={confirm}
+              onChange={setConfirm}
+              autoComplete="new-password"
+              minLength={10}
+              placeholder="Confirm passphrase"
+              delay={0.05}
+            />
+            {uploadErr && <Notice kind="error">{uploadErr}</Notice>}
+            <PrimaryButton type="submit" loading={uploadBusy} disabled={!canUpload}>
+              Upload to cloud
+            </PrimaryButton>
+            <p className="text-[11px]" style={{ color: MUTED, lineHeight: 1.5 }}>
+              Lose the passphrase and this backup is unrecoverable — we can't reset it for you.
+            </p>
+          </form>
+        )}
+
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {listErr && <Notice kind="error">{listErr}</Notice>}
+          {!loading && entries && entries.length === 0 && !listErr && (
+            <div
+              className="rounded-xl border px-4 py-6 text-center text-[12.5px]"
+              style={{ borderColor: BORDER, color: MUTED }}
+            >
+              No cloud backups yet. Upload one to keep an off-device copy.
+            </div>
+          )}
+          {entries && entries.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {entries.map((e) => (
+                <li
+                  key={e.name}
+                  className="flex items-center gap-3 rounded-xl border px-3 py-2.5"
+                  style={{ borderColor: BORDER, background: "white" }}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div
+                      className="truncate text-[13px]"
+                      style={{ color: CHARCOAL, fontWeight: 500 }}
+                    >
+                      {e.fileName}
+                    </div>
+                    <div className="text-[11px]" style={{ color: MUTED }}>
+                      {e.createdAt ? new Date(e.createdAt).toLocaleString() : "—"} ·{" "}
+                      {formatBackupSize(e.size)}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRestoreTarget(e);
+                      setRestorePass("");
+                      setRestoreErr(null);
+                    }}
+                    className="rounded-full px-3 py-1.5 text-[12px]"
+                    style={{ background: CHARCOAL, color: "white" }}
+                  >
+                    Restore
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void doDelete(e)}
+                    disabled={deletingPath === e.name}
+                    className="flex h-8 w-8 items-center justify-center rounded-full"
+                    style={{ background: "rgb(var(--aegis-ink-rgb) / 0.06)", color: CHARCOAL }}
+                    aria-label="Delete backup"
+                  >
+                    <Trash2 className="h-4 w-4" strokeWidth={1.8} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {restoreTarget && (
+          <div
+            className="mt-4 rounded-xl border p-3"
+            style={{ borderColor: BORDER, background: "white" }}
+          >
+            <div className="mb-2 text-[12.5px]" style={{ color: CHARCOAL }}>
+              Restore <span style={{ fontWeight: 600 }}>{restoreTarget.fileName}</span>
+            </div>
+            <form onSubmit={doRestore} className="flex flex-col gap-2">
+              <PasswordField
+                value={restorePass}
+                onChange={setRestorePass}
+                autoComplete="current-password"
+                placeholder="Backup passphrase"
+                autoFocus
+              />
+              {restoreErr && <Notice kind="error">{restoreErr}</Notice>}
+              <div className="flex gap-2">
+                <PrimaryButton type="submit" loading={restoreBusy} disabled={restorePass.length < 1}>
+                  Restore into vault
+                </PrimaryButton>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRestoreTarget(null);
+                    setRestorePass("");
+                  }}
+                  className="rounded-full px-4 py-2 text-[12px]"
+                  style={{ background: "rgb(var(--aegis-ink-rgb) / 0.06)", color: CHARCOAL }}
+                >
+                  Cancel
+                </button>
+              </div>
+              <p className="text-[11px]" style={{ color: MUTED, lineHeight: 1.5 }}>
+                Duplicate accounts (same issuer, label and secret) are skipped.
+              </p>
+            </form>
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+}
+
