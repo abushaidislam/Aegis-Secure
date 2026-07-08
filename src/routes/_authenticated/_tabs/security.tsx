@@ -169,6 +169,18 @@ function SecurityPage() {
     };
   }, [user.id]);
 
+  // Boot the auto-backup scheduler for this user; refresh UI on settings/status changes.
+  useEffect(() => {
+    initAutoBackup(user.id);
+    setAutoBackup(getAutoBackupSettings(user.id));
+    const unsub = subscribeAutoBackup(user.id, () =>
+      setAutoBackup(getAutoBackupSettings(user.id)),
+    );
+    return () => {
+      unsub();
+    };
+  }, [user.id]);
+
   const toggleBiometric = async (next: boolean) => {
     if (bioBusy) return;
     setBioBusy(true);
