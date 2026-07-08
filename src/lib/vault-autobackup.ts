@@ -39,9 +39,40 @@ const PREFIX = "aegis.autobackup.";
 const AUTO_LABEL = "auto";
 const CHECK_INTERVAL_MS = 15 * 60 * 1000; // 15 min
 const DEFAULT_KEEP = 5;
+const LOG_MAX = 25;
+
+export type AutoBackupLogKind = "change" | "start" | "success" | "error" | "skipped";
+export interface AutoBackupLogEntry {
+  at: string; // ISO
+  kind: AutoBackupLogKind;
+  message?: string;
+}
 
 function key(userId: string, k: string) {
   return `${PREFIX}${userId}.${k}`;
+}
+
+export function getAutoBackupLog(userId: string): AutoBackupLogEntry[] {
+  const raw = safeGet(key(userId, "log"));
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as AutoBackupLogEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function clearAutoBackupLog(userId: string) {
+  safeSet(key(userId, "log"), null);
+  emit(userId);
+}
+
+function appendLog(userId: string, kind: AutoBackupLogKind, message?: string) {
+  const entry: AutoBackupLogEntry = { at: new Date().toISOString(), kind, message };
+  const next = [entry, ...getAutoBackupLog(userId)].slice(0, LOG_MAX);
+  safeSet(key(userId, "log"), JSON.stringify(next));
+  emit(userId);
 }
 
 function safeGet(k: string): string | null {
