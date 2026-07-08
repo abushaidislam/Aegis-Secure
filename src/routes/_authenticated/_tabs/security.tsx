@@ -1247,3 +1247,266 @@ function CloudBackupSheet({
   );
 }
 
+function autoBackupSummary(s: AutoBackupSettings): string {
+  if (!s.enabled) return "Off";
+  const freq = s.frequency === "weekly" ? "Weekly" : "Daily";
+  if (s.lastError) return `${freq} · last attempt failed`;
+  if (!s.lastAt) return `${freq} · waiting for first run`;
+  return `${freq} · last ${relTime(s.lastAt)}`;
+}
+
+function relTime(iso: string): string {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return "just now";
+  const diff = Date.now() - t;
+  const min = Math.round(diff / 60000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const d = Math.round(hr / 24);
+  return `${d}d ago`;
+}
+
+function AutoBackupSheet({
+  userId,
+  settings,
+  onClose,
+  onNotice,
+}: {
+  userId: string;
+  settings: AutoBackupSettings;
+  onClose: () => void;
+  onNotice: (n: NoticeKind) => void;
+}) {
+  const alreadyStored = hasStoredPassphrase(userId);
+  const [enabled, setEnabled] = useState(settings.enabled);
+  const [frequency, setFrequency] = useState<AutoBackupFrequency>(settings.frequency);
+  const [keep, setKeep] = useState<number>(settings.keep);
+  const [passphrase, setPassphrase] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [needsPass, setNeedsPass] = useState<boolean>(!alreadyStored);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const canSave = !enabled
+    ? true
+    : needsPass
+      ? passphrase.length >= 10 && scoreStrength(passphrase) >= 2 && passphrase === confirm
+      : true;
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr(null);
+    if (!canSave) return;
+    setBusy(true);
+    try {
+      if (!enabled) {
+        disableAutoBackup(userId);
+        onNotice({ kind: "info", text: "Scheduled auto-backup turned off." });
+        onClose();
+        return;
+      }
+      if (needsPass) {
+        await enableAutoBackup(userId, passphrase, { frequency, keep });
+        onNotice({ kind: "info", text: "Scheduled auto-backup enabled." });
+      } else {
+        updateAutoBackupSettings(userId, { frequency, keep });
+        onNotice({ kind: "info", text: "Auto-backup schedule updated." });
+      }
+      onClose();
+    } catch (e2) {
+      setErr(e2 instanceof Error ? e2.message : "Could not save.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const backupNow = async () => {
+    setErr(null);
+    setBusy(true);
+    try {
+      await runAutoBackupNow(userId);
+      const next = getAutoBackupSettings(userId);
+      if (next.lastError) throw new Error(next.lastError);
+      onNotice({ kind: "info", text: "Backup uploaded." });
+    } catch (e2) {
+      setErr(e2 instanceof Error ? e2.message : "Backup failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.button
+        aria-label="Close"
+        onClick={onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0"
+        style={{ background: "rgb(var(--aegis-ink-rgb) / 0.35)", backdropFilter: "blur(4px)" }}
+      />
+      <motion.div
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 40, opacity: 0 }}
+        transition={soft}
+        className="relative z-10 mx-auto flex max-h-[85vh] w-full max-w-[480px] flex-col overflow-y-auto rounded-t-[22px] px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[22px]"
+        style={{
+          background: CREAM_SOFT,
+          border: `1px solid ${BORDER}`,
+          boxShadow: "0 -12px 40px -12px rgba(0,0,0,0.25)",
+        }}
+      >
+        <div className="mb-3 flex items-start justify-between">
+          <div>
+            <div
+              className="text-[18px]"
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontWeight: 600,
+                letterSpacing: "-0.01em",
+                color: CHARCOAL,
+              }}
+            >
+              Scheduled auto-backup
+            </div>
+            <div className="mt-1 text-[12.5px]" style={{ color: MUTED }}>
+              Silently uploads an encrypted .avf while your vault is unlocked. Zero-knowledge — passphrase never leaves this device.
+            </div>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-full"
+            style={{ background: "rgb(var(--aegis-ink-rgb) / 0.06)", color: CHARCOAL }}
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" strokeWidth={1.8} />
+          </motion.button>
+        </div>
+
+        <form onSubmit={save} className="flex flex-col gap-4">
+          <label className="flex items-center justify-between rounded-[14px] px-4 py-3" style={{ background: "rgb(var(--aegis-ink-rgb) / 0.04)", border: `1px solid ${BORDER}` }}>
+            <span className="text-[14px]" style={{ color: CHARCOAL, fontWeight: 500 }}>
+              Enable auto-backup
+            </span>
+            <Switch checked={enabled} onCheckedChange={(v) => setEnabled(v)} aria-label="Enable auto-backup" />
+          </label>
+
+          {enabled && (
+            <>
+              <div>
+                <div className="mb-1.5 text-[11px] uppercase" style={{ color: MUTED, letterSpacing: "0.14em", fontWeight: 600 }}>
+                  Frequency
+                </div>
+                <div className="flex gap-2">
+                  {(["daily", "weekly"] as AutoBackupFrequency[]).map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setFrequency(f)}
+                      className="flex-1 rounded-[12px] px-3 py-2 text-[13px] capitalize"
+                      style={{
+                        background: frequency === f ? CHARCOAL : "transparent",
+                        color: frequency === f ? CREAM_SOFT : CHARCOAL,
+                        border: `1px solid ${BORDER}`,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-1.5 text-[11px] uppercase" style={{ color: MUTED, letterSpacing: "0.14em", fontWeight: 600 }}>
+                  Keep last N copies ({keep})
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={20}
+                  value={keep}
+                  onChange={(e) => setKeep(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="mt-1 text-[11px]" style={{ color: MUTED }}>
+                  Older auto copies are pruned after each successful upload. Manual backups are kept.
+                </div>
+              </div>
+
+              {needsPass ? (
+                <div className="flex flex-col gap-2">
+                  <PasswordField
+                    value={passphrase}
+                    onChange={setPassphrase}
+                    placeholder="Auto-backup passphrase (≥ 10 chars)"
+                    autoComplete="new-password"
+                  />
+                  <PasswordField
+                    value={confirm}
+                    onChange={setConfirm}
+                    placeholder="Confirm passphrase"
+                    autoComplete="new-password"
+                  />
+                  <ZxcvbnMeter password={passphrase} />
+                  <p className="text-[11px]" style={{ color: MUTED, lineHeight: 1.5 }}>
+                    Stored wrapped by your vault key. If you lose it, restoring is impossible — even we can't help.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-[12px] px-3 py-2 text-[12.5px]" style={{ background: "rgb(var(--aegis-ink-rgb) / 0.04)", border: `1px solid ${BORDER}`, color: MUTED }}>
+                  Using the passphrase you saved previously.{" "}
+                  <button type="button" onClick={() => setNeedsPass(true)} className="underline" style={{ color: CHARCOAL }}>
+                    Change it
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="rounded-[12px] px-3 py-2 text-[12px]" style={{ background: "rgb(var(--aegis-ink-rgb) / 0.03)", border: `1px solid ${BORDER}`, color: MUTED }}>
+            <div>Status: <span style={{ color: CHARCOAL, fontWeight: 500 }}>{autoBackupSummary(settings)}</span></div>
+            {settings.lastError && (
+              <div className="mt-1" style={{ color: "#b45309" }}>Last error: {settings.lastError}</div>
+            )}
+          </div>
+
+          {err && (
+            <div className="rounded-[12px] px-3 py-2 text-[12.5px]" style={{ background: "rgba(239,68,68,0.08)", color: "#b91c1c", border: "1px solid rgba(239,68,68,0.25)" }}>
+              {err}
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <PrimaryButton type="submit" disabled={busy || !canSave}>
+              {busy ? "Saving…" : enabled ? "Save schedule" : "Turn off"}
+            </PrimaryButton>
+            {settings.enabled && !needsPass && (
+              <button
+                type="button"
+                onClick={backupNow}
+                disabled={busy}
+                className="rounded-full px-4 py-2 text-[13px] disabled:opacity-50"
+                style={{ background: "transparent", color: CHARCOAL, border: `1px solid ${BORDER}`, fontWeight: 500 }}
+              >
+                <RefreshCw className="mr-1.5 inline h-3.5 w-3.5" strokeWidth={1.8} />
+                Back up now
+              </button>
+            )}
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  );
+}
+
