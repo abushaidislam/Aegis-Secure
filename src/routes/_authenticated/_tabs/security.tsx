@@ -78,8 +78,10 @@ import {
   type CloudBackupEntry,
 } from "@/lib/vault-cloud-backup";
 import {
+  clearAutoBackupLog,
   disableAutoBackup,
   enableAutoBackup,
+  getAutoBackupLog,
   getAutoBackupSettings,
   hasStoredPassphrase,
   initAutoBackup,
@@ -87,6 +89,7 @@ import {
   subscribeAutoBackup,
   updateAutoBackupSettings,
   type AutoBackupFrequency,
+  type AutoBackupLogEntry,
   type AutoBackupSettings,
 } from "@/lib/vault-autobackup";
 
