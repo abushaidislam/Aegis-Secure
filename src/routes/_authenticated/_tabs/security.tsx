@@ -77,6 +77,18 @@ import {
   uploadCloudBackup,
   type CloudBackupEntry,
 } from "@/lib/vault-cloud-backup";
+import {
+  disableAutoBackup,
+  enableAutoBackup,
+  getAutoBackupSettings,
+  hasStoredPassphrase,
+  initAutoBackup,
+  runAutoBackupNow,
+  subscribeAutoBackup,
+  updateAutoBackupSettings,
+  type AutoBackupFrequency,
+  type AutoBackupSettings,
+} from "@/lib/vault-autobackup";
 
 export const Route = createFileRoute("/_authenticated/_tabs/security")({
   beforeLoad: ({ location }) => {
