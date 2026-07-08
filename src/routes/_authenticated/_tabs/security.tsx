@@ -1458,7 +1458,7 @@ function AutoBackupSheet({
                     placeholder="Confirm passphrase"
                     autoComplete="new-password"
                   />
-                  <ZxcvbnMeter password={passphrase} />
+                  <ZxcvbnMeter value={passphrase} />
                   <p className="text-[11px]" style={{ color: MUTED, lineHeight: 1.5 }}>
                     Stored wrapped by your vault key. If you lose it, restoring is impossible — even we can't help.
                   </p>
