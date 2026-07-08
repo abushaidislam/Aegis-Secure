@@ -118,9 +118,9 @@ async function wrapPassphrase(dek: CryptoKey, passphrase: string): Promise<strin
 async function unwrapPassphrase(dek: CryptoKey, blob: string): Promise<string> {
   const { iv, ct } = JSON.parse(blob) as { iv: string; ct: string };
   const pt = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: fromB64(iv) },
+    { name: "AES-GCM", iv: fromB64(iv) as unknown as BufferSource },
     dek,
-    fromB64(ct),
+    fromB64(ct) as unknown as BufferSource,
   );
   return dec.decode(pt);
 }
