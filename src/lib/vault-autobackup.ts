@@ -337,6 +337,13 @@ function tryFlushDirty() {
 
 function markDirty() {
   dirty = true;
+  if (activeUserId) {
+    const settings = getAutoBackupSettings(activeUserId);
+    if (settings.enabled) {
+      const suffix = isOnline() ? "" : " (offline — queued)";
+      appendLog(activeUserId, "change", `Vault changed${suffix}`);
+    }
+  }
   if (typeof window === "undefined") return;
   if (debounceTimer !== null) window.clearTimeout(debounceTimer);
   debounceTimer = window.setTimeout(() => {
