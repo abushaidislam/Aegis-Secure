@@ -471,6 +471,15 @@ function SecurityPage() {
             onNotice={(n) => setNotice(n)}
           />
         )}
+        {autoBackupOpen && (
+          <AutoBackupSheet
+            userId={user.id}
+            settings={autoBackup}
+            onClose={() => setAutoBackupOpen(false)}
+            onNotice={(n) => setNotice(n)}
+          />
+        )}
+
       </AnimatePresence>
     </>
   );
