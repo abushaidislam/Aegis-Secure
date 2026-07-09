@@ -1483,6 +1483,103 @@ export function AccountCard({
               )}
             </AnimatePresence>
             <AnimatePresence>
+              {shareOpen && (
+                <motion.div
+                  key="share-sheet"
+                  className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <motion.button
+                    aria-label="Close"
+                    onClick={() => !shareBusy && setShareOpen(false)}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0"
+                    style={{ background: "rgb(var(--aegis-ink-rgb) / 0.35)", backdropFilter: "blur(4px)" }}
+                  />
+                  <motion.div
+                    role="dialog"
+                    aria-modal="true"
+                    initial={{ y: 12, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 12, opacity: 0 }}
+                    transition={soft}
+                    className="relative z-10 w-full max-w-[420px] rounded-[18px] p-5"
+                    style={{ background: CREAM_SOFT, border: `1px solid ${BORDER}` }}
+                  >
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-[15px]" style={{ color: CHARCOAL, fontWeight: 600 }}>
+                        Share {account.issuer || "account"}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => !shareBusy && setShareOpen(false)}
+                        aria-label="Close"
+                      >
+                        <X className="h-4 w-4" strokeWidth={1.8} style={{ color: MUTED }} />
+                      </button>
+                    </div>
+                    <form onSubmit={submitShare} className="flex flex-col gap-3">
+                      <label className="flex flex-col gap-1 text-[12px]" style={{ color: MUTED }}>
+                        Recipient's email
+                        <input
+                          type="email"
+                          value={shareEmail}
+                          onChange={(e) => setShareEmail(e.target.value)}
+                          required
+                          autoComplete="email"
+                          placeholder="friend@example.com"
+                          className="rounded-[10px] border bg-transparent px-3 py-2 text-[14px] outline-none"
+                          style={{ borderColor: BORDER, color: CHARCOAL }}
+                        />
+                      </label>
+                      <p className="text-[11.5px]" style={{ color: MUTED, lineHeight: 1.5 }}>
+                        End-to-end encrypted. They must already have an Aegis
+                        account and have unlocked their vault at least once.
+                      </p>
+                      {shareError && (
+                        <p className="text-[12px]" style={{ color: DANGER }} role="alert">
+                          {shareError}
+                        </p>
+                      )}
+                      <div className="mt-1 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShareOpen(false)}
+                          disabled={shareBusy}
+                          className="rounded-[10px] border px-3 py-2 text-[13px]"
+                          style={{ borderColor: BORDER, color: CHARCOAL }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={shareBusy || !shareEmail.trim()}
+                          className="flex items-center gap-2 rounded-[10px] px-3 py-2 text-[13px] disabled:opacity-55"
+                          style={{ background: CHARCOAL, color: CREAM_SOFT, fontWeight: 600 }}
+                        >
+                          {shareBusy ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+                              Sharing…
+                            </>
+                          ) : (
+                            <>
+                              <Share2 className="h-3.5 w-3.5" strokeWidth={1.9} />
+                              Share
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <AnimatePresence>
               {confirmOpen && (
                 <motion.div
                   key="delete-sheet"
