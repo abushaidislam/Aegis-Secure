@@ -685,6 +685,15 @@ export type Database = {
           x25519_public_key: string
         }[]
       }
+      get_family_member_public_keys: {
+        Args: never
+        Returns: {
+          ed25519_public_key: string
+          email: string
+          user_id: string
+          x25519_public_key: string
+        }[]
+      }
       get_user_family_id: { Args: { _user_id?: string }; Returns: string }
       is_admin: { Args: { _user_id?: string }; Returns: boolean }
       is_family_admin: { Args: { _user_id?: string }; Returns: boolean }
