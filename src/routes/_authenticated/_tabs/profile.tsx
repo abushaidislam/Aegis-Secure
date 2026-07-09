@@ -201,6 +201,23 @@ function ProfilePage() {
     }
   }, [sub, activePaidTier, awaitingUpgrade, user.id]);
 
+  // Auto-open the plan sheet when a gated feature deep-links here with
+  // `#plan` (e.g. UpgradePrompt from the vault quota banner).
+  useEffect(() => {
+    const check = () => {
+      if (window.location.hash === "#plan") {
+        setPlanSheet(true);
+        // Strip the hash so re-navigation re-opens cleanly.
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+      }
+    };
+    check();
+    window.addEventListener("hashchange", check);
+    return () => window.removeEventListener("hashchange", check);
+  }, []);
+
+
+
 
   const [displayName, setDisplayName] = useState("");
   const [initialName, setInitialName] = useState("");
