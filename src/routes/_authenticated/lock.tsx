@@ -333,6 +333,7 @@ function LockPage() {
     try {
       const dek = await unlockWithBiometric(user.id);
       setVaultKey(dek);
+      void runV3Migration(user.id, dek);
       routeAfterUnlock();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Biometric unlock failed.";
