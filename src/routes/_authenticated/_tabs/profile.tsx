@@ -309,27 +309,53 @@ function ProfilePage() {
   // are the read path because the avatars bucket is private.
   useEffect(() => {
     let cancelled = false;
+    let objectUrl: string | null = null;
+    const setObj = (blob: Blob) => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = URL.createObjectURL(blob);
+      setAvatarUrl(objectUrl);
+    };
+
     if (!avatarPath) {
+      // No server-side avatar → drop any cached blob so the UI stays truthful.
       setAvatarUrl(null);
-      return;
+      void clearAvatarBlob(user.id);
+      return () => {
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+      };
     }
+
     (async () => {
+      // 1) Paint from cache immediately (works offline, no flash).
+      const cached = await getAvatarBlob(user.id);
+      if (cancelled) return;
+      if (cached) setObj(cached);
+
+      // 2) Refresh from network in the background and update cache.
       const { data, error } = await supabase.storage
         .from("avatars")
         .createSignedUrl(avatarPath, 60 * 60);
       if (cancelled) return;
       if (error || !data?.signedUrl) {
-        setAvatarUrl(null);
-      } else {
-        // Cache-bust on the signed URL so a re-uploaded photo shows immediately.
+        if (!cached) setAvatarUrl(null);
+        return;
+      }
+      const fresh = await cacheAvatarFromUrl(user.id, data.signedUrl);
+      if (cancelled) return;
+      if (fresh) setObj(fresh);
+      else if (!cached) {
         const sep = data.signedUrl.includes("?") ? "&" : "?";
-        setAvatarUrl(avatarVersion ? `${data.signedUrl}${sep}v=${avatarVersion}` : data.signedUrl);
+        setAvatarUrl(
+          avatarVersion ? `${data.signedUrl}${sep}v=${avatarVersion}` : data.signedUrl,
+        );
       }
     })();
+
     return () => {
       cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [avatarPath, avatarVersion]);
+  }, [avatarPath, avatarVersion, user.id]);
 
   const save = async () => {
     setSaving(true);
