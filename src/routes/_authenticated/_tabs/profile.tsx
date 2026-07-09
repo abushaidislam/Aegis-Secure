@@ -512,11 +512,28 @@ function ProfilePage() {
             onChange={handleAvatarFile}
           />
           <div className="min-w-0 flex-1">
-            <div
-              className="truncate text-[15px]"
-              style={{ color: CHARCOAL, fontWeight: 600, letterSpacing: "-0.01em" }}
-            >
-              {displayShown}
+            <div className="flex items-center gap-1.5">
+              <div
+                className="truncate text-[15px]"
+                style={{ color: CHARCOAL, fontWeight: 600, letterSpacing: "-0.01em" }}
+              >
+                {displayShown}
+              </div>
+              {activePaidTier && (
+                <span
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] uppercase"
+                  style={{
+                    background: CHARCOAL,
+                    color: CREAM_SOFT,
+                    letterSpacing: "0.09em",
+                    fontWeight: 600,
+                  }}
+                  aria-label={`${planLabel} member`}
+                >
+                  <Sparkles className="h-2.5 w-2.5" strokeWidth={2.2} />
+                  {planLabel}
+                </span>
+              )}
             </div>
             <div className="truncate text-[12.5px]" style={{ color: MUTED }}>
               {avatarBusy ? (
