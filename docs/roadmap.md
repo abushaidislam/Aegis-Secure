@@ -268,9 +268,9 @@ within 30 days. Old v1 code kept in-tree for six months, then removed.
 ## Phase 13 — Sharing, family, teams (`[P2]`, 4 weeks)
 
 ### 13.1 Vault sharing (1:1) `[P2]`
-- [ ] Recipient's public key (Ed25519 wrapping key) added on account creation
-- [ ] Sender rewraps DEK-for-that-account with recipient's public key
-- [ ] Revocation deletes wrap row; shared account rotates secret next time owner touches it
+- [x] Recipient's public key (X25519 wrapping key + Ed25519 signing key) auto-generated on first unlock; private halves AES-GCM'd under the vault DEK in `user_public_keys`. Discovery via rate-limited `find_user_by_email` RPC.
+- [x] Sender seals the per-account TOTP secret with ephemeral-static X25519 ECDH → HKDF-SHA256 → AES-GCM (AAD binds owner|recipient|account) into `vault_shares`. Recipient decrypts locally with their X25519 private key.
+- [x] Revocation soft-deletes the share row and flags `vault_accounts.needs_rotation = true`; Security tab prompts the owner to re-enroll the secret at the source site (TOTP is one-way — only the site can mint a new secret).
 
 ### 13.2 Family plan `[P2]`
 - [ ] Family group with admin, up to 6 members

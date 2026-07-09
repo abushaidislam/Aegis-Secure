@@ -239,6 +239,21 @@ export type Database = {
         }
         Relationships: []
       }
+      share_lookup_attempts: {
+        Row: {
+          attempted_at: string
+          caller_user_id: string
+        }
+        Insert: {
+          attempted_at?: string
+          caller_user_id: string
+        }
+        Update: {
+          attempted_at?: string
+          caller_user_id?: string
+        }
+        Relationships: []
+      }
       user_login_events: {
         Row: {
           coarse_country: string | null
@@ -272,6 +287,42 @@ export type Database = {
           session_id?: string | null
           user_agent?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_public_keys: {
+        Row: {
+          created_at: string
+          ed25519_private_wrapped: string
+          ed25519_private_wrapped_iv: string
+          ed25519_public_key: string
+          updated_at: string
+          user_id: string
+          x25519_private_wrapped: string
+          x25519_private_wrapped_iv: string
+          x25519_public_key: string
+        }
+        Insert: {
+          created_at?: string
+          ed25519_private_wrapped: string
+          ed25519_private_wrapped_iv: string
+          ed25519_public_key: string
+          updated_at?: string
+          user_id: string
+          x25519_private_wrapped: string
+          x25519_private_wrapped_iv: string
+          x25519_public_key: string
+        }
+        Update: {
+          created_at?: string
+          ed25519_private_wrapped?: string
+          ed25519_private_wrapped_iv?: string
+          ed25519_public_key?: string
+          updated_at?: string
+          user_id?: string
+          x25519_private_wrapped?: string
+          x25519_private_wrapped_iv?: string
+          x25519_public_key?: string
         }
         Relationships: []
       }
@@ -321,6 +372,7 @@ export type Database = {
           is_favorite: boolean
           issuer: string
           label: string
+          needs_rotation: boolean
           otp_type: string
           period: number
           secret_ciphertext: string
@@ -342,6 +394,7 @@ export type Database = {
           is_favorite?: boolean
           issuer?: string
           label?: string
+          needs_rotation?: boolean
           otp_type?: string
           period?: number
           secret_ciphertext: string
@@ -363,6 +416,7 @@ export type Database = {
           is_favorite?: boolean
           issuer?: string
           label?: string
+          needs_rotation?: boolean
           otp_type?: string
           period?: number
           secret_ciphertext?: string
@@ -407,14 +461,91 @@ export type Database = {
         }
         Relationships: []
       }
+      vault_shares: {
+        Row: {
+          account_id: string
+          algorithm_snapshot: string
+          created_at: string
+          digits_snapshot: number
+          ephemeral_public_key: string
+          id: string
+          issuer_snapshot: string
+          label_snapshot: string
+          otp_type_snapshot: string
+          owner_user_id: string
+          period_snapshot: number
+          recipient_user_id: string
+          revoked_at: string | null
+          sealed_ciphertext: string
+          sealed_iv: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          algorithm_snapshot?: string
+          created_at?: string
+          digits_snapshot?: number
+          ephemeral_public_key: string
+          id?: string
+          issuer_snapshot?: string
+          label_snapshot?: string
+          otp_type_snapshot?: string
+          owner_user_id: string
+          period_snapshot?: number
+          recipient_user_id: string
+          revoked_at?: string | null
+          sealed_ciphertext: string
+          sealed_iv: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          algorithm_snapshot?: string
+          created_at?: string
+          digits_snapshot?: number
+          ephemeral_public_key?: string
+          id?: string
+          issuer_snapshot?: string
+          label_snapshot?: string
+          otp_type_snapshot?: string
+          owner_user_id?: string
+          period_snapshot?: number
+          recipient_user_id?: string
+          revoked_at?: string | null
+          sealed_ciphertext?: string
+          sealed_iv?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vault_shares_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "vault_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      find_user_by_email: {
+        Args: { _email: string }
+        Returns: {
+          ed25519_public_key: string
+          user_id: string
+          x25519_public_key: string
+        }[]
+      }
       is_admin: { Args: { _user_id?: string }; Returns: boolean }
       purge_old_client_errors: { Args: { days?: number }; Returns: number }
       purge_old_login_events: { Args: { days?: number }; Returns: number }
+      purge_old_share_lookup_attempts: {
+        Args: { minutes?: number }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
