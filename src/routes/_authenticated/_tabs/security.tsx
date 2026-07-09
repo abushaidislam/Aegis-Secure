@@ -94,6 +94,7 @@ import {
   type AutoBackupLogEntry,
   type AutoBackupSettings,
 } from "@/lib/vault-autobackup";
+import { usePlan } from "@/hooks/use-plan";
 
 export const Route = createFileRoute("/_authenticated/_tabs/security")({
   beforeLoad: ({ location }) => {
@@ -115,7 +116,7 @@ export const Route = createFileRoute("/_authenticated/_tabs/security")({
         property: "og:description",
         content: "Passphrase, recovery, and encrypted backup for your Aegis vault.",
       },
-      { property: "og:url", content: "https://hug-machine-maker.lovable.app/security" },
+      { property: "og:url", content: "https://aegis-syed.lovable.app/security" },
     ],
   }),
   component: SecurityPage,
@@ -140,6 +141,8 @@ function SecurityPage() {
     return msg === id ? fallback : msg;
   };
   const autoLockMs = useAutoLockMs();
+  const plan = usePlan();
+  const canAutoBackup = plan.hasFeature("auto-cloud-backup");
   const hideCodes = useHideCodes();
   const [hint, setHint] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: "error" | "info"; text: string } | null>(null);
@@ -333,8 +336,21 @@ function SecurityPage() {
           <SettingsRow
             icon={<CalendarClock className="h-4 w-4" strokeWidth={1.8} />}
             title={t("security.autoBackup", "Scheduled auto-backup")}
-            value={autoBackupSummary(autoBackup)}
-            onClick={() => setAutoBackupOpen(true)}
+            value={
+              canAutoBackup
+                ? autoBackupSummary(autoBackup)
+                : t("security.autoBackup.proOnly", "Pro — upgrade to enable")
+            }
+            onClick={() => {
+              if (canAutoBackup) {
+                setAutoBackupOpen(true);
+              } else {
+                toast.info("Scheduled auto-backup is a Pro feature", {
+                  description: "Upgrade to Pro or Family to enable daily encrypted backups.",
+                });
+                void navigate({ to: "/profile", hash: "plan" });
+              }
+            }}
             chevron
           />
 
