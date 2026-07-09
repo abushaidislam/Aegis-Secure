@@ -27,6 +27,8 @@ import {
   Sun,
   Moon,
   Users,
+  Sparkles,
+  CreditCard,
 } from "lucide-react";
 import {
   BORDER,
