@@ -24,6 +24,7 @@ import {
   updateAccountDetails,
   type DecryptedAccount,
 } from "@/lib/vault-accounts";
+import { shareAccountByEmail } from "@/lib/vault-sharing";
 import { getVaultKey } from "@/lib/vault-session";
 import { BORDER, CHARCOAL, CREAM_SOFT, DANGER, FAV, MUTED, soft } from "@/components/aegis/chrome";
 import {
