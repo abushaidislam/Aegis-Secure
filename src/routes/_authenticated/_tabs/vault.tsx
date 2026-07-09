@@ -1485,36 +1485,158 @@ function AccountGroup({
   );
 }
 
-function SearchField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function SearchField({
+  value,
+  onChange,
+  menu,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  menu?: React.ReactNode;
+}) {
   return (
-    <div
-      className="flex h-11 shrink-0 items-center gap-2 rounded-full px-3.5"
-      style={{
-        background: CREAM_SOFT,
-        border: `1px solid ${BORDER}`,
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+    <div className="flex items-center gap-2">
+      <div
+        className="flex h-11 flex-1 shrink-0 items-center gap-2 rounded-full px-3.5"
+        style={{
+          background: CREAM_SOFT,
+          border: `1px solid ${BORDER}`,
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+        }}
+      >
+        <Search className="h-4 w-4" strokeWidth={1.8} style={{ color: MUTED }} />
+        <input
+          type="search"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Search accounts"
+          className="flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-[color:var(--aegis-placeholder)]"
+          style={{ color: CHARCOAL }}
+        />
+        {value && (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="flex h-6 w-6 items-center justify-center rounded-full"
+            style={{ color: MUTED, background: "rgb(var(--aegis-ink-rgb) / 0.06)" }}
+            aria-label="Clear search"
+          >
+            <X className="h-3 w-3" strokeWidth={2} />
+          </button>
+        )}
+      </div>
+      {menu}
+    </div>
+  );
+}
+
+function SearchMenu({
+  onSelect,
+  onManageTags,
+  onClearFilters,
+  activeFilterCount,
+}: {
+  onSelect: () => void;
+  onManageTags?: () => void;
+  onClearFilters?: () => void;
+  activeFilterCount: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (!wrapRef.current) return;
+      if (!wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const item = (icon: React.ReactNode, label: string, onClick: () => void, hint?: string) => (
+    <button
+      type="button"
+      onClick={() => {
+        setOpen(false);
+        onClick();
       }}
+      className="flex w-full items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-left text-[13px] transition-colors hover:bg-[rgb(var(--aegis-ink-rgb)/0.06)]"
+      style={{ color: CHARCOAL, fontWeight: 500 }}
     >
-      <Search className="h-4 w-4" strokeWidth={1.8} style={{ color: MUTED }} />
-      <input
-        type="search"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Search accounts"
-        className="flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-[color:var(--aegis-placeholder)]"
-        style={{ color: CHARCOAL }}
-      />
-      {value && (
-        <button
-          type="button"
-          onClick={() => onChange("")}
-          className="flex h-6 w-6 items-center justify-center rounded-full"
-          style={{ color: MUTED, background: "rgb(var(--aegis-ink-rgb) / 0.06)" }}
-          aria-label="Clear search"
-        >
-          <X className="h-3 w-3" strokeWidth={2} />
-        </button>
+      <span className="flex h-6 w-6 items-center justify-center" style={{ color: MUTED }}>
+        {icon}
+      </span>
+      <span className="flex-1">{label}</span>
+      {hint && (
+        <span className="text-[10.5px] tabular-nums" style={{ color: MUTED }}>
+          {hint}
+        </span>
       )}
+    </button>
+  );
+
+  return (
+    <div ref={wrapRef} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="More actions"
+        className="relative flex h-11 w-11 items-center justify-center rounded-full transition-colors active:scale-[0.97]"
+        style={{
+          background: CREAM_SOFT,
+          border: `1px solid ${BORDER}`,
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+          color: CHARCOAL,
+        }}
+      >
+        <MoreHorizontal className="h-4 w-4" strokeWidth={1.8} />
+        {activeFilterCount > 0 && (
+          <span
+            aria-hidden
+            className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full"
+            style={{ background: CHARCOAL }}
+          />
+        )}
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="menu"
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.14, ease: [0.4, 0, 0.2, 1] }}
+            className="absolute right-0 top-[calc(100%+6px)] z-30 w-[200px] rounded-[14px] p-1.5"
+            style={{
+              background: CREAM_SOFT,
+              border: `1px solid ${BORDER}`,
+              boxShadow:
+                "0 8px 24px -8px rgb(var(--aegis-ink-rgb) / 0.18), 0 2px 6px -2px rgb(var(--aegis-ink-rgb) / 0.10)",
+            }}
+          >
+            {item(<CheckSquare className="h-3.5 w-3.5" strokeWidth={1.8} />, "Select multiple", onSelect)}
+            {onManageTags &&
+              item(<Tags className="h-3.5 w-3.5" strokeWidth={1.8} />, "Manage tags", onManageTags)}
+            {onClearFilters &&
+              item(
+                <X className="h-3.5 w-3.5" strokeWidth={1.8} />,
+                "Clear filters",
+                onClearFilters,
+                String(activeFilterCount),
+              )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
