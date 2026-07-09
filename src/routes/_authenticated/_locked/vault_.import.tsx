@@ -309,57 +309,78 @@ function ImportPage() {
               </p>
             </div>
 
-
-            <SegmentedTabs tab={tab} setTab={setTab} />
-
-            {notice && (
-              <div className="pt-3">
-                <Notice kind={notice.kind}>{notice.text}</Notice>
+            {atCap ? (
+              <div className="pt-2">
+                <UpgradePrompt
+                  feature="unlimited-accounts"
+                  title={`You're at your ${cap}-account limit`}
+                  body="Free plans hold up to 25 accounts. Upgrade to Pro to import more and unlock 500 slots."
+                />
               </div>
+            ) : (
+              <>
+                {plan.isFree && capFinite && accountCount !== null && remaining <= 5 && (
+                  <div className="pt-2">
+                    <Notice kind="info">
+                      {remaining === 0
+                        ? `You're at your ${cap}-account Free limit.`
+                        : `Only ${remaining} slot${remaining === 1 ? "" : "s"} left on the Free plan (${accountCount}/${cap}).`}
+                    </Notice>
+                  </div>
+                )}
+
+                <SegmentedTabs tab={tab} setTab={setTab} />
+
+                {notice && (
+                  <div className="pt-3">
+                    <Notice kind={notice.kind}>{notice.text}</Notice>
+                  </div>
+                )}
+
+                <div className="pt-4">
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                      key={tab}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={soft}
+                    >
+                      {tab === "scan" ? (
+                        <ScanTab
+                          onDetected={handleScanned}
+                          onError={(msg) => setNotice({ kind: "error", text: msg })}
+                          switchToPaste={() => setTab("paste")}
+                        />
+                      ) : tab === "paste" ? (
+                        <PasteTab value={pasteText} onChange={setPasteText} onSubmit={handlePaste} />
+                      ) : (
+                        <FileTab
+                          decoding={decoding}
+                          onJsonPick={() => jsonInputRef.current?.click()}
+                          onImagePick={() => imageInputRef.current?.click()}
+                        />
+                      )}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+
+                <input
+                  ref={jsonInputRef}
+                  type="file"
+                  accept="application/json,.json,.txt,.avf"
+                  className="hidden"
+                  onChange={handleJsonFile}
+                />
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageFile}
+                />
+              </>
             )}
-
-            <div className="pt-4">
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={tab}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={soft}
-                >
-                  {tab === "scan" ? (
-                    <ScanTab
-                      onDetected={handleScanned}
-                      onError={(msg) => setNotice({ kind: "error", text: msg })}
-                      switchToPaste={() => setTab("paste")}
-                    />
-                  ) : tab === "paste" ? (
-                    <PasteTab value={pasteText} onChange={setPasteText} onSubmit={handlePaste} />
-                  ) : (
-                    <FileTab
-                      decoding={decoding}
-                      onJsonPick={() => jsonInputRef.current?.click()}
-                      onImagePick={() => imageInputRef.current?.click()}
-                    />
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            <input
-              ref={jsonInputRef}
-              type="file"
-              accept="application/json,.json,.txt,.avf"
-              className="hidden"
-              onChange={handleJsonFile}
-            />
-            <input
-              ref={imageInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageFile}
-            />
           </>
         ) : stage === "avf" ? (
           <AvfPassStage
