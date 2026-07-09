@@ -169,23 +169,37 @@ function ProfilePage() {
   };
 
   // Re-check subscription after returning from Stripe Checkout (webhook may
-  // arrive a beat later — refetch a few times).
+  // arrive a beat later — refetch a few times, and once the paid tier
+  // lands, fire the one-time welcome sheet.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("checkout") === "success") {
       toast.success("Welcome to Pro. Give billing a moment to sync.");
+      setAwaitingUpgrade(true);
       let tries = 0;
       const iv = setInterval(() => {
         void refetchSub();
-        if (++tries >= 6) clearInterval(iv);
+        if (++tries >= 8) clearInterval(iv);
       }, 1500);
-      // Clean the URL so refresh doesn't re-toast.
       const url = new URL(window.location.href);
       url.searchParams.delete("checkout");
       window.history.replaceState({}, "", url.toString());
       return () => clearInterval(iv);
     }
   }, [refetchSub]);
+
+  // When the paid tier actually lands (via webhook), reveal the welcome
+  // sheet exactly once per upgrade. Keyed by tier so a later Pro→Family
+  // upgrade also celebrates.
+  useEffect(() => {
+    if (!sub || !activePaidTier) return;
+    const key = `aegis:welcomed:${user.id}:${sub.tier}`;
+    if (awaitingUpgrade && !localStorage.getItem(key)) {
+      setWelcomeSheet(true);
+      localStorage.setItem(key, "1");
+      setAwaitingUpgrade(false);
+    }
+  }, [sub, activePaidTier, awaitingUpgrade, user.id]);
 
 
   const [displayName, setDisplayName] = useState("");
