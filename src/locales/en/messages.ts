@@ -190,4 +190,107 @@ export const messages: Record<string, string> = {
     "End-to-end encrypted. They must already have an Aegis account and have unlocked their vault at least once.",
   "vault.card.share.submit": "Share",
   "vault.card.share.busy": "Sharing…",
+
+  // Common
+  "common.notFound": "Not found",
+
+  // Vault tab — free-plan quota banner
+  "vault.freeLimit.hit": "You've hit the Free limit ({count}/25)",
+  "vault.freeLimit.progress": "{count}/25 accounts used",
+  "vault.freeLimit.body": "Upgrade to Pro for 500 accounts, encrypted cloud backup, and breach monitoring.",
+
+  // Vault tab — offline / sync banners
+  "vault.offline.reconnecting": "Reconnecting — showing cached codes.",
+  "vault.offline.queued.one": "You're offline — {count} change queued for sync.",
+  "vault.offline.queued.other": "You're offline — {count} changes queued for sync.",
+  "vault.offline.cached": "You're offline — showing cached codes. Add is disabled.",
+  "vault.offline.retryAria": "Retry loading vault",
+  "vault.offline.retry": "Retry",
+  "vault.tagSync.pending.one": "{count} tag update waiting to sync.",
+  "vault.tagSync.pending.other": "{count} tag updates waiting to sync.",
+  "vault.tagSync.pendingOffline.one": "{count} tag update saved locally — will sync when online.",
+  "vault.tagSync.pendingOffline.other": "{count} tag updates saved locally — will sync when online.",
+  "vault.tagSync.retryAria": "Retry syncing tag updates",
+  "vault.tagSync.syncNow": "Sync now",
+
+  // Vault tab — empty results
+  "vault.empty.filters": "No account matches the current filters.",
+  "vault.empty.query": "No account matches \"{query}\".",
+
+  // Vault tab — bulk delete sheet
+  "vault.bulkDelete.title.one": "Remove {count} account?",
+  "vault.bulkDelete.title.other": "Remove {count} accounts?",
+  "vault.bulkDelete.subtitle": "Selected from your vault",
+  "vault.bulkDelete.body":
+    "The encrypted secrets will be deleted from your vault. You'll need the original QR codes or setup keys to add them back. This can't be undone.",
+  "vault.bulkDelete.removing": "Removing…",
+  "vault.bulkDelete.confirm.one": "Remove {count} account",
+  "vault.bulkDelete.confirm.other": "Remove {count} accounts",
+
+  // Vault tab — export sheet
+  "vault.export.selectedTitle": "Export selected",
+
+  // Vault tab — selection mode
+  "vault.select.on": "Select account",
+  "vault.select.off": "Deselect account",
+
+  // Vault tab — tag filter row / manager
+  "vault.filter.label": "Filter",
+  "vault.tagManager.aria": "Manage tags",
+  "vault.tagManager.title": "Manage tags",
+  "vault.tagManager.subtitle": "Rename or delete tags across every account.",
+  "vault.tagManager.empty": "No tags yet. Add one from any account's details sheet.",
+  "vault.tagManager.count.one": "{count} account",
+  "vault.tagManager.count.other": "{count} accounts",
+  "vault.tagManager.rename": "Rename",
+  "vault.tagManager.delete": "Delete",
+  "vault.tagManager.footnote":
+    "Renaming to an existing tag merges the two. Deleting removes the tag from every account — the accounts themselves stay.",
+
+  // Vault tab — search + overflow menu
+  "vault.search.placeholder": "Search accounts",
+  "vault.search.clearAria": "Clear search",
+  "vault.menu.aria": "More actions",
+  "vault.menu.selectMultiple": "Select multiple",
+  "vault.menu.manageTags": "Manage tags",
+  "vault.menu.clearFilters": "Clear filters",
+  "vault.menu.filterByTag": "Filter by tag",
+  "vault.menu.tagCount.on": "{count} on",
+
+  // Vault tab — empty state
+  "vault.emptyState.title": "No codes yet",
+  "vault.emptyState.body": "Scan a QR from any service or paste a secret to add your first account.",
+  "vault.emptyState.cta": "Add your first account",
+
+  // Vault tab — bulk actions bar
+  "vault.bulk.toolbarAria": "Bulk actions",
+  "vault.bulk.cancelAria": "Cancel selection",
+  "vault.bulk.selected": "selected",
+  "vault.bulk.all": "All",
+  "vault.bulk.addTag": "Add tag",
+  "vault.bulk.exportSelected": "Export selected",
+  "vault.bulk.deleteSelected": "Delete selected",
+
+  // Vault tab — bulk tag sheet
+  "vault.bulkTag.title": "Add tag",
+  "vault.bulkTag.subtitle": "Pick a tag to add to every selected account.",
+
+  // Vault tab — toasts / errors
+  "vault.toast.deletionQueued": "Deletion queued — will sync when you're back online.",
+  "vault.toast.tagSyncStuck": "Some tag updates still can't reach the server.",
+  "vault.toast.tagRemoved": "Removed tag \"{tag}\"",
+  "vault.toast.tagRemovedOffline": "Removed \"{tag}\" locally — will sync when online",
+  "vault.toast.tagRemoveFailed": "Could not remove tag.",
+  "vault.toast.tagRenamed": "Renamed \"{from}\" → \"{to}\"",
+  "vault.toast.tagRenamedOffline": "Renamed \"{from}\" → \"{to}\" locally — will sync when online",
+  "vault.toast.tagRenameFailed": "Could not rename tag.",
+  "vault.toast.syncedChanges.one": "Synced {count} pending change",
+  "vault.toast.syncedChanges.other": "Synced {count} pending changes",
+  "vault.toast.syncedTags.one": "Synced {count} tag update",
+  "vault.toast.syncedTags.other": "Synced {count} tag updates",
+  "vault.toast.exported.one": "Exported {count} account.",
+  "vault.toast.exported.other": "Exported {count} accounts.",
+  "vault.error.favorite": "Could not update favorite.",
+  "vault.error.load": "Failed to load vault.",
+  "vault.error.delete": "Could not delete.",
 };
