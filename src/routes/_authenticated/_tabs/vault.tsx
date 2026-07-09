@@ -560,6 +560,21 @@ function VaultPage() {
 
       <InstallPrompt />
 
+      {plan.isFree && accounts && accounts.length >= 20 && (
+        <div className="mb-2 mt-1">
+          <UpgradePrompt
+            title={
+              accounts.length >= 25
+                ? `You've hit the Free limit (${accounts.length}/25)`
+                : `${accounts.length}/25 accounts used`
+            }
+            body="Upgrade to Pro for 500 accounts, encrypted cloud backup, and breach monitoring."
+            tier="Pro"
+          />
+        </div>
+      )}
+
+
       {(!online || source === "cache") && accounts && (
         <div
           className="mb-2 mt-1 flex items-center gap-2 rounded-full px-3.5 py-2 text-[12px]"
