@@ -1040,7 +1040,8 @@ function CloudBackupSheet({
         text: `Uploaded backup (${accounts.length} ${accounts.length === 1 ? "account" : "accounts"}).`,
       });
     } catch (err) {
-      setUploadErr(err instanceof Error ? err.message : "Upload failed.");
+      const raw = err instanceof Error ? err.message : "Upload failed.";
+      setUploadErr(friendlyBackupError(raw));
     } finally {
       setUploadBusy(false);
     }
