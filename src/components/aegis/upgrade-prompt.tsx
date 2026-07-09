@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Sparkles, ArrowRight } from "lucide-react";
+import { useLingui } from "@lingui/react";
 import type { ReactNode } from "react";
 
 /**
@@ -19,6 +20,16 @@ export function UpgradePrompt({
   icon?: ReactNode;
   compact?: boolean;
 }) {
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const msg = i18n._(id);
+    return msg === id ? fallback : msg;
+  };
+  const tierLabel =
+    tier === "Family"
+      ? t("plan.tier.family", "Family")
+      : t("plan.tier.pro", "Pro");
+
   return (
     <div
       className="flex items-start gap-3 rounded-[12px] p-3"
@@ -53,7 +64,7 @@ export function UpgradePrompt({
               fontWeight: 600,
             }}
           >
-            {tier}
+            {tierLabel}
           </span>
         </div>
         {!compact && (
@@ -70,7 +81,7 @@ export function UpgradePrompt({
           className="mt-2 inline-flex items-center gap-1 text-[12.5px] underline underline-offset-[3px]"
           style={{ color: "var(--aegis-ink)" }}
         >
-          See plans
+          {t("upgrade.seePlans", "See plans")}
           <ArrowRight className="h-3 w-3" strokeWidth={2} />
         </Link>
       </div>

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ShieldAlert, Check, ArrowRight } from "lucide-react";
+import { useLingui } from "@lingui/react";
 
 /**
  * Rich upgrade card shown to Free users wherever breach monitoring is
@@ -8,11 +9,17 @@ import { ShieldAlert, Check, ArrowRight } from "lucide-react";
  * so the plan comparison sheet auto-opens on arrival.
  */
 export function BreachUpgradeCard() {
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const msg = i18n._(id);
+    return msg === id ? fallback : msg;
+  };
+
   const perks = [
-    "Anonymous k-anonymity checks against Have I Been Pwned",
-    "Alerts when an issuer you use appears in a breach corpus",
-    "Auto encrypted cloud backup + 30-day history",
-    "500 accounts, unlimited devices & tags",
+    t("breach.perk.hibp", "Anonymous k-anonymity checks against Have I Been Pwned"),
+    t("breach.perk.alerts", "Alerts when an issuer you use appears in a breach corpus"),
+    t("breach.perk.backup", "Auto encrypted cloud backup + 30-day history"),
+    t("breach.perk.limits", "500 accounts, unlimited devices & tags"),
   ];
 
   return (
@@ -39,7 +46,7 @@ export function BreachUpgradeCard() {
               className="text-[14px]"
               style={{ color: "var(--aegis-ink)", fontWeight: 600 }}
             >
-              Breach monitoring
+              {t("breach.title", "Breach monitoring")}
             </span>
             <span
               className="rounded-full px-1.5 py-0.5 text-[10px] uppercase"
@@ -50,15 +57,17 @@ export function BreachUpgradeCard() {
                 fontWeight: 600,
               }}
             >
-              Pro
+              {t("plan.tier.pro", "Pro")}
             </span>
           </div>
           <div
             className="mt-1 text-[12.5px] leading-[1.5]"
             style={{ color: "var(--aegis-muted)" }}
           >
-            Free plan doesn’t include breach checks. Upgrade to Pro to see if
-            any issuer in your vault has appeared in a known breach.
+            {t(
+              "breach.body",
+              "Free plan doesn't include breach checks. Upgrade to Pro to see if any issuer in your vault has appeared in a known breach.",
+            )}
           </div>
         </div>
       </div>
@@ -85,8 +94,12 @@ export function BreachUpgradeCard() {
         style={{ background: "var(--aegis-cream)" }}
       >
         <div className="text-[12.5px]" style={{ color: "var(--aegis-ink)" }}>
-          <span style={{ fontWeight: 600 }}>Pro — $2.99/mo</span>
-          <span style={{ color: "var(--aegis-muted)" }}> · Family $4.99</span>
+          <span style={{ fontWeight: 600 }}>
+            {t("breach.pricing.pro", "Pro — $2.99/mo")}
+          </span>
+          <span style={{ color: "var(--aegis-muted)" }}>
+            {t("breach.pricing.family", " · Family $4.99")}
+          </span>
         </div>
         <Link
           to="/profile"
@@ -98,7 +111,7 @@ export function BreachUpgradeCard() {
             fontWeight: 500,
           }}
         >
-          Upgrade
+          {t("breach.upgradeCta", "Upgrade")}
           <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
         </Link>
       </div>

@@ -32,8 +32,12 @@ const SRC = resolve(__dirname, "..", "..");
 const CRITICAL_FILES = [
   "components/aegis/plan-comparison-sheet.tsx",
   "components/aegis/sharing-section.tsx",
+  "components/aegis/upgrade-prompt.tsx",
+  "components/aegis/breach-upgrade-card.tsx",
+  "components/aegis/premium-welcome-sheet.tsx",
   "components/vault/AccountCard.tsx",
   "routes/_authenticated/_tabs/vault.tsx",
+  "routes/_authenticated/_tabs/profile.tsx",
 ];
 
 const CALL_PATTERNS: RegExp[] = [

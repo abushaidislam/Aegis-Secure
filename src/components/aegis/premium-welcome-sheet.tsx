@@ -12,6 +12,7 @@ import {
   LifeBuoy,
   Check,
 } from "lucide-react";
+import { useLingui } from "@lingui/react";
 import type { PlanTier } from "@/lib/plan";
 
 /**
@@ -20,21 +21,6 @@ import type { PlanTier } from "@/lib/plan";
  * user has just unlocked so the value of the plan is immediate and
  * visible — no digging through settings.
  */
-const PRO_FEATURES = [
-  { icon: InfinityIcon, title: "500 accounts", body: "20× more room than Free." },
-  { icon: CloudUpload, title: "Auto cloud backup", body: "Encrypted, with 30-day history." },
-  { icon: ShieldAlert, title: "Breach monitoring", body: "We watch HIBP so you don't have to." },
-  { icon: Chrome, title: "Browser autofill", body: "One-click codes in the extension." },
-  { icon: Tags, title: "Unlimited tags", body: "Organize your vault your way." },
-  { icon: History, title: "90-day push history", body: "Full sign-in trail, not just 7 days." },
-];
-
-const FAMILY_EXTRAS = [
-  { icon: Users, title: "Up to 6 members", body: "Invite the whole household." },
-  { icon: HomeIcon, title: "Shared household vault", body: "Codes everyone can use." },
-  { icon: LifeBuoy, title: "Emergency access", body: "Trusted recovery for loved ones." },
-];
-
 export function PremiumWelcomeSheet({
   open,
   tier,
@@ -44,9 +30,33 @@ export function PremiumWelcomeSheet({
   tier: PlanTier;
   onClose: () => void;
 }) {
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string, values?: Record<string, unknown>) => {
+    const msg = i18n._(id, values);
+    return msg === id ? fallback : msg;
+  };
+
   const isFamily = tier === "family";
+  const label = isFamily
+    ? t("plan.tier.family", "Family")
+    : t("plan.tier.pro", "Pro");
+
+  const PRO_FEATURES = [
+    { icon: InfinityIcon, title: t("premium.feature.accounts.title", "500 accounts"), body: t("premium.feature.accounts.body", "20× more room than Free.") },
+    { icon: CloudUpload, title: t("premium.feature.backup.title", "Auto cloud backup"), body: t("premium.feature.backup.body", "Encrypted, with 30-day history.") },
+    { icon: ShieldAlert, title: t("premium.feature.breach.title", "Breach monitoring"), body: t("premium.feature.breach.body", "We watch HIBP so you don't have to.") },
+    { icon: Chrome, title: t("premium.feature.autofill.title", "Browser autofill"), body: t("premium.feature.autofill.body", "One-click codes in the extension.") },
+    { icon: Tags, title: t("premium.feature.tags.title", "Unlimited tags"), body: t("premium.feature.tags.body", "Organize your vault your way.") },
+    { icon: History, title: t("premium.feature.history.title", "90-day push history"), body: t("premium.feature.history.body", "Full sign-in trail, not just 7 days.") },
+  ];
+
+  const FAMILY_EXTRAS = [
+    { icon: Users, title: t("premium.feature.members.title", "Up to 6 members"), body: t("premium.feature.members.body", "Invite the whole household.") },
+    { icon: HomeIcon, title: t("premium.feature.shared.title", "Shared household vault"), body: t("premium.feature.shared.body", "Codes everyone can use.") },
+    { icon: LifeBuoy, title: t("premium.feature.emergency.title", "Emergency access"), body: t("premium.feature.emergency.body", "Trusted recovery for loved ones.") },
+  ];
+
   const features = isFamily ? [...PRO_FEATURES, ...FAMILY_EXTRAS] : PRO_FEATURES;
-  const label = isFamily ? "Family" : "Pro";
 
   return (
     <AnimatePresence>
@@ -97,7 +107,7 @@ export function PremiumWelcomeSheet({
                   fontWeight: 600,
                 }}
               >
-                Welcome to Aegis {label}
+                {t("premium.welcome.eyebrow", `Welcome to Aegis ${label}`, { label })}
               </div>
               <div
                 className="mt-1 text-[22px] leading-[1.15]"
@@ -107,13 +117,15 @@ export function PremiumWelcomeSheet({
                   letterSpacing: "-0.02em",
                 }}
               >
-                You just unlocked{isFamily ? " everything." : " a lot."}
+                {isFamily
+                  ? t("premium.welcome.title.family", "You just unlocked everything.")
+                  : t("premium.welcome.title.other", "You just unlocked a lot.")}
               </div>
               <div
                 className="mt-1.5 text-[13px] leading-[1.5]"
                 style={{ color: "var(--aegis-muted)" }}
               >
-                Here's what's now available in your vault.
+                {t("premium.welcome.body", "Here's what's now available in your vault.")}
               </div>
             </div>
 
@@ -181,7 +193,7 @@ export function PremiumWelcomeSheet({
                   letterSpacing: "-0.005em",
                 }}
               >
-                Start using {label}
+                {t("premium.welcome.cta", `Start using ${label}`, { label })}
               </button>
             </div>
           </motion.div>

@@ -81,8 +81,16 @@ export const Route = createFileRoute("/_authenticated/_tabs/profile")({
   errorComponent: ({ error }) => (
     <div className="flex min-h-screen items-center justify-center p-6 text-sm">{error.message}</div>
   ),
-  notFoundComponent: () => <div className="p-6 text-sm">Not found</div>,
+  notFoundComponent: () => <NotFoundView />,
 });
+
+function NotFoundView() {
+  const { i18n } = useLingui();
+  const msg = i18n._("common.notFound");
+  return <div className="p-6 text-sm">{msg === "common.notFound" ? "Not found" : msg}</div>;
+}
+
+
 
 
 function initials(source: string): string {
@@ -180,7 +188,7 @@ function ProfilePage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("checkout") === "success") {
-      toast.success("Welcome to Pro. Give billing a moment to sync.");
+      toast.success(t("profile.upgradeSyncToast", "Welcome to Pro. Give billing a moment to sync."));
       setAwaitingUpgrade(true);
       let tries = 0;
       const iv = setInterval(() => {
@@ -447,10 +455,10 @@ function ProfilePage() {
       await putAvatarBlob(user.id, blob);
       setAvatarPath(path);
       setAvatarVersion(Date.now());
-      setNotice({ kind: "info", text: "Photo updated." });
-      toast.success("Photo updated");
+      setNotice({ kind: "info", text: t("profile.photoUpdated", "Photo updated") });
+      toast.success(t("profile.photoUpdated", "Photo updated"));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Could not upload photo.";
+      const msg = err instanceof Error ? err.message : t("profile.photoUpdateFailed", "Could not upload photo.");
       setNotice({ kind: "error", text: msg });
       toast.error(msg);
     } finally {
@@ -472,9 +480,9 @@ function ProfilePage() {
       if (error) throw error;
       await clearAvatarBlob(user.id);
       setAvatarPath(null);
-      toast.success("Photo removed");
+      toast.success(t("profile.photoRemoved", "Photo removed"));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Could not remove photo.";
+      const msg = err instanceof Error ? err.message : t("profile.photoRemoveFailed", "Could not remove photo.");
       setNotice({ kind: "error", text: msg });
       toast.error(msg);
     } finally {
@@ -483,12 +491,12 @@ function ProfilePage() {
   };
 
   const seed = displayName || user.email || "?";
-  const displayShown = initialName || "Unnamed";
+  const displayShown = initialName || t("profile.unnamed", "Unnamed");
   const hasAvatar = !!avatarPath;
 
   return (
     <>
-      <LargeTitle title="Account" subtitle="How you show up inside Aegis." />
+      <LargeTitle title={t("profile.title", "Account")} subtitle={t("profile.subtitle", "How you show up inside Aegis.")} />
 
       <div className="flex flex-col gap-1 pt-1">
         <motion.div
@@ -604,7 +612,7 @@ function ProfilePage() {
           </div>
         </motion.div>
 
-        <SectionLabel>Personal</SectionLabel>
+        <SectionLabel>{t("profile.section.personal", "Personal")}</SectionLabel>
         <SettingsGroup>
           {loading ? (
             <div className="flex items-center justify-center py-6" style={{ color: MUTED }}>
@@ -628,12 +636,12 @@ function ProfilePage() {
                 value={displayName}
                 maxLength={64}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Your name"
+                placeholder={t("profile.displayName.placeholder", "Your name")}
                 className="min-w-0 flex-1 bg-transparent text-[14.5px] outline-none"
                 style={{ color: CHARCOAL, fontWeight: 500 }}
               />
               <button onClick={cancelEdit} className="text-[12px]" style={{ color: MUTED }}>
-                Cancel
+                {t("common.cancel", "Cancel")}
               </button>
               <motion.button
                 whileTap={{ scale: 0.94 }}
@@ -641,7 +649,7 @@ function ProfilePage() {
                 disabled={saving}
                 className="flex h-8 w-8 items-center justify-center rounded-full disabled:opacity-60"
                 style={{ background: CHARCOAL, color: CREAM_SOFT }}
-                aria-label="Save"
+                aria-label={t("common.save", "Save")}
               >
                 {saving ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -653,8 +661,8 @@ function ProfilePage() {
           ) : (
             <SettingsRow
               icon={<User className="h-4 w-4" strokeWidth={1.8} />}
-              title="Display name"
-              value={initialName || "Not set"}
+              title={t("profile.displayName", "Display name")}
+              value={initialName || t("profile.displayName.empty", "Not set")}
               onClick={() => setEditing(true)}
               trailing={
                 <Pencil className="h-3.5 w-3.5" strokeWidth={1.8} style={{ color: MUTED }} />
@@ -903,10 +911,15 @@ function ThemeSheet({
   onChoose: (pref: ThemePref) => void;
   onClose: () => void;
 }) {
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const msg = i18n._(id);
+    return msg === id ? fallback : msg;
+  };
   const options: { pref: ThemePref; icon: React.ReactNode; title: string; description: string }[] = [
-    { pref: "system", icon: <Monitor className="h-4 w-4" strokeWidth={1.8} />, title: "System", description: "Follow your device." },
-    { pref: "light", icon: <Sun className="h-4 w-4" strokeWidth={1.8} />, title: "Light", description: "Warm cream, always." },
-    { pref: "dark", icon: <Moon className="h-4 w-4" strokeWidth={1.8} />, title: "Dark", description: "Easy on the eyes." },
+    { pref: "system", icon: <Monitor className="h-4 w-4" strokeWidth={1.8} />, title: t("appearance.system", "System"), description: t("appearance.system.description", "Follow your device.") },
+    { pref: "light", icon: <Sun className="h-4 w-4" strokeWidth={1.8} />, title: t("appearance.light", "Light"), description: t("appearance.light.description", "Warm cream, always.") },
+    { pref: "dark", icon: <Moon className="h-4 w-4" strokeWidth={1.8} />, title: t("appearance.dark", "Dark"), description: t("appearance.dark.description", "Easy on the eyes.") },
   ];
   return (
     <motion.div
@@ -916,7 +929,7 @@ function ThemeSheet({
       exit={{ opacity: 0 }}
     >
       <motion.button
-        aria-label="Close"
+        aria-label={t("common.close", "Close")}
         onClick={onClose}
         className="absolute inset-0"
         style={{ background: "rgb(var(--aegis-ink-rgb) / 0.35)", backdropFilter: "blur(4px)" }}
@@ -941,7 +954,7 @@ function ThemeSheet({
           className="mb-3 px-1 text-[11px] uppercase"
           style={{ color: MUTED, letterSpacing: "0.14em", fontWeight: 600 }}
         >
-          Appearance
+          {t("appearance.title", "Appearance")}
         </div>
         <div
           className="overflow-hidden rounded-[16px]"
@@ -965,7 +978,7 @@ function ThemeSheet({
           className="mt-3 w-full rounded-[14px] px-4 py-3 text-[13.5px]"
           style={{ color: MUTED, fontWeight: 500 }}
         >
-          Cancel
+          {t("common.cancel", "Cancel")}
         </button>
       </motion.div>
     </motion.div>
@@ -981,9 +994,14 @@ function LocaleSheet({
   onChoose: (pref: LocalePref) => void;
   onClose: () => void;
 }) {
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const msg = i18n._(id);
+    return msg === id ? fallback : msg;
+  };
   type Row = { pref: LocalePref; title: string; description: string };
   const rows: Row[] = [
-    { pref: "system", title: "System", description: "Follow your device." },
+    { pref: "system", title: t("language.system", "System"), description: t("language.system.description", "Follow your device.") },
     ...SUPPORTED_LOCALES.map((l) => ({
       pref: l.code as LocalePref,
       title: l.nativeLabel,
@@ -998,7 +1016,7 @@ function LocaleSheet({
       exit={{ opacity: 0 }}
     >
       <motion.button
-        aria-label="Close"
+        aria-label={t("common.close", "Close")}
         onClick={onClose}
         className="absolute inset-0"
         style={{ background: "rgb(var(--aegis-ink-rgb) / 0.35)", backdropFilter: "blur(4px)" }}
@@ -1023,7 +1041,7 @@ function LocaleSheet({
           className="mb-3 px-1 text-[11px] uppercase"
           style={{ color: MUTED, letterSpacing: "0.14em", fontWeight: 600 }}
         >
-          Language
+          {t("language.title", "Language")}
         </div>
         <div
           className="max-h-[60vh] overflow-y-auto overflow-x-hidden rounded-[16px]"
@@ -1047,7 +1065,7 @@ function LocaleSheet({
           className="mt-3 w-full rounded-[14px] px-4 py-3 text-[13.5px]"
           style={{ color: MUTED, fontWeight: 500 }}
         >
-          Cancel
+          {t("common.cancel", "Cancel")}
         </button>
       </motion.div>
     </motion.div>
@@ -1073,6 +1091,11 @@ function AvatarActionSheet({
   onRemove: () => void;
   onClose: () => void;
 }) {
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const msg = i18n._(id);
+    return msg === id ? fallback : msg;
+  };
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
@@ -1081,7 +1104,7 @@ function AvatarActionSheet({
       exit={{ opacity: 0 }}
     >
       <motion.button
-        aria-label="Close"
+        aria-label={t("common.close", "Close")}
         onClick={onClose}
         className="absolute inset-0"
         style={{ background: "rgb(var(--aegis-ink-rgb) / 0.35)", backdropFilter: "blur(4px)" }}
@@ -1137,7 +1160,7 @@ function AvatarActionSheet({
               letterSpacing: "-0.01em",
             }}
           >
-            Profile photo
+            {t("profile.photo.title", "Profile photo")}
           </div>
         </div>
 
@@ -1154,7 +1177,7 @@ function AvatarActionSheet({
           >
             <Camera className="h-4 w-4" strokeWidth={1.8} />
             <span className="text-[14px]" style={{ fontWeight: 500 }}>
-              {hasAvatar ? "Choose a new photo" : "Choose a photo"}
+              {hasAvatar ? t("profile.photo.chooseNew", "Choose a new photo") : t("profile.photo.choose", "Choose a photo")}
             </span>
           </motion.button>
 
@@ -1171,7 +1194,7 @@ function AvatarActionSheet({
             >
               <Trash2 className="h-4 w-4" strokeWidth={1.8} />
               <span className="text-[14px]" style={{ fontWeight: 500 }}>
-                Remove current photo
+                {t("profile.photo.remove", "Remove current photo")}
               </span>
             </motion.button>
           )}
@@ -1181,7 +1204,7 @@ function AvatarActionSheet({
             className="mt-1 rounded-[14px] px-4 py-3 text-[13.5px]"
             style={{ color: MUTED, fontWeight: 500 }}
           >
-            Cancel
+            {t("common.cancel", "Cancel")}
           </button>
         </div>
       </motion.div>
@@ -1208,6 +1231,11 @@ function PlanSheet({
   onManage: () => void;
   onClose: () => void;
 }) {
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string, values?: Record<string, unknown>) => {
+    const msg = i18n._(id, values);
+    return msg === id ? fallback : msg;
+  };
   const isPaid = tier !== "free" && ["active", "trialing"].includes(status);
   const renews = currentPeriodEnd ? new Date(currentPeriodEnd).toLocaleDateString() : null;
   return (
@@ -1218,7 +1246,7 @@ function PlanSheet({
       exit={{ opacity: 0 }}
     >
       <motion.button
-        aria-label="Close"
+        aria-label={t("common.close", "Close")}
         onClick={onClose}
         className="absolute inset-0"
         style={{ background: "rgb(var(--aegis-ink-rgb) / 0.35)", backdropFilter: "blur(4px)" }}
@@ -1243,21 +1271,21 @@ function PlanSheet({
           className="mb-3 px-1 text-[11px] uppercase"
           style={{ color: MUTED, letterSpacing: "0.14em", fontWeight: 600 }}
         >
-          Plan &amp; billing
+          {t("plan.sheet.title", "Plan & billing")}
         </div>
 
         {isPaid ? (
           <div className="flex flex-col gap-3 px-1 pb-2">
             <div className="rounded-[14px] px-4 py-3.5" style={{ border: `1px solid ${BORDER}` }}>
               <div className="text-[14.5px]" style={{ color: CHARCOAL, fontWeight: 600 }}>
-                {tier === "family" ? "Aegis Family" : "Aegis Pro"} · {status}
+                {tier === "family" ? t("plan.name.family", "Aegis Family") : t("plan.name.pro", "Aegis Pro")} · {status}
               </div>
               <div className="mt-1 text-[12.5px]" style={{ color: MUTED }}>
-                Up to 500 accounts.{" "}
+                {t("plan.paid.description", "Up to 500 accounts.")}{" "}
                 {renews
                   ? cancelAtPeriodEnd
-                    ? `Ends ${renews}.`
-                    : `Renews ${renews}.`
+                    ? t("plan.paid.ends", `Ends ${renews}.`, { date: renews })
+                    : t("plan.paid.renews", `Renews ${renews}.`, { date: renews })
                   : ""}
               </div>
             </div>
@@ -1269,17 +1297,17 @@ function PlanSheet({
               style={{ background: CHARCOAL, color: CREAM_SOFT, fontWeight: 500 }}
             >
               {busy === "portal" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" strokeWidth={1.8} />}
-              Manage billing
+              {t("plan.manageBilling", "Manage billing")}
             </motion.button>
           </div>
         ) : (
           <div className="flex flex-col gap-2 px-1 pb-1">
             <div className="rounded-[14px] px-4 py-3.5" style={{ border: `1px solid ${BORDER}` }}>
               <div className="text-[14.5px]" style={{ color: CHARCOAL, fontWeight: 600 }}>
-                Free
+                {t("plan.tier.free", "Free")}
               </div>
               <div className="mt-1 text-[12.5px]" style={{ color: MUTED }}>
-                Up to 25 accounts. Encrypted sync included.
+                {t("plan.free.description", "Up to 25 accounts. Encrypted sync included.")}
               </div>
             </div>
             <motion.button
@@ -1291,9 +1319,9 @@ function PlanSheet({
             >
               <div className="flex flex-col">
                 <span className="text-[14px]" style={{ fontWeight: 600 }}>
-                  Upgrade to Pro
+                  {t("plan.upgradePro", "Upgrade to Pro")}
                 </span>
-                <span className="text-[12px] opacity-80">Up to 500 accounts.</span>
+                <span className="text-[12px] opacity-80">{t("plan.upgradePro.description", "Up to 500 accounts.")}</span>
               </div>
               {busy === "pro" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1310,10 +1338,10 @@ function PlanSheet({
             >
               <div className="flex flex-col">
                 <span className="text-[14px]" style={{ fontWeight: 600 }}>
-                  Upgrade to Family
+                  {t("plan.upgradeFamily", "Upgrade to Family")}
                 </span>
                 <span className="text-[12px]" style={{ color: MUTED }}>
-                  Everything in Pro + share with up to 6 members.
+                  {t("plan.upgradeFamily.description", "Everything in Pro + share with up to 6 members.")}
                 </span>
               </div>
               {busy === "family" ? (
@@ -1329,7 +1357,7 @@ function PlanSheet({
           className="mt-3 w-full rounded-[14px] px-4 py-3 text-[13.5px]"
           style={{ color: MUTED, fontWeight: 500 }}
         >
-          Close
+          {t("common.close", "Close")}
         </button>
       </motion.div>
     </motion.div>
