@@ -83,6 +83,7 @@ import {
   clearAutoBackupLog,
   disableAutoBackup,
   enableAutoBackup,
+  friendlyBackupError,
   getAutoBackupLog,
   getAutoBackupSettings,
   hasStoredPassphrase,
