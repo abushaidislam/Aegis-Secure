@@ -57,6 +57,7 @@ import {
   Trash2,
   Download,
   Tag as TagIcon,
+  MoreHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
