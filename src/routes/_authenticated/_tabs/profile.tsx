@@ -994,9 +994,14 @@ function LocaleSheet({
   onChoose: (pref: LocalePref) => void;
   onClose: () => void;
 }) {
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const msg = i18n._(id);
+    return msg === id ? fallback : msg;
+  };
   type Row = { pref: LocalePref; title: string; description: string };
   const rows: Row[] = [
-    { pref: "system", title: "System", description: "Follow your device." },
+    { pref: "system", title: t("language.system", "System"), description: t("language.system.description", "Follow your device.") },
     ...SUPPORTED_LOCALES.map((l) => ({
       pref: l.code as LocalePref,
       title: l.nativeLabel,
