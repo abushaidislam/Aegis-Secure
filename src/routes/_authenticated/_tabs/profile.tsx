@@ -693,6 +693,18 @@ function ProfilePage() {
             onClose={() => setLocaleSheet(false)}
           />
         )}
+        {planSheet && (
+          <PlanSheet
+            tier={sub?.tier ?? "free"}
+            status={sub?.status ?? "active"}
+            cancelAtPeriodEnd={sub?.cancel_at_period_end ?? false}
+            currentPeriodEnd={sub?.current_period_end ?? null}
+            busy={planBusy}
+            onUpgrade={(t) => handleUpgrade(t)}
+            onManage={handleManage}
+            onClose={() => setPlanSheet(false)}
+          />
+        )}
       </AnimatePresence>
     </>
   );
