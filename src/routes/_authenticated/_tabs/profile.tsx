@@ -443,6 +443,8 @@ function ProfilePage() {
         .from("profiles")
         .upsert({ id: user.id, avatar_url: path }, { onConflict: "id" });
       if (profErr) throw profErr;
+      // Prime the offline cache with the just-uploaded bytes.
+      await putAvatarBlob(user.id, blob);
       setAvatarPath(path);
       setAvatarVersion(Date.now());
       setNotice({ kind: "info", text: "Photo updated." });
