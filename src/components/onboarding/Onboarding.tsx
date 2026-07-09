@@ -1065,7 +1065,7 @@ function StepDone({ next }: { next: () => void }) {
 /*  Main flow                                                          */
 /* ------------------------------------------------------------------ */
 
-const TOTAL = 7;
+const TOTAL = 8;
 
 /* Subtle haptics — silent no-op where unsupported (desktop, iOS Safari). */
 type HapticKind = "tick" | "soft" | "success";
