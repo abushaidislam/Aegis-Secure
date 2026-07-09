@@ -139,6 +139,119 @@ docker compose logs -f migrate
 Migrations are additive and idempotent — the runner applies only files
 newer than the last successful run recorded in Postgres.
 
+## Expose the stack over HTTPS with Cloudflare Tunnel
+
+`docker compose up -d` binds PostgREST and GoTrue to `localhost` only. To
+reach them from a browser on the public internet — without opening a
+port, renting a static IP, or issuing certificates yourself — put a
+Cloudflare Tunnel in front. Traffic terminates TLS at Cloudflare's edge
+and rides an outbound-only tunnel back to your box.
+
+This flow works on any host that can run Docker: a home server behind
+NAT, a Raspberry Pi, a laptop, or a $4 VPS.
+
+### 1. Prerequisites
+
+- A domain on a Cloudflare account (free plan is fine).
+- The self-host stack already running (`docker compose ps` shows
+  `db`, `rest`, `auth` as healthy).
+- Two subdomains you want to use, e.g.:
+  - `api.vault.example.com` → PostgREST (port 3000)
+  - `auth.vault.example.com` → GoTrue (port 9999)
+
+### 2. Create the tunnel in the Cloudflare dashboard
+
+1. Cloudflare dashboard → **Zero Trust** → **Networks** → **Tunnels**.
+2. **Create a tunnel** → connector **Cloudflared** → name it `aegis`.
+3. Copy the install command for **Docker**. It looks like:
+   ```
+   docker run cloudflare/cloudflared:latest tunnel --no-autoupdate run --token eyJhIjoi...
+   ```
+   Copy only the token (the `eyJ...` part) — you will paste it into `.env`.
+
+### 3. Add cloudflared to the compose stack
+
+Append this service to `self-host/docker-compose.yml` (same `networks:
+[aegis]` block as the other services):
+
+```yaml
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on: [rest, auth]
+    networks: [aegis]
+```
+
+Add the token to `self-host/.env`:
+
+```
+CLOUDFLARE_TUNNEL_TOKEN=eyJhIjoi...paste-from-dashboard...
+```
+
+Bring the tunnel up:
+
+```bash
+docker compose up -d tunnel
+docker compose logs -f tunnel   # wait for "Registered tunnel connection"
+```
+
+### 4. Map hostnames to services
+
+Back in the tunnel's dashboard page → **Public Hostnames** → **Add a
+public hostname**. Do this twice:
+
+| Subdomain | Domain | Type | URL |
+| --- | --- | --- | --- |
+| `api`  | `vault.example.com` | HTTP | `rest:3000` |
+| `auth` | `vault.example.com` | HTTP | `auth:9999` |
+
+The URL uses the compose service name (`rest`, `auth`) because
+cloudflared is on the same `aegis` docker network. Cloudflare provisions
+DNS and SSL for both hostnames within a minute.
+
+Verify:
+
+```bash
+curl https://api.vault.example.com/    # PostgREST OpenAPI root
+curl https://auth.vault.example.com/health
+```
+
+### 5. Point the web client at the tunnel
+
+Rebuild with the public URLs:
+
+```bash
+VITE_SUPABASE_URL=https://api.vault.example.com \
+VITE_SUPABASE_PUBLISHABLE_KEY="$(grep ^ANON_KEY self-host/.env | cut -d= -f2-)" \
+  bun run build
+```
+
+Update `SITE_URL` in `self-host/.env` to the public URL of the client
+(e.g. `https://vault.example.com`) so GoTrue's email links point at the
+right place, then `docker compose up -d auth` to reload it.
+
+### 6. Lock it down (recommended)
+
+- **Zero Trust → Access → Applications**: put an Access policy in front
+  of the `auth` hostname if you don't want the internet hitting the
+  signup endpoint. Combine with `GOTRUE_DISABLE_SIGNUP=true` after
+  creating your admin user.
+- **WAF → Rate limiting**: cap `/token` and `/signup` on the auth
+  hostname to blunt credential stuffing.
+- **Origin does not need port 443 open.** If you accidentally opened it
+  earlier, close it — the tunnel is the only ingress path.
+
+### Tunnel troubleshooting
+
+| Symptom | Fix |
+| --- | --- |
+| `tunnel` logs `Unauthorized: Failed to get tunnel` | Token is wrong or the tunnel was deleted in the dashboard. Re-copy the token, update `.env`, `docker compose up -d tunnel`. |
+| `curl` returns Cloudflare error 1033 | No public hostname is mapped yet, or DNS hasn't propagated. Wait 60s, then recheck the **Public Hostnames** table. |
+| Client gets CORS errors from `api.vault.example.com` | PostgREST allows all origins by default. If you added a stricter CORS setup, whitelist the client's public URL. |
+| Auth emails link to `http://localhost:5173` | `SITE_URL` still points at localhost. Update `.env` and restart `auth`. |
+
+
 ## Troubleshooting
 
 | Symptom | Fix |
