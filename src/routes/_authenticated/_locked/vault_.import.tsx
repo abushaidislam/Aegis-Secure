@@ -16,7 +16,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getVaultKey } from "@/lib/vault-session";
-import { addAccount, type ParsedOtpauth } from "@/lib/vault-accounts";
+import { addAccount, readCachedAccountsOnly, type ParsedOtpauth } from "@/lib/vault-accounts";
+import { UpgradePrompt } from "@/components/aegis/upgrade-prompt";
+import { usePlan } from "@/hooks/use-plan";
 import {
   importFromAvf,
   importFromJson,
