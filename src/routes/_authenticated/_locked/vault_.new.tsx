@@ -12,6 +12,7 @@ import {
   type OtpType,
 } from "@/lib/vault-accounts";
 import { TagInput } from "@/components/vault/tags";
+import { friendlyVaultSaveError } from "@/lib/friendly-errors";
 import { ScanTab } from "@/components/vault/ScanTab";
 import {
   ArrowLeft,
@@ -103,7 +104,8 @@ function NewAccountPage() {
         navigate({ to: "/vault", replace: true });
         return true;
       } catch (err) {
-        setNotice({ kind: "error", text: err instanceof Error ? err.message : "Could not save." });
+        const raw = err instanceof Error ? err.message : "Could not save.";
+        setNotice({ kind: "error", text: friendlyVaultSaveError(raw) });
         return false;
       } finally {
         setSaving(false);
