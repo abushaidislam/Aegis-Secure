@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useLingui } from "@lingui/react";
 import { supabase } from "@/integrations/supabase/client";
 import { KeyRound, Lock } from "lucide-react";
 import {
@@ -40,12 +41,22 @@ export const Route = createFileRoute("/auth/reset-password")({
   errorComponent: ({ error }) => (
     <div className="flex min-h-screen items-center justify-center p-6 text-sm">{error.message}</div>
   ),
-  notFoundComponent: () => <div className="p-6 text-sm">Not found</div>,
+  notFoundComponent: () => <NotFoundView />,
 });
 
+function NotFoundView() {
+  const { i18n } = useLingui();
+  const msg = i18n._("auth.notFound");
+  return <div className="p-6 text-sm">{msg === "auth.notFound" ? "Not found" : msg}</div>;
+}
 
 function ResetPasswordPage() {
   const navigate = useNavigate();
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const m = i18n._(id);
+    return m === id ? fallback : m;
+  };
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<{ kind: "error" | "info"; text: string } | null>(null);
@@ -68,12 +79,12 @@ function ResetPasswordPage() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      setNotice({ kind: "info", text: "Password updated. Redirecting…" });
+      setNotice({ kind: "info", text: t("authReset.success", "Password updated. Redirecting…") });
       setTimeout(() => navigate({ to: "/", replace: true }), 800);
     } catch (err) {
       setNotice({
         kind: "error",
-        text: err instanceof Error ? err.message : "Could not update password.",
+        text: err instanceof Error ? err.message : t("authReset.error", "Could not update password."),
       });
     } finally {
       setLoading(false);
@@ -87,9 +98,9 @@ function ResetPasswordPage() {
         <div className="flex flex-col items-start gap-4">
           <HeroIcon Icon={KeyRound} />
           <div className="flex flex-col gap-2.5">
-            <Eyebrow>New password</Eyebrow>
-            <Display>Set a new password.</Display>
-            <Lede>Choose something you'll remember — at least 8 characters.</Lede>
+            <Eyebrow>{t("authReset.eyebrow", "New password")}</Eyebrow>
+            <Display>{t("authReset.title", "Set a new password.")}</Display>
+            <Lede>{t("authReset.subtitle", "Choose something you'll remember — at least 8 characters.")}</Lede>
           </div>
         </div>
 
@@ -100,7 +111,7 @@ function ResetPasswordPage() {
               autoComplete="new-password"
               required
               minLength={8}
-              placeholder="New password"
+              placeholder={t("authReset.placeholder", "New password")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className={inputClass}
@@ -112,12 +123,12 @@ function ResetPasswordPage() {
 
           <div className="pt-1">
             <PrimaryButton type="submit" loading={loading} disabled={!ready}>
-              Update password
+              {t("authReset.button", "Update password")}
             </PrimaryButton>
           </div>
           {!ready && (
             <p className="text-center text-[12px]" style={{ color: MUTED }}>
-              Waiting for a valid reset link…
+              {t("authReset.waiting", "Waiting for a valid reset link…")}
             </p>
           )}
         </form>

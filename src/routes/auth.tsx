@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLingui } from "@lingui/react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Mail, ShieldCheck } from "lucide-react";
@@ -53,13 +54,24 @@ export const Route = createFileRoute("/auth")({
   errorComponent: ({ error }) => (
     <div className="flex min-h-screen items-center justify-center p-6 text-sm">{error.message}</div>
   ),
-  notFoundComponent: () => <div className="p-6 text-sm">Not found</div>,
+  notFoundComponent: () => <NotFoundView />,
 });
+
+function NotFoundView() {
+  const { i18n } = useLingui();
+  const msg = i18n._("auth.notFound");
+  return <div className="p-6 text-sm">{msg === "auth.notFound" ? "Not found" : msg}</div>;
+}
 
 type Mode = "signin" | "signup" | "reset";
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const m = i18n._(id);
+    return m === id ? fallback : m;
+  };
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -90,7 +102,7 @@ function AuthPage() {
           options: { emailRedirectTo: window.location.origin + "/auth/callback" },
         });
         if (error) throw error;
-        setNotice({ kind: "info", text: "Account created. You can sign in now." });
+        setNotice({ kind: "info", text: t("auth.notice.signupSuccess", "Account created. You can sign in now.") });
         setMode("signin");
       } else if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -101,7 +113,7 @@ function AuthPage() {
           redirectTo: window.location.origin + "/auth/reset-password",
         });
         if (error) throw error;
-        setNotice({ kind: "info", text: "Check your inbox for a reset link." });
+        setNotice({ kind: "info", text: t("auth.notice.resetSent", "Check your inbox for a reset link.") });
       }
       try {
         window.localStorage.setItem(LAST_EMAIL_KEY, email);
@@ -109,13 +121,13 @@ function AuthPage() {
         /* ignore */
       }
     } catch (err) {
-      const raw = err instanceof Error ? err.message : "Something went wrong.";
+      const raw = err instanceof Error ? err.message : t("auth.error.generic", "Something went wrong.");
       const friendly = /invalid.*credent|invalid.*login/i.test(raw)
-        ? "Email or password is incorrect."
+        ? t("auth.error.invalidCredentials", "Email or password is incorrect.")
         : /rate limit|too many/i.test(raw)
-          ? "Too many attempts — please wait a moment and try again."
+          ? t("auth.error.rateLimit", "Too many attempts — please wait a moment and try again.")
           : /already.*registered/i.test(raw)
-            ? "An account with that email already exists."
+            ? t("auth.error.alreadyRegistered", "An account with that email already exists.")
             : raw;
       setNotice({ kind: "error", text: friendly });
     } finally {
@@ -130,32 +142,36 @@ function AuthPage() {
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin + "/auth/callback",
       });
-      if (result.error) throw new Error(result.error.message ?? "Google sign-in failed");
+      if (result.error) throw new Error(result.error.message ?? t("auth.error.google", "Google sign-in failed."));
       if (result.redirected) return;
       navigate({ to: "/", replace: true });
     } catch (err) {
       setNotice({
         kind: "error",
-        text: err instanceof Error ? err.message : "Google sign-in failed.",
+        text: err instanceof Error ? err.message : t("auth.error.google", "Google sign-in failed."),
       });
       setLoading(false);
     }
   };
 
   const eyebrow =
-    mode === "signup" ? "Create account" : mode === "reset" ? "Reset access" : "Sign in";
+    mode === "signup"
+      ? t("auth.eyebrow.signup", "Create account")
+      : mode === "reset"
+        ? t("auth.eyebrow.reset", "Reset access")
+        : t("auth.eyebrow.signin", "Sign in");
   const title =
     mode === "signup"
-      ? "Create your Aegis account"
+      ? t("auth.title.signup", "Create your Aegis account")
       : mode === "reset"
-        ? "Reset your password"
-        : "Sign in to your Aegis account";
+        ? t("auth.title.reset", "Reset your password")
+        : t("auth.title.signin", "Sign in to your Aegis account");
   const subtitle =
     mode === "signup"
-      ? "One account, every one-time code — quietly protected."
+      ? t("auth.subtitle.signup", "One account, every one-time code — quietly protected.")
       : mode === "reset"
-        ? "We'll email you a secure link to set a new password."
-        : "Sign in to unlock your vault.";
+        ? t("auth.subtitle.reset", "We'll email you a secure link to set a new password.")
+        : t("auth.subtitle.signin", "Sign in to unlock your vault.");
 
   return (
     <AegisScreen>
@@ -187,7 +203,7 @@ function AuthPage() {
               type="email"
               autoComplete="email"
               required
-              placeholder="you@example.com"
+              placeholder={t("auth.email.placeholder", "you@example.com")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={inputClass}
@@ -211,7 +227,11 @@ function AuthPage() {
                     onChange={setPassword}
                     autoComplete={mode === "signup" ? "new-password" : "current-password"}
                     minLength={mode === "signup" ? 8 : undefined}
-                    placeholder={mode === "signup" ? "Create a strong password" : "Your password"}
+                    placeholder={
+                      mode === "signup"
+                        ? t("auth.password.placeholder.signup", "Create a strong password")
+                        : t("auth.password.placeholder.signin", "Your password")
+                    }
                     delay={0.1}
                   />
                   {mode === "signup" && <StrengthMeter value={password} />}
@@ -233,10 +253,10 @@ function AuthPage() {
               }
             >
               {mode === "signup"
-                ? "Create account"
+                ? t("auth.button.signup", "Create account")
                 : mode === "reset"
-                  ? "Send reset link"
-                  : "Sign in"}
+                  ? t("auth.button.reset", "Send reset link")
+                  : t("auth.button.signin", "Sign in")}
             </PrimaryButton>
           </div>
         </form>
@@ -244,13 +264,13 @@ function AuthPage() {
         <div className="flex items-center gap-3">
           <div className="h-px flex-1" style={{ background: BORDER }} />
           <span className="text-[11px] uppercase tracking-[0.14em]" style={{ color: MUTED }}>
-            or
+            {t("auth.divider.or", "or")}
           </span>
           <div className="h-px flex-1" style={{ background: BORDER }} />
         </div>
 
         <GhostButton onClick={handleGoogle} disabled={loading} icon={<GoogleIcon />}>
-          Continue with Google
+          {t("auth.google.cta", "Continue with Google")}
         </GhostButton>
 
         <div
@@ -259,33 +279,37 @@ function AuthPage() {
         >
           {mode === "signin" && (
             <>
-              <TextLink onClick={() => setMode("reset")}>Forgot your password?</TextLink>
+              <TextLink onClick={() => setMode("reset")}>
+                {t("auth.link.forgot", "Forgot your password?")}
+              </TextLink>
               <div>
-                New to Aegis?{" "}
+                {t("auth.newToAegis", "New to Aegis?")}{" "}
                 <button
                   onClick={() => setMode("signup")}
                   className="underline underline-offset-[3px]"
                   style={{ color: CHARCOAL }}
                 >
-                  Create an account
+                  {t("auth.createAccountLink", "Create an account")}
                 </button>
               </div>
             </>
           )}
           {mode === "signup" && (
             <div>
-              Already have an account?{" "}
+              {t("auth.haveAccount", "Already have an account?")}{" "}
               <button
                 onClick={() => setMode("signin")}
                 className="underline underline-offset-[3px]"
                 style={{ color: CHARCOAL }}
               >
-                Sign in
+                {t("auth.signinLink", "Sign in")}
               </button>
             </div>
           )}
           {mode === "reset" && (
-            <TextLink onClick={() => setMode("signin")}>Back to sign in</TextLink>
+            <TextLink onClick={() => setMode("signin")}>
+              {t("auth.backToSignin", "Back to sign in")}
+            </TextLink>
           )}
         </div>
       </div>

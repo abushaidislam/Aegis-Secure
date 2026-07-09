@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Loader2, ShieldCheck } from "lucide-react";
+import { useLingui } from "@lingui/react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   AegisScreen,
@@ -36,13 +37,23 @@ export const Route = createFileRoute("/auth/callback")({
   errorComponent: ({ error }) => (
     <div className="flex min-h-screen items-center justify-center p-6 text-sm">{error.message}</div>
   ),
-  notFoundComponent: () => <div className="p-6 text-sm">Not found</div>,
+  notFoundComponent: () => <NotFoundView />,
 });
 
+function NotFoundView() {
+  const { i18n } = useLingui();
+  const msg = i18n._("auth.notFound");
+  return <div className="p-6 text-sm">{msg === "auth.notFound" ? "Not found" : msg}</div>;
+}
 
 function CallbackPage() {
   const navigate = useNavigate();
   const reduce = useReducedMotion();
+  const { i18n } = useLingui();
+  const t = (id: string, fallback: string) => {
+    const m = i18n._(id);
+    return m === id ? fallback : m;
+  };
 
   useEffect(() => {
     let done = false;
@@ -93,8 +104,8 @@ function CallbackPage() {
           </motion.div>
         </div>
         <div className="flex flex-col items-center gap-2">
-          <Display>Signing you in…</Display>
-          <Lede>Confirming your session — this only takes a moment.</Lede>
+          <Display>{t("authCallback.title", "Signing you in…")}</Display>
+          <Lede>{t("authCallback.subtitle", "Confirming your session — this only takes a moment.")}</Lede>
         </div>
         <Loader2 className="h-4 w-4 animate-spin opacity-60" />
       </div>
