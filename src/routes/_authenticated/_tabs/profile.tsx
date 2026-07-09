@@ -104,6 +104,8 @@ function ProfilePage() {
   const [planBusy, setPlanBusy] = useState<null | "pro" | "family" | "portal">(null);
   const [planSheet, setPlanSheet] = useState(false);
   const [compareSheet, setCompareSheet] = useState(false);
+  const [welcomeSheet, setWelcomeSheet] = useState(false);
+  const [awaitingUpgrade, setAwaitingUpgrade] = useState(false);
 
   const activePaidTier = sub && sub.tier !== "free" && ["active", "trialing"].includes(sub.status);
   const planLabel = !sub
