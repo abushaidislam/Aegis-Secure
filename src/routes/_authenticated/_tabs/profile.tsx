@@ -1104,7 +1104,7 @@ function AvatarActionSheet({
       exit={{ opacity: 0 }}
     >
       <motion.button
-        aria-label="Close"
+        aria-label={t("common.close", "Close")}
         onClick={onClose}
         className="absolute inset-0"
         style={{ background: "rgb(var(--aegis-ink-rgb) / 0.35)", backdropFilter: "blur(4px)" }}
@@ -1160,7 +1160,7 @@ function AvatarActionSheet({
               letterSpacing: "-0.01em",
             }}
           >
-            Profile photo
+            {t("profile.photo.title", "Profile photo")}
           </div>
         </div>
 
@@ -1177,7 +1177,7 @@ function AvatarActionSheet({
           >
             <Camera className="h-4 w-4" strokeWidth={1.8} />
             <span className="text-[14px]" style={{ fontWeight: 500 }}>
-              {hasAvatar ? "Choose a new photo" : "Choose a photo"}
+              {hasAvatar ? t("profile.photo.chooseNew", "Choose a new photo") : t("profile.photo.choose", "Choose a photo")}
             </span>
           </motion.button>
 
@@ -1194,7 +1194,7 @@ function AvatarActionSheet({
             >
               <Trash2 className="h-4 w-4" strokeWidth={1.8} />
               <span className="text-[14px]" style={{ fontWeight: 500 }}>
-                Remove current photo
+                {t("profile.photo.remove", "Remove current photo")}
               </span>
             </motion.button>
           )}
@@ -1204,7 +1204,7 @@ function AvatarActionSheet({
             className="mt-1 rounded-[14px] px-4 py-3 text-[13.5px]"
             style={{ color: MUTED, fontWeight: 500 }}
           >
-            Cancel
+            {t("common.cancel", "Cancel")}
           </button>
         </div>
       </motion.div>
