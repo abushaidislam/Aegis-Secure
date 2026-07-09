@@ -556,7 +556,15 @@ export function HealthSheet({
                 count={-1 /* always render body */}
                 severity="info"
               >
-                <div className="text-[11.5px]" style={{ color: MUTED }}>
+                {!canBreachScan ? (
+                  <UpgradePrompt
+                    title="Breach monitoring"
+                    body="Pro checks your issuers against Have I Been Pwned so you know when a service you use has leaked credentials."
+                    tier="Pro"
+                  />
+                ) : (
+                  <>
+
                   Tap an issuer to run an anonymous k-anonymity lookup against
                   Have I Been Pwned. Only the first 5 characters of the hashed
                   domain are sent — the issuer name and full hash stay on this
