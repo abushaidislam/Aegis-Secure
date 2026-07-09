@@ -84,7 +84,13 @@ export async function runV3Migration(
           toBytes(row.secret_iv),
         );
         const rewrapped = await encryptSecret(dek, plaintext, aad);
-        const update: Record<string, string | number> = {
+        const update: {
+          secret_ciphertext: string;
+          secret_iv: string;
+          crypto_version: number;
+          counter_ciphertext?: string;
+          counter_iv?: string;
+        } = {
           secret_ciphertext: toByteaHex(rewrapped.ciphertext),
           secret_iv: toByteaHex(rewrapped.iv),
           crypto_version: VAULT_ROW_CRYPTO_VERSION,
@@ -143,18 +149,15 @@ async function reportTelemetry(payload: {
   error?: string;
 }): Promise<void> {
   try {
+    // client_errors has no `kind`/`metadata` columns — pack the summary
+    // into `message` and use `route` as the component tag so admins can
+    // filter these events without JSON parsing.
+    const summary = payload.error
+      ? `vault-migrator v${payload.from}->v${payload.to} FAILED after ${payload.rowsMigrated} row(s): ${payload.error}`
+      : `vault-migrator v${payload.from}->v${payload.to} OK · rows=${payload.rowsMigrated} elapsed_ms=${payload.elapsedMs}`;
     await supabase.from("client_errors").insert({
-      kind: payload.error ? "error" : "info",
-      message: payload.error
-        ? `vault-migrator v${payload.from}->v${payload.to} failed after ${payload.rowsMigrated} row(s): ${payload.error}`
-        : `vault-migrator v${payload.from}->v${payload.to} completed`,
-      metadata: {
-        component: "vault-migrator",
-        from: payload.from,
-        to: payload.to,
-        rows_migrated: payload.rowsMigrated,
-        elapsed_ms: payload.elapsedMs,
-      },
+      message: summary,
+      route: "vault-migrator",
     });
   } catch {
     // Telemetry is best-effort; never surface to user.
