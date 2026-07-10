@@ -2,21 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useLingui } from "@lingui/react";
 import { supabase } from "@/integrations/supabase/client";
-import { KeyRound, Lock } from "lucide-react";
+import { MUTED } from "@/components/aegis/chrome";
+import { PasswordField, StrengthMeter, scoreStrength } from "@/components/aegis/password-field";
 import {
-  AegisScreen,
-  BrandBar,
-  Display,
-  Eyebrow,
-  Field,
-  HeroIcon,
-  Lede,
-  Notice,
-  PrimaryButton,
-  MUTED,
-  inputClass,
-  inputStyle,
-} from "@/components/aegis/chrome";
+  BlueButton,
+  InlineNotice,
+  StarfieldHeroLayout,
+} from "@/components/aegis/starfield-hero";
 
 export const Route = createFileRoute("/auth/reset-password")({
   ssr: false,
@@ -92,47 +84,49 @@ function ResetPasswordPage() {
   };
 
   return (
-    <AegisScreen>
-      <BrandBar />
-      <div className="flex flex-1 flex-col justify-center gap-6">
-        <div className="flex flex-col items-start gap-4">
-          <HeroIcon Icon={KeyRound} />
-          <div className="flex flex-col gap-2.5">
-            <Eyebrow>{t("authReset.eyebrow", "New password")}</Eyebrow>
-            <Display>{t("authReset.title", "Set a new password.")}</Display>
-            <Lede>{t("authReset.subtitle", "Choose something you'll remember — at least 8 characters.")}</Lede>
+    <StarfieldHeroLayout
+      heroTitle={t("authReset.title", "Set a new password")}
+      heroSubtitle={t(
+        "authReset.subtitle",
+        "Choose something you'll remember — at least 8 characters.",
+      )}
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <span
+            className="text-[12.5px] font-medium"
+            style={{ color: MUTED, letterSpacing: "-0.005em" }}
+          >
+            {t("authReset.fieldLabel", "New password")}
+          </span>
+          <PasswordField
+            value={password}
+            onChange={setPassword}
+            autoComplete="new-password"
+            minLength={8}
+            placeholder={t("authReset.placeholder", "New password")}
+          />
+          <div className="mt-1">
+            <StrengthMeter value={password} />
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
-          <Field icon={<Lock className="h-4 w-4" strokeWidth={1.6} />} delay={0.05}>
-            <input
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              placeholder={t("authReset.placeholder", "New password")}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={inputClass}
-              style={inputStyle}
-            />
-          </Field>
+        {notice && <InlineNotice kind={notice.kind}>{notice.text}</InlineNotice>}
 
-          {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
+        <BlueButton
+          type="submit"
+          loading={loading}
+          disabled={!ready || scoreStrength(password) < 2}
+        >
+          {t("authReset.button", "Update password")}
+        </BlueButton>
 
-          <div className="pt-1">
-            <PrimaryButton type="submit" loading={loading} disabled={!ready}>
-              {t("authReset.button", "Update password")}
-            </PrimaryButton>
-          </div>
-          {!ready && (
-            <p className="text-center text-[12px]" style={{ color: MUTED }}>
-              {t("authReset.waiting", "Waiting for a valid reset link…")}
-            </p>
-          )}
-        </form>
-      </div>
-    </AegisScreen>
+        {!ready && (
+          <p className="text-center text-[12px]" style={{ color: MUTED }}>
+            {t("authReset.waiting", "Waiting for a valid reset link…")}
+          </p>
+        )}
+      </form>
+    </StarfieldHeroLayout>
   );
 }

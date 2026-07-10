@@ -4,16 +4,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { useLingui } from "@lingui/react";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  AegisScreen,
-  BrandBar,
-  Display,
-  Lede,
-  INSET_SHADOW,
-  CREAM_SOFT,
-  CHARCOAL,
-  BORDER,
-} from "@/components/aegis/chrome";
+import { MUTED } from "@/components/aegis/chrome";
+import { StarfieldHeroLayout } from "@/components/aegis/starfield-hero";
 
 export const Route = createFileRoute("/auth/callback")({
   ssr: false,
@@ -78,37 +70,52 @@ function CallbackPage() {
   }, [navigate]);
 
   return (
-    <AegisScreen>
-      <BrandBar />
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
+    <StarfieldHeroLayout
+      heroTitle={t("authCallback.title", "Signing you in…")}
+      heroSubtitle={t(
+        "authCallback.subtitle",
+        "Confirming your session — this only takes a moment.",
+      )}
+    >
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 py-6 text-center">
         <div
           className="relative flex items-center justify-center"
-          style={{ width: 140, height: 140 }}
+          style={{ width: 120, height: 120 }}
         >
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
               className="absolute rounded-full"
-              style={{ width: 70 + i * 24, height: 70 + i * 24, border: `1px solid ${BORDER}` }}
+              style={{
+                width: 60 + i * 22,
+                height: 60 + i * 22,
+                border: "1px solid rgb(var(--aegis-ink-rgb) / 0.12)",
+              }}
               animate={reduce ? undefined : { scale: [1, 1.08, 1], opacity: [0.9, 0.3, 0.9] }}
               transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: i * 0.25 }}
             />
           ))}
           <motion.div
-            className="relative flex h-[64px] w-[64px] items-center justify-center rounded-full"
-            style={{ background: CHARCOAL, boxShadow: INSET_SHADOW }}
+            className="relative flex h-[58px] w-[58px] items-center justify-center rounded-full text-white"
+            style={{
+              background: "linear-gradient(180deg, #4f6bff 0%, #3548d1 100%)",
+              boxShadow:
+                "inset 0 1px 0 rgba(255,255,255,0.28), 0 12px 24px -12px rgba(53,72,209,0.55)",
+            }}
             animate={reduce ? undefined : { rotate: [0, 6, 0, -6, 0] }}
             transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
           >
-            <ShieldCheck className="h-7 w-7" style={{ color: CREAM_SOFT }} strokeWidth={1.6} />
+            <ShieldCheck className="h-7 w-7" strokeWidth={1.6} />
           </motion.div>
         </div>
-        <div className="flex flex-col items-center gap-2">
-          <Display>{t("authCallback.title", "Signing you in…")}</Display>
-          <Lede>{t("authCallback.subtitle", "Confirming your session — this only takes a moment.")}</Lede>
+        <div
+          className="flex items-center gap-2 text-[13px]"
+          style={{ color: MUTED }}
+        >
+          <Loader2 className="h-4 w-4 animate-spin" />
+          {t("authCallback.status", "One moment…")}
         </div>
-        <Loader2 className="h-4 w-4 animate-spin opacity-60" />
       </div>
-    </AegisScreen>
+    </StarfieldHeroLayout>
   );
 }
