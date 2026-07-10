@@ -240,10 +240,23 @@ async function pruneOldAutoBackups(userId: string, keep: number) {
   }
 }
 
+// Plan gate — set by the client (Security tab) from `usePlan().hasFeature(...)`.
+// Fails closed: if never set, we assume Free and skip backups. This makes sure
+// a Pro user who downgrades stops auto-backing-up even if their local settings
+// still say `enabled: true`.
+let planAllowsAutoBackup = false;
+export function setAutoBackupPlanGate(allowed: boolean) {
+  planAllowsAutoBackup = allowed;
+}
+
 export async function runAutoBackupNow(userId: string): Promise<void> {
   if (running.has(userId)) return;
   const settings = getAutoBackupSettings(userId);
   if (!settings.enabled) return;
+  if (!planAllowsAutoBackup) {
+    appendLog(userId, "skipped", "Auto-backup requires Pro");
+    return;
+  }
   const dek = getVaultKey();
   if (!dek) {
     appendLog(userId, "skipped", "Vault locked");
