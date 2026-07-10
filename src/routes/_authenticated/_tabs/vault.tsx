@@ -44,7 +44,7 @@ import {
 } from "@/lib/vault-tag-queue";
 import { useOnlineStatus } from "@/lib/use-online";
 import { onSyncOpportunity } from "@/lib/sync-coordinator";
-import { requestPersistentStorage, getStorageStatus } from "@/lib/storage-quota";
+import { requestPersistentStorage, getStorageStatus, evictNonEssentialCaches } from "@/lib/storage-quota";
 import { AccountCard } from "@/components/vault/AccountCard";
 import { PRESET_TAGS, TagChip } from "@/components/vault/tags";
 import { ExportPassphraseSheet } from "@/components/vault/ExportPassphraseSheet";
