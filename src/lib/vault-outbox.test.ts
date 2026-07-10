@@ -113,7 +113,7 @@ describe("vault-outbox", () => {
     expect(entries[0]).toMatchObject({ kind: "update-details", issuer: "Second", label: "b@x" });
   });
 
-  it("keeps failed entries in the queue for the next flush", async () => {
+  it("keeps failed entries in the queue for the next flush (with backoff)", async () => {
     enqueueDelete("acc-6");
     enqueueUpdateDetails("acc-7", "GH", "l");
     const appliers = makeAppliers({
@@ -124,7 +124,16 @@ describe("vault-outbox", () => {
     expect(first).toHaveLength(1); // only the update succeeded
     expect(outboxSize()).toBe(1);  // delete still queued
 
+    // Immediate re-flush is a no-op: backoff hasn't elapsed yet.
     const recovered = makeAppliers();
+    const immediate = await flushOutbox(recovered);
+    expect(immediate).toHaveLength(0);
+    expect(outboxSize()).toBe(1);
+
+    // Force the entry past its retry deadline and re-flush.
+    const raw = JSON.parse(localStorage.getItem("aegis.outbox.v1") ?? "[]");
+    raw[0].nextRetryAt = 0;
+    localStorage.setItem("aegis.outbox.v1", JSON.stringify(raw));
     const second = await flushOutbox(recovered);
     expect(second).toHaveLength(1);
     expect(outboxSize()).toBe(0);
