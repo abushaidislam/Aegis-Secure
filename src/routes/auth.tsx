@@ -186,13 +186,7 @@ function AuthPage() {
           }}
         />
 
-          <SegmentedTabs
-            mode={mode}
-            onChange={(next) => {
-              setNotice(null);
-              setMode(next);
-            }}
-          />
+
 
           <form onSubmit={handleEmail} className="flex flex-col gap-4">
             <FieldGroup label={t("auth.field.email", "Email")}>
