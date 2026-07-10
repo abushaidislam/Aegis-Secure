@@ -31,6 +31,7 @@ import { ExtensionTrustSection } from "@/components/aegis/extension-trust-sectio
 import { ApprovalSection } from "@/components/aegis/approval-section";
 import { SignInHistorySection } from "@/components/aegis/signin-history-section";
 import { VaultHealthHero } from "@/components/aegis/vault-health-hero";
+import { VaultHealthTips } from "@/components/aegis/vault-health-tips";
 
 import { Switch } from "@/components/ui/switch";
 import { setHideCodes, useHideCodes } from "@/lib/vault-privacy";
@@ -295,6 +296,7 @@ function SecurityPage() {
 
       <div className="flex flex-col gap-1 pt-1">
         <VaultHealthHero />
+        <VaultHealthTips />
 
         <SectionLabel>{t("security.section.vault", "Vault")}</SectionLabel>
         <SettingsGroup>
