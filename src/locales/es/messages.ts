@@ -781,4 +781,11 @@ export const messages: Record<string, string> = {
   "emergency.duration.now": "ahora",
   "emergency.duration.dh": "{d} d {h} h",
   "emergency.duration.hm": "{h} h {m} m",
+  "common.back": "Atrás",
+  "family.emergency.section": "Acceso de emergencia",
+  "family.emergency.title": "Recuperación por contacto de confianza",
+  "family.emergency.desc": "Permite que una persona de confianza recupere tu bóveda tras un periodo de espera que tú controlas.",
+  "vault.readOnly.banner": "Bóveda de recuperación de solo lectura — estás viendo códigos de otro usuario. Las escrituras están deshabilitadas.",
+  "vault.readOnly.blocked": "Bóveda de recuperación de solo lectura — las escrituras están deshabilitadas.",
+  "vault.readOnly.exit": "Salir",
 };

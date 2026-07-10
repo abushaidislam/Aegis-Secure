@@ -781,4 +781,11 @@ export const messages: Record<string, string> = {
   "emergency.duration.now": "今すぐ",
   "emergency.duration.dh": "{d}日 {h}時間",
   "emergency.duration.hm": "{h}時間 {m}分",
+  "common.back": "戻る",
+  "family.emergency.section": "緊急アクセス",
+  "family.emergency.title": "信頼できる連絡先による復旧",
+  "family.emergency.desc": "あなたが設定した待機期間の後、信頼できる人に金庫の復旧を許可します。",
+  "vault.readOnly.banner": "読み取り専用の復旧金庫 — 他のユーザーのコードを表示しています。書き込みは無効です。",
+  "vault.readOnly.blocked": "読み取り専用の復旧金庫 — 書き込みは無効です。",
+  "vault.readOnly.exit": "終了",
 };

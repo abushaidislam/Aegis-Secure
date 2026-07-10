@@ -781,4 +781,11 @@ export const messages: Record<string, string> = {
   "emergency.duration.now": "jetzt",
   "emergency.duration.dh": "{d} T {h} Std",
   "emergency.duration.hm": "{h} Std {m} Min",
+  "common.back": "Zurück",
+  "family.emergency.section": "Notfallzugriff",
+  "family.emergency.title": "Wiederherstellung durch vertrauenswürdigen Kontakt",
+  "family.emergency.desc": "Lass eine vertrauenswürdige Person deinen Tresor nach einer von dir festgelegten Wartezeit wiederherstellen.",
+  "vault.readOnly.banner": "Schreibgeschützter Wiederherstellungstresor — du siehst die Codes eines anderen Nutzers. Schreiben ist deaktiviert.",
+  "vault.readOnly.blocked": "Schreibgeschützter Wiederherstellungstresor — Schreiben ist deaktiviert.",
+  "vault.readOnly.exit": "Beenden",
 };

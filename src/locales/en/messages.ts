@@ -824,4 +824,11 @@ export const messages: Record<string, string> = {
   "emergency.duration.now": "now",
   "emergency.duration.dh": "{d}d {h}h",
   "emergency.duration.hm": "{h}h {m}m",
+  "common.back": "Back",
+  "family.emergency.section": "Emergency access",
+  "family.emergency.title": "Trusted-contact recovery",
+  "family.emergency.desc": "Let a trusted person recover your vault after a waiting period you control.",
+  "vault.readOnly.banner": "Read-only recovery vault — you're viewing another user's codes. Writes are disabled.",
+  "vault.readOnly.blocked": "Read-only recovery vault — writes are disabled.",
+  "vault.readOnly.exit": "Exit",
 };

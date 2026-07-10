@@ -781,4 +781,11 @@ export const messages: Record<string, string> = {
   "emergency.duration.now": "এখনই",
   "emergency.duration.dh": "{d} দি {h} ঘ",
   "emergency.duration.hm": "{h} ঘ {m} মি",
+  "common.back": "ফিরে যান",
+  "family.emergency.section": "জরুরি অ্যাক্সেস",
+  "family.emergency.title": "বিশ্বস্ত পরিচিতির মাধ্যমে পুনরুদ্ধার",
+  "family.emergency.desc": "আপনার নিয়ন্ত্রিত অপেক্ষার সময় শেষে একজন বিশ্বস্ত ব্যক্তিকে আপনার ভল্ট পুনরুদ্ধার করতে দিন।",
+  "vault.readOnly.banner": "শুধু-পঠন পুনরুদ্ধার ভল্ট — আপনি অন্য ব্যবহারকারীর কোড দেখছেন। লেখা নিষ্ক্রিয়।",
+  "vault.readOnly.blocked": "শুধু-পঠন পুনরুদ্ধার ভল্ট — লেখা নিষ্ক্রিয়।",
+  "vault.readOnly.exit": "প্রস্থান",
 };

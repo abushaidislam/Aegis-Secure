@@ -781,4 +781,11 @@ export const messages: Record<string, string> = {
   "emergency.duration.now": "maintenant",
   "emergency.duration.dh": "{d} j {h} h",
   "emergency.duration.hm": "{h} h {m} min",
+  "common.back": "Retour",
+  "family.emergency.section": "Accès d'urgence",
+  "family.emergency.title": "Récupération par contact de confiance",
+  "family.emergency.desc": "Permettez à une personne de confiance de récupérer votre coffre après un délai que vous contrôlez.",
+  "vault.readOnly.banner": "Coffre de récupération en lecture seule — vous consultez les codes d'un autre utilisateur. Écritures désactivées.",
+  "vault.readOnly.blocked": "Coffre de récupération en lecture seule — écritures désactivées.",
+  "vault.readOnly.exit": "Quitter",
 };

@@ -781,4 +781,11 @@ export const messages: Record<string, string> = {
   "emergency.duration.now": "अभी",
   "emergency.duration.dh": "{d} दि {h} घं",
   "emergency.duration.hm": "{h} घं {m} मि",
+  "common.back": "वापस",
+  "family.emergency.section": "आपातकालीन एक्सेस",
+  "family.emergency.title": "विश्वसनीय संपर्क द्वारा रिकवरी",
+  "family.emergency.desc": "एक विश्वसनीय व्यक्ति को आपकी नियंत्रित प्रतीक्षा अवधि के बाद आपका वॉल्ट पुनर्प्राप्त करने दें।",
+  "vault.readOnly.banner": "केवल-पढ़ने योग्य रिकवरी वॉल्ट — आप किसी अन्य उपयोगकर्ता के कोड देख रहे हैं। लेखन अक्षम है।",
+  "vault.readOnly.blocked": "केवल-पढ़ने योग्य रिकवरी वॉल्ट — लेखन अक्षम है।",
+  "vault.readOnly.exit": "बाहर निकलें",
 };

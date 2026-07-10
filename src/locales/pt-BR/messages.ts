@@ -781,4 +781,11 @@ export const messages: Record<string, string> = {
   "emergency.duration.now": "agora",
   "emergency.duration.dh": "{d}d {h}h",
   "emergency.duration.hm": "{h}h {m}m",
+  "common.back": "Voltar",
+  "family.emergency.section": "Acesso de emergência",
+  "family.emergency.title": "Recuperação por contato de confiança",
+  "family.emergency.desc": "Permita que uma pessoa de confiança recupere seu cofre após um período de espera que você controla.",
+  "vault.readOnly.banner": "Cofre de recuperação somente leitura — você está vendo códigos de outro usuário. Gravações desabilitadas.",
+  "vault.readOnly.blocked": "Cofre de recuperação somente leitura — gravações desabilitadas.",
+  "vault.readOnly.exit": "Sair",
 };
