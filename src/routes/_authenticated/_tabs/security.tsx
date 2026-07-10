@@ -183,6 +183,10 @@ function SecurityPage() {
   // Also surface success/error events as toast notifications so the user gets feedback
   // even when the Auto-backup sheet is closed.
   useEffect(() => {
+    setAutoBackupPlanGate(canAutoBackup);
+  }, [canAutoBackup]);
+
+  useEffect(() => {
     initAutoBackup(user.id);
     setAutoBackup(getAutoBackupSettings(user.id));
     // Seed the "last seen" cursor with the newest existing entry so we don't
