@@ -45,6 +45,7 @@ import {
 import { useOnlineStatus } from "@/lib/use-online";
 import { onSyncOpportunity } from "@/lib/sync-coordinator";
 import { requestPersistentStorage, getStorageStatus, evictNonEssentialCaches } from "@/lib/storage-quota";
+import { deadLetterCount } from "@/lib/vault-outbox";
 import { AccountCard } from "@/components/vault/AccountCard";
 import { PRESET_TAGS, TagChip } from "@/components/vault/tags";
 import { ExportPassphraseSheet } from "@/components/vault/ExportPassphraseSheet";
