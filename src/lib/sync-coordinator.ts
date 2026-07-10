@@ -127,6 +127,64 @@ export function onSyncOpportunity(cb: SyncCb): () => void {
   return () => {
     callbacks.delete(cb);
   };
+/**
+ * Broadcast a cache-mutation event so sibling tabs know their
+ * IndexedDB / localStorage view is stale and should re-render on the
+ * next tick. Best-effort; no delivery guarantee. Listeners get a small
+ * payload identifying which surface changed (`vault`, `outbox`, `tags`).
+ */
+export function broadcastCacheMutation(
+  surface: "vault" | "outbox" | "tags",
+  detail?: Record<string, unknown>,
+): void {
+  const ch = safeChannel();
+  if (!ch) return;
+  try {
+    ch.postMessage({ type: "cache-mutation", surface, detail, at: Date.now() });
+  } catch {
+    // best-effort
+  }
+}
+
+export type CacheMutationListener = (
+  surface: "vault" | "outbox" | "tags",
+  detail?: Record<string, unknown>,
+) => void;
+
+const mutationListeners = new Set<CacheMutationListener>();
+
+/** Subscribe to sibling-tab cache-mutation broadcasts. Returns unsub. */
+export function onCacheMutation(cb: CacheMutationListener): () => void {
+  ensureStarted();
+  mutationListeners.add(cb);
+  const ch = safeChannel();
+  if (ch) {
+    // Attach a listener on the shared channel that fans out to every
+    // registered callback. We rely on the singleton channel created in
+    // `safeChannel()` so multiple subscribers share one connection.
+    const handler = (ev: MessageEvent) => {
+      if (ev.data?.type !== "cache-mutation") return;
+      for (const l of mutationListeners) {
+        try {
+          l(ev.data.surface, ev.data.detail);
+        } catch {
+          // isolated
+        }
+      }
+    };
+    ch.addEventListener("message", handler);
+    return () => {
+      mutationListeners.delete(cb);
+      try {
+        ch.removeEventListener("message", handler);
+      } catch {
+        // best-effort
+      }
+    };
+  }
+  return () => {
+    mutationListeners.delete(cb);
+  };
 }
 
 /** Explicit user- or app-triggered flush (e.g. after enqueuing work). */

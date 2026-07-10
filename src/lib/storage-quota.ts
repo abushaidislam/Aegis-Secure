@@ -114,5 +114,21 @@ export async function evictNonEssentialCaches(): Promise<StorageStatus> {
   } catch {
     // best-effort — never let cleanup surface as an error
   }
+  // Drop Workbox runtime caches too. These are auto-refilled on next
+  // network fetch and are nowhere near as precious as the encrypted
+  // vault mirror. Vault ciphertext lives in IndexedDB (`aegis-vault`)
+  // which we deliberately never delete.
+  try {
+    if (typeof caches !== "undefined") {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter((k) => k !== "aegis-vault" && k !== "aegis-media")
+          .map((k) => caches.delete(k)),
+      );
+    }
+  } catch {
+    // best-effort
+  }
   return getStorageStatus();
 }

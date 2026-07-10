@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { initAutoLockForUser, useActivityKeepAlive } from "@/lib/vault-session";
 import { initHideCodesForUser } from "@/lib/vault-privacy";
 import { recordDeviceSeen } from "@/lib/devices.functions";
+import { requestPersistentStorage } from "@/lib/storage-quota";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -48,6 +49,10 @@ function AuthenticatedShell() {
   useEffect(() => {
     initAutoLockForUser(user.id);
     initHideCodesForUser(user.id);
+    // Ask the browser to mark our IndexedDB persistent as early as
+    // possible — before the user ever visits /vault. Idempotent, safe
+    // to call on every mount.
+    void requestPersistentStorage().catch(() => {});
     // Phase 9.1: record this device session so it shows up in Security → Devices.
     void heartbeat().catch(() => {
       // Non-fatal; the vault still works if this fails (e.g. offline).
