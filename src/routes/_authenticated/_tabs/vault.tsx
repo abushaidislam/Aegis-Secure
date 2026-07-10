@@ -20,6 +20,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   getVaultKey,
   isVaultUnlocked,
+  isVaultReadOnly,
+  lockVault,
   useActivityKeepAlive,
   useVaultUnlocked,
 } from "@/lib/vault-session";
