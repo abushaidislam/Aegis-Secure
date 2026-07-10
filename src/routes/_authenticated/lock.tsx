@@ -709,7 +709,7 @@ function LockPage() {
         )}
       </AnimatePresence>
 
-      <div className="mt-1 flex flex-col items-center gap-2 pt-1">
+      <div className="mt-auto flex flex-col items-center gap-1.5 pt-2">
         <button
           type="button"
           onClick={async () => {
