@@ -100,3 +100,19 @@ export async function getStorageStatus(): Promise<StorageStatus> {
 }
 
 export const STORAGE_HIGH_WATERMARK = HIGH_WATERMARK;
+
+/**
+ * Free up device storage by dropping non-essential caches (currently
+ * just avatar blobs — vault ciphertext is the last thing we ever evict).
+ * Returns the new status after the sweep so the caller can decide
+ * whether to nag the user.
+ */
+export async function evictNonEssentialCaches(): Promise<StorageStatus> {
+  try {
+    const { clearAllAvatarBlobs } = await import("./avatar-cache");
+    await clearAllAvatarBlobs();
+  } catch {
+    // best-effort — never let cleanup surface as an error
+  }
+  return getStorageStatus();
+}
