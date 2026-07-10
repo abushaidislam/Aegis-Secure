@@ -161,22 +161,27 @@ function EmergencyPage() {
   return (
     <AegisScreen>
       <AppBar
-        left={
-          <AppBarButton asChild aria-label={t("common.back", "Back")}>
-            <Link to="/family"><ArrowLeft className="h-5 w-5" strokeWidth={2} /></Link>
+        title={t("emergency.title", "Emergency access")}
+        trailing={
+          <AppBarButton label={t("common.back", "Back")} onClick={() => router.history.back()}>
+            <ArrowLeft className="h-4 w-4" strokeWidth={1.8} />
           </AppBarButton>
         }
       />
-      <LargeTitle>{t("emergency.title", "Emergency access")}</LargeTitle>
-      <p className="px-5 pb-4 text-[13.5px]" style={{ color: MUTED }}>
-        {t(
-          "emergency.subtitle",
-          "Grant trusted people read-only recovery to your vault after a waiting period you control.",
-        )}
-      </p>
+      <div
+        className="aegis-scroll -mx-6 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-6 pb-8"
+        style={{ WebkitOverflowScrolling: "touch" as never }}
+      >
+        <LargeTitle
+          title={t("emergency.title", "Emergency access")}
+          subtitle={t(
+            "emergency.subtitle",
+            "Grant trusted people read-only recovery to your vault after a waiting period you control.",
+          )}
+        />
 
       {!canUse && (
-        <div className="px-5 pt-2">
+        <div className="pt-2">
           <UpgradePrompt
             title={t("emergency.upgrade.title", "Emergency access is a Family-plan feature")}
             body={t(
@@ -189,8 +194,8 @@ function EmergencyPage() {
       )}
 
       {canUse && !unlocked && (
-        <div className="px-5 pt-2">
-          <Notice>{t("emergency.locked", "Unlock your vault first to manage emergency contacts.")}</Notice>
+        <div className="pt-2">
+          <Notice kind="info">{t("emergency.locked", "Unlock your vault first to manage emergency contacts.")}</Notice>
         </div>
       )}
 
