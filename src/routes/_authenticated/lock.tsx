@@ -617,7 +617,7 @@ function LockPage() {
   return (
     <StarfieldHeroLayout
       heroKey="unlock"
-      heroTitle={<span className="block max-w-[62%] sm:max-w-[70%]">Unlock your vault</span>}
+      heroTitle={<span className="block max-w-[68%] sm:max-w-[72%]">Unlock your vault</span>}
       heroMinVh={22}
       heroAccessory={<VaultIllustration />}
     >
@@ -680,7 +680,7 @@ function LockPage() {
               {cooldownLeft > 0 ? `Wait ${Math.ceil(cooldownLeft / 1000)}s` : "Unlock vault"}
             </DarkButton>
 
-            {(bioEnrolled && bioAvailable) || pinEnrolled ? <OrDivider /> : null}
+            {((bioEnrolled && bioAvailable) || pinEnrolled) && <OrDivider />}
 
             {bioEnrolled && bioAvailable && (
               <SecondaryPill
@@ -688,6 +688,18 @@ function LockPage() {
                 busy={bioBusy}
                 icon={<Fingerprint className="h-4 w-4" strokeWidth={1.8} />}
                 label="Continue with Biometrics"
+              />
+            )}
+
+            {pinEnrolled && (
+              <SecondaryPill
+                onClick={() => {
+                  setTab("pin");
+                  setNotice(null);
+                  setPin("");
+                }}
+                icon={<KeyRound className="h-4 w-4" strokeWidth={1.8} />}
+                label="Use PIN instead"
               />
             )}
           </motion.form>
@@ -1078,32 +1090,31 @@ function VaultIllustration() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(55% 55% at 65% 55%, rgba(46,196,105,0.32), transparent 72%)",
-          filter: "blur(6px)",
+            "radial-gradient(50% 50% at 62% 58%, rgba(46,196,105,0.28), transparent 72%)",
+          filter: "blur(8px)",
         }}
       />
       <motion.div
-        initial={{ opacity: 0, x: 20, scale: 0.9 }}
-        animate={{ opacity: 1, x: 0, scale: 1 }}
-        transition={{ type: "spring", stiffness: 220, damping: 22, mass: 0.9 }}
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: "spring", stiffness: 220, damping: 24, mass: 0.9 }}
         className="absolute inset-0 flex items-center justify-center pr-3 sm:pr-5"
       >
-        <motion.img
+        <img
           src={vaultIllustration.url}
           alt=""
           draggable={false}
-          animate={{ y: [0, -4, 0], rotate: [0, -1.2, 0] }}
-          transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-          className="pointer-events-none h-[150px] w-auto select-none sm:h-[180px]"
+          className="pointer-events-none h-[128px] w-auto select-none sm:h-[150px]"
           style={{
             filter:
-              "drop-shadow(0 18px 28px rgba(0,0,0,0.55)) drop-shadow(0 0 28px rgba(46,196,105,0.35))",
+              "drop-shadow(0 16px 24px rgba(0,0,0,0.55)) drop-shadow(0 0 26px rgba(46,196,105,0.32))",
           }}
         />
       </motion.div>
     </div>
   );
 }
+
 
 
 function KeypadButton({
