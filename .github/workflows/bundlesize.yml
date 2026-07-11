@@ -1,0 +1,27 @@
+name: bundlesize
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "vite.config.ts"
+      - "package.json"
+      - "bun.lockb"
+      - "scripts/check-bundlesize.mjs"
+  push:
+    branches: [main]
+
+jobs:
+  bundlesize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install deps
+        run: bun install --frozen-lockfile
+      - name: Build client
+        run: bun run build
+      - name: Check bundle size
+        run: bun run check:bundlesize
