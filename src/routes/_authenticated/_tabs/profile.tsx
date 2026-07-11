@@ -35,7 +35,9 @@ import {
   Users,
   Sparkles,
   CreditCard,
+  MessageCircle,
 } from "lucide-react";
+import { FeedbackSheet } from "@/components/aegis/feedback-sheet";
 import {
   BORDER,
   CHARCOAL,
@@ -768,6 +770,20 @@ function ProfilePage() {
               "Share your Aegis codes with up to 6 family members.",
             )}
             onClick={() => navigate({ to: "/family" })}
+            chevron
+          />
+        </SettingsGroup>
+
+        <SectionLabel>{t("profile.section.support", "Support")}</SectionLabel>
+        <SettingsGroup>
+          <SettingsRow
+            icon={<MessageCircle className="h-4 w-4" strokeWidth={1.8} />}
+            title={t("profile.feedback", "Report a problem")}
+            description={t(
+              "profile.feedback.description",
+              "Bugs, ideas, or questions — sent straight to us.",
+            )}
+            onClick={() => setFeedbackSheet(true)}
             chevron
           />
         </SettingsGroup>
