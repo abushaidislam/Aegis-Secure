@@ -1074,19 +1074,40 @@ function Keypad({
 function VaultIllustration() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+      initial={{ opacity: 0, y: 12, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ type: "spring", stiffness: 220, damping: 24, mass: 0.9 }}
-      className="mx-auto -mt-2 flex w-full items-center justify-center"
+      transition={{ type: "spring", stiffness: 220, damping: 22, mass: 0.9 }}
+      className="relative -mt-10 mb-1 flex w-full items-center justify-center sm:-mt-12"
       aria-hidden
     >
-      <img
+      {/* Ambient green glow behind the safe */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-0"
+        style={{
+          background:
+            "radial-gradient(60% 55% at 50% 45%, rgba(46,196,105,0.28), transparent 70%)",
+          filter: "blur(4px)",
+        }}
+      />
+      {/* Soft ground shadow */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-[78%] h-3 w-[52%] -translate-x-1/2 rounded-full"
+        style={{
+          background:
+            "radial-gradient(closest-side, rgba(15,15,32,0.28), transparent 75%)",
+          filter: "blur(2px)",
+        }}
+      />
+      <motion.img
         src={vaultIllustration.url}
         alt=""
         draggable={false}
-        className="pointer-events-none h-[112px] w-auto select-none sm:h-[128px]"
+        animate={{ y: [0, -3, 0] }}
+        transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+        className="pointer-events-none relative z-10 h-[124px] w-auto select-none sm:h-[140px]"
         style={{
-          filter: "drop-shadow(0 18px 24px rgba(15,15,32,0.18))",
+          filter:
+            "drop-shadow(0 14px 20px rgba(15,15,32,0.28)) drop-shadow(0 0 22px rgba(46,196,105,0.18))",
         }}
       />
     </motion.div>
