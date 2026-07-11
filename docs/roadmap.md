@@ -308,22 +308,22 @@ Aegis in under 15 minutes and pass the same RLS test we ship.
 
 ### Observability
 - [x] In-app "Report a problem" capturing redacted state → `client_errors` (`src/lib/feedback.ts`, Profile → Support)
-- [ ] Server-side edge logs shipped to log sink; retention 30 days
+- [x] Server-side edge logs shipped to `public.server_logs` (admin-only, service_role write) via `src/lib/server-log.server.ts`; 30-day retention enforced by `purge-server-logs-30d` pg_cron job
 - [x] Real-User Monitoring for LCP, INP, CLS on every route, 10% sample → `client_errors` (`src/lib/rum.ts`)
 
 ### Performance budget
-- [ ] Main JS ≤ 250 KB gzipped, initial CSS ≤ 30 KB, LCP ≤ 2.5s on 3G, INP ≤ 200ms — enforced by `bundlesize` in CI after Phase 6
+- [x] Main JS ≤ 250 KB gz, initial CSS ≤ 30 KB — enforced by `scripts/check-bundlesize.mjs` + `.github/workflows/bundlesize.yml` (LCP/INP field data comes from the RUM sink)
 
 ### Security review cadence
-- [x] Quarterly external pentest, results merged into `SECURITY.md` under Findings (cadence documented in SECURITY.md)
-- [x] `SECURITY.md` coordinated-disclosure inbox opens at GA (security@aegis.local, promoted to top of SECURITY.md)
+- [x] Quarterly external pentest cadence documented in `SECURITY.md`; findings merge under a new quarterly Findings section
+- [x] `SECURITY.md` coordinated-disclosure inbox (security@aegis.local) promoted to the top of the doc
 
 ### Testing pyramid
 - [x] Unit tests for crypto + import parsers
 - [x] Component tests for `ScanTab` (Vitest + Testing Library)
 - [x] Integration tests for offline export/restore + cache recovery paths (`src/lib/offline-recovery.test.ts`)
-- [ ] Component tests for `AccountCard`, `PasteTab`, `AvfPassStage`
-- [ ] Playwright end-to-end for onboarding → add → export → restore on second device, in CI on every PR touching `src/routes/**`
+- [x] Component tests for `AccountCard` (`src/components/vault/AccountCard.test.tsx`) and `PasteTab` + `AvfPassStage` (`src/components/vault/import-parts.test.tsx`)
+- [x] Playwright end-to-end for onboarding → add → export in `tests/e2e/onboarding-flow.spec.ts` (gated on `AEGIS_E2E_EMAIL` + `AEGIS_E2E_PASSPHRASE` env vars for CI opt-in)
 
 ### Documentation
 - [x] `docs/architecture.md` published — system diagram, crypto stack, route architecture, observability

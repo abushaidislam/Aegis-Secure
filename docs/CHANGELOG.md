@@ -15,6 +15,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Real-User Monitoring** — sampled (10%) LCP / INP / CLS collector
   that flushes on visibility change. Same admin-only table, tagged
   `rum:<pathname>`.
+- **Server-side log shipping** — `public.server_logs` admin-only table
+  with a helper at `src/lib/server-log.server.ts`. A `pg_cron` job
+  purges rows older than 30 days.
+- **Bundle-size CI gate** — `scripts/check-bundlesize.mjs` +
+  `.github/workflows/bundlesize.yml`. Fails a PR when the main JS
+  entry exceeds 250 KB gz or CSS exceeds 30 KB gz.
+- **Component tests** for `AccountCard`, `PasteTab`, and `AvfPassStage`
+  under `src/components/vault/`.
+- **Playwright E2E** onboarding → add → export flow at
+  `tests/e2e/onboarding-flow.spec.ts` (opt-in via env vars).
 - `docs/architecture.md` — system-level overview referenced by the
   roadmap and every phase document.
 - `docs/CHANGELOG.md` — this file.
