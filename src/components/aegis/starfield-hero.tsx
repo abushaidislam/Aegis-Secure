@@ -178,7 +178,6 @@ export function StarfieldHeroLayout({
                 <span
                   className="text-white/70"
                   style={{
-                    fontFamily: "'JetBrains Mono', ui-monospace, monospace",
                     fontSize: 10,
                     fontWeight: 600,
                     letterSpacing: "0.22em",
@@ -199,7 +198,6 @@ export function StarfieldHeroLayout({
                 transition={soft}
                 className="text-white"
                 style={{
-                  fontFamily: "'Playfair Display', serif",
                   fontSize: "clamp(32px, 9vw, 44px)",
                   lineHeight: 1.02,
                   fontWeight: 600,

@@ -62,7 +62,6 @@
   --color-success: var(--success);
   --font-sans: "Geist", ui-sans-serif, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-display: "Geist", ui-sans-serif, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 :root {
@@ -118,7 +117,6 @@
   --aegis-warning: #c9a24a;
   --aegis-warning-rgb: 201 162 74;
   --aegis-scanner-bg: #0a0a0a;
-  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
 
   /* backdrop glows (warm cream sunrise) */
   --aegis-glow-a: rgba(255, 214, 180, 0.35);
@@ -195,6 +193,13 @@
 @layer base {
   * {
     border-color: var(--color-border);
+  }
+
+  /* One clear type voice across the app — from page titles to vault details. */
+  body *,
+  body *::before,
+  body *::after {
+    font-family: var(--font-sans) !important;
   }
 
   html, body {

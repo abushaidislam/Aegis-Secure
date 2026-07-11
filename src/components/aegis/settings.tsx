@@ -74,41 +74,29 @@ export function LargeTitle({ title, subtitle }: { title: string; subtitle?: stri
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={soft}
-      className="sticky top-0 z-10 -mx-6 flex flex-col gap-1 px-6 pt-[max(24px,env(safe-area-inset-top))] pb-5"
+      className="sticky top-0 z-10 -mx-6 flex flex-col gap-1 px-6 pt-[max(22px,env(safe-area-inset-top))] pb-5"
+      style={{
+        background: "color-mix(in oklab, var(--aegis-cream) 92%, transparent)",
+        backdropFilter: "blur(20px) saturate(1.08)",
+        WebkitBackdropFilter: "blur(20px) saturate(1.08)",
+      }}
     >
-      <div className="mb-1 flex items-center gap-2">
-        <span className="h-px w-5" style={{ background: "rgb(var(--aegis-ink-rgb) / 0.32)" }} />
-        <span className="text-[9px] uppercase" style={{ color: MUTED, letterSpacing: "0.18em", fontWeight: 700 }}>Aegis vault</span>
-      </div>
       <h1
         data-testid="page-large-title"
-        className="text-[28px] leading-[1.08]"
+        className="text-[30px] leading-[1.08]"
         style={{
           color: CHARCOAL,
-          fontFamily: "'Geist', ui-sans-serif, system-ui, sans-serif",
-          fontWeight: 600,
-          letterSpacing: "-0.025em",
+          fontWeight: 700,
+          letterSpacing: "-0.035em",
         }}
       >
         {title}
       </h1>
       {subtitle && (
-        <p className="text-[13.5px] leading-[1.4]" style={{ color: MUTED }}>
+        <p className="mt-0.5 text-[14px] leading-[1.4]" style={{ color: MUTED }}>
           {subtitle}
         </p>
       )}
-      {/* Fade + blur veil so content scrolling behind the sticky title dissolves */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[calc(100%+28px)]"
-        style={{
-          background:
-            "linear-gradient(to bottom, color-mix(in oklab, var(--aegis-cream) 96%, transparent) 0%, color-mix(in oklab, var(--aegis-cream) 92%, transparent) 55%, color-mix(in oklab, var(--aegis-cream) 55%, transparent) 82%, color-mix(in oklab, var(--aegis-cream) 0%, transparent) 100%)",
-          backdropFilter: "blur(10px)",
-          maskImage:
-            "linear-gradient(to bottom, rgb(var(--aegis-ink-rgb)) 0%, rgb(var(--aegis-ink-rgb)) 70%, rgb(var(--aegis-ink-rgb) / 0.6) 88%, transparent 100%)",
-        }}
-      />
     </motion.header>
   );
 }

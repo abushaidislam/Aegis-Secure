@@ -11,8 +11,6 @@ import { CHARCOAL, CREAM_SOFT, DANGER, MUTED } from "./chrome";
 /* ---------------- font families ---------------- */
 
 export const FONT_SANS = "var(--font-sans)";
-export const FONT_MONO = "var(--font-mono)";
-export const FONT_SERIF = "var(--font-serif)";
 
 /* ---------------- typographic roles ---------------- */
 
@@ -28,7 +26,7 @@ export const typeDisplay: CSSProperties = {
 
 /** Serif variant for editorial / print-adjacent headings (recovery, sheets). */
 export const typeDisplaySerif: CSSProperties = {
-  fontFamily: FONT_SERIF,
+  fontFamily: FONT_SANS,
   fontSize: 26,
   lineHeight: 1.15,
   fontWeight: 600,
@@ -38,7 +36,7 @@ export const typeDisplaySerif: CSSProperties = {
 
 /** Bottom-sheet / modal title (Playfair) — smaller than a page display. */
 export const typeSheetTitle: CSSProperties = {
-  fontFamily: FONT_SERIF,
+  fontFamily: FONT_SANS,
   fontSize: 17,
   fontWeight: 600,
   letterSpacing: "-0.01em",
@@ -92,7 +90,7 @@ export const typeBodySm: CSSProperties = {
 
 /** Uppercase eyebrow / section label (JetBrains Mono). */
 export const typeEyebrow: CSSProperties = {
-  fontFamily: FONT_MONO,
+  fontFamily: FONT_SANS,
   fontSize: 9.5,
   fontWeight: 600,
   letterSpacing: "0.22em",
@@ -102,7 +100,7 @@ export const typeEyebrow: CSSProperties = {
 
 /** Primary OTP code display on the card row. */
 export const typeCode: CSSProperties = {
-  fontFamily: FONT_MONO,
+  fontFamily: FONT_SANS,
   fontSize: 26,
   lineHeight: 1,
   fontWeight: 600,
@@ -120,7 +118,7 @@ export const typeCodeLg: CSSProperties = {
 
 /** Small "next code" preview beside the current code. */
 export const typeCodeNext: CSSProperties = {
-  fontFamily: FONT_MONO,
+  fontFamily: FONT_SANS,
   fontSize: 11,
   fontWeight: 600,
   letterSpacing: "0.05em",
@@ -130,7 +128,7 @@ export const typeCodeNext: CSSProperties = {
 
 /** Ring / countdown timer digit. */
 export const typeTimer: CSSProperties = {
-  fontFamily: FONT_MONO,
+  fontFamily: FONT_SANS,
   fontSize: 10,
   fontWeight: 600,
   fontFeatureSettings: "'tnum'",
@@ -146,7 +144,7 @@ export const typeMetaLabel: CSSProperties = {
 
 /** Meta-cell value (algorithm / digits / period value). */
 export const typeMetaValue: CSSProperties = {
-  fontFamily: FONT_MONO,
+  fontFamily: FONT_SANS,
   fontSize: 13.5,
   fontWeight: 600,
   letterSpacing: "0.02em",
@@ -156,7 +154,7 @@ export const typeMetaValue: CSSProperties = {
 
 /** Inline mono snippet inside body text (e.g. `otpauth://`, `.avf`). */
 export const typeMonoInline: CSSProperties = {
-  fontFamily: FONT_MONO,
+  fontFamily: FONT_SANS,
 };
 
 /** Standard input field text. */

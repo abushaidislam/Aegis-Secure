@@ -119,7 +119,6 @@ export function Display({ children, delay = 0 }: { children: ReactNode; delay?: 
         color: CHARCOAL,
         fontWeight: 600,
         letterSpacing: "-0.02em",
-        fontFamily: "'Playfair Display', serif",
       }}
     >
       {children}
@@ -157,7 +156,6 @@ export function Eyebrow({ children }: { children: ReactNode }) {
           border: `1px solid rgb(var(--aegis-ink-rgb) / 0.06)`,
           letterSpacing: "0.25em",
           fontWeight: 500,
-          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
           boxShadow: "0 1px 0 rgba(255,255,255,0.6) inset",
         }}
       >
