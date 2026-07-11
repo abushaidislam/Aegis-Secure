@@ -276,6 +276,8 @@ function RootComponent() {
     void import("@/lib/pwa-register").then(({ registerAegisServiceWorker }) =>
       registerAegisServiceWorker(),
     );
+    // Real-User Monitoring — LCP/INP/CLS collector, sampled at 10%.
+    void import("@/lib/rum").then(({ initRum }) => initRum());
   }, []);
 
   return (

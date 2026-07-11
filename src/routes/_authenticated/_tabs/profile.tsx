@@ -252,6 +252,7 @@ function ProfilePage() {
   const [avatarSheet, setAvatarSheet] = useState(false);
   const [themeSheet, setThemeSheet] = useState(false);
   const [localeSheet, setLocaleSheet] = useState(false);
+  const [feedbackSheet, setFeedbackSheet] = useState(false);
 
   const [notice, setNotice] = useState<{ kind: "error" | "info"; text: string } | null>(null);
   const [themePref, setThemePrefState] = useState<ThemePref>(() => getThemePref());
@@ -856,6 +857,7 @@ function ProfilePage() {
             onClose={() => setPlanSheet(false)}
           />
         )}
+        {feedbackSheet && <FeedbackSheet onClose={() => setFeedbackSheet(false)} />}
       </AnimatePresence>
       <PlanComparisonSheet open={compareSheet} onClose={() => setCompareSheet(false)} />
       <PremiumWelcomeSheet
