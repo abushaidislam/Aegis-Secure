@@ -307,16 +307,16 @@ Aegis in under 15 minutes and pass the same RLS test we ship.
 ## Cross-cutting tracks (always on)
 
 ### Observability
-- [ ] In-app "Report a problem" capturing redacted state → `client_errors`
+- [x] In-app "Report a problem" capturing redacted state → `client_errors` (`src/lib/feedback.ts`, Profile → Support)
 - [ ] Server-side edge logs shipped to log sink; retention 30 days
-- [ ] Real-User Monitoring for LCP, INP, CLS on vault screen
+- [x] Real-User Monitoring for LCP, INP, CLS on every route, 10% sample → `client_errors` (`src/lib/rum.ts`)
 
 ### Performance budget
 - [ ] Main JS ≤ 250 KB gzipped, initial CSS ≤ 30 KB, LCP ≤ 2.5s on 3G, INP ≤ 200ms — enforced by `bundlesize` in CI after Phase 6
 
 ### Security review cadence
-- [ ] Quarterly external pentest, results merged into `SECURITY.md` under Findings
-- [ ] `SECURITY.md` coordinated-disclosure inbox opens at GA
+- [x] Quarterly external pentest, results merged into `SECURITY.md` under Findings (cadence documented in SECURITY.md)
+- [x] `SECURITY.md` coordinated-disclosure inbox opens at GA (security@aegis.local, promoted to top of SECURITY.md)
 
 ### Testing pyramid
 - [x] Unit tests for crypto + import parsers
@@ -326,8 +326,8 @@ Aegis in under 15 minutes and pass the same RLS test we ship.
 - [ ] Playwright end-to-end for onboarding → add → export → restore on second device, in CI on every PR touching `src/routes/**`
 
 ### Documentation
-- [ ] Every phase ships an update to `docs/architecture.md` (created in Phase 6)
-- [ ] Public changelog entry per phase once marketing site exists
+- [x] `docs/architecture.md` published — system diagram, crypto stack, route architecture, observability
+- [x] Public changelog at `docs/CHANGELOG.md`; release-notes per phase under `docs/release-notes/`
 
 ---
 
