@@ -845,10 +845,6 @@ export type Database = {
         Args: { _contact_id: string }
         Returns: undefined
       }
-      request_emergency_access: {
-        Args: { _contact_id: string }
-        Returns: undefined
-      }
     }
     Enums: {
       emergency_status: "active" | "requested" | "approved" | "revoked"

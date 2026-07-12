@@ -27,7 +27,6 @@ import { Route as AuthenticatedDevicesRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedApproveRouteImport } from './routes/_authenticated/approve'
 import { Route as AuthenticatedTabsRouteImport } from './routes/_authenticated/_tabs'
 import { Route as AuthenticatedLockedRouteRouteImport } from './routes/_authenticated/_locked/route'
-import { Route as ApiPublicSupabaseCheckRouteImport } from './routes/api/public/supabase-check'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedTabsVaultRouteImport } from './routes/_authenticated/_tabs/vault'
@@ -127,11 +126,6 @@ const AuthenticatedLockedRouteRoute =
     id: '/_locked',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const ApiPublicSupabaseCheckRoute = ApiPublicSupabaseCheckRouteImport.update({
-  id: '/api/public/supabase-check',
-  path: '/api/public/supabase-check',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   id: '/api/public/stripe-webhook',
   path: '/api/public/stripe-webhook',
@@ -199,7 +193,6 @@ export interface FileRoutesByFullPath {
   '/vault': typeof AuthenticatedTabsVaultRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
-  '/api/public/supabase-check': typeof ApiPublicSupabaseCheckRoute
   '/vault/import': typeof AuthenticatedLockedVaultImportRoute
   '/vault/new': typeof AuthenticatedLockedVaultNewRoute
   '/vault/recovery': typeof AuthenticatedLockedVaultRecoveryRoute
@@ -225,7 +218,6 @@ export interface FileRoutesByTo {
   '/vault': typeof AuthenticatedTabsVaultRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
-  '/api/public/supabase-check': typeof ApiPublicSupabaseCheckRoute
   '/vault/import': typeof AuthenticatedLockedVaultImportRoute
   '/vault/new': typeof AuthenticatedLockedVaultNewRoute
   '/vault/recovery': typeof AuthenticatedLockedVaultRecoveryRoute
@@ -255,7 +247,6 @@ export interface FileRoutesById {
   '/_authenticated/_tabs/vault': typeof AuthenticatedTabsVaultRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
-  '/api/public/supabase-check': typeof ApiPublicSupabaseCheckRoute
   '/_authenticated/_locked/vault_/import': typeof AuthenticatedLockedVaultImportRoute
   '/_authenticated/_locked/vault_/new': typeof AuthenticatedLockedVaultNewRoute
   '/_authenticated/_locked/vault_/recovery': typeof AuthenticatedLockedVaultRecoveryRoute
@@ -283,7 +274,6 @@ export interface FileRouteTypes {
     | '/vault'
     | '/api/public/health'
     | '/api/public/stripe-webhook'
-    | '/api/public/supabase-check'
     | '/vault/import'
     | '/vault/new'
     | '/vault/recovery'
@@ -309,7 +299,6 @@ export interface FileRouteTypes {
     | '/vault'
     | '/api/public/health'
     | '/api/public/stripe-webhook'
-    | '/api/public/supabase-check'
     | '/vault/import'
     | '/vault/new'
     | '/vault/recovery'
@@ -338,7 +327,6 @@ export interface FileRouteTypes {
     | '/_authenticated/_tabs/vault'
     | '/api/public/health'
     | '/api/public/stripe-webhook'
-    | '/api/public/supabase-check'
     | '/_authenticated/_locked/vault_/import'
     | '/_authenticated/_locked/vault_/new'
     | '/_authenticated/_locked/vault_/recovery'
@@ -357,7 +345,6 @@ export interface RootRouteChildren {
   DevTokensRoute: typeof DevTokensRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
-  ApiPublicSupabaseCheckRoute: typeof ApiPublicSupabaseCheckRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -487,13 +474,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedLockedRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/api/public/supabase-check': {
-      id: '/api/public/supabase-check'
-      path: '/api/public/supabase-check'
-      fullPath: '/api/public/supabase-check'
-      preLoaderRoute: typeof ApiPublicSupabaseCheckRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/api/public/stripe-webhook': {
       id: '/api/public/stripe-webhook'
@@ -626,8 +606,17 @@ const rootRouteChildren: RootRouteChildren = {
   DevTokensRoute: DevTokensRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
-  ApiPublicSupabaseCheckRoute: ApiPublicSupabaseCheckRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
