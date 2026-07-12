@@ -1,5 +1,5 @@
 import { motion, useReducedMotion, type MotionProps } from "framer-motion";
-import { Shield, ArrowRight, Loader2, type LucideIcon } from "lucide-react";
+import { ArrowRight, Loader2, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 /* -------------------------------------------------------------------------- */
@@ -93,12 +93,14 @@ export function BrandBar({ right }: { right?: ReactNode }) {
       className="flex h-12 shrink-0 items-center justify-between"
     >
       <div className="flex items-center gap-2">
-        <span
-          className="flex h-7 w-7 items-center justify-center rounded-full"
-          style={{ background: CHARCOAL, color: CREAM_SOFT, boxShadow: INSET_SHADOW }}
-        >
-          <Shield className="h-3.5 w-3.5" strokeWidth={1.8} />
-        </span>
+        <img
+          src="/icon-512.png"
+          alt="Aegis"
+          width={28}
+          height={28}
+          className="h-7 w-7 rounded-full object-contain"
+          style={{ boxShadow: INSET_SHADOW }}
+        />
         <span className="text-[13px] font-medium tracking-tight">Aegis</span>
       </div>
       {right}
