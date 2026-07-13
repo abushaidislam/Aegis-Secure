@@ -649,17 +649,8 @@ function VaultPage() {
 
   return (
     <>
-      <LargeTitle
-        title={t("vault.title", "Your codes")}
-        subtitle={
-          accounts && accounts.length > 0
-            ? (accounts.length === 1
-                ? t("vault.subtitle.count.one", "{count} account · tap to copy")
-                : t("vault.subtitle.count.other", "{count} accounts · tap to copy")
-              ).replace("{count}", String(accounts.length))
-            : t("vault.subtitle.empty", "One-time codes, encrypted end-to-end.")
-        }
-      />
+      <div className="pt-[max(22px,env(safe-area-inset-top))]" />
+
 
       <InstallPrompt />
 
