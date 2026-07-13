@@ -169,24 +169,30 @@ function SecurityPage() {
   const [bioBusy, setBioBusy] = useState(false);
   const [autoUnlock, setAutoUnlock] = useState<boolean>(() => isAutoUnlockEnabled(user.id));
   const [autoUnlockBusy, setAutoUnlockBusy] = useState(false);
+  const [autoUnlockConfirmOpen, setAutoUnlockConfirmOpen] = useState(false);
+  const [autoUnlockConfirmError, setAutoUnlockConfirmError] = useState<string | null>(null);
 
-  const toggleAutoUnlock = async (next: boolean) => {
+  const requestAutoUnlockToggle = (next: boolean) => {
     if (autoUnlockBusy) return;
+    if (next) {
+      // Turning OFF the passphrase requirement — high-stakes, always confirm.
+      setAutoUnlockConfirmError(null);
+      setAutoUnlockConfirmOpen(true);
+      return;
+    }
+    void applyAutoUnlockChange(false);
+  };
+
+  const applyAutoUnlockChange = async (next: boolean) => {
     setAutoUnlockBusy(true);
     setNotice(null);
     try {
       if (next) {
-        const confirmed = window.confirm(
-          "Turn off passphrase unlock?\n\nThe vault will open on this device without asking for your passphrase, PIN or biometric. Anyone with access to this browser will be able to read your codes.\n\nContinue?",
-        );
-        if (!confirmed) {
-          setAutoUnlockBusy(false);
-          return;
-        }
         const dek = getVaultKey();
         if (!dek) throw new Error("Unlock the vault first, then turn this on.");
         await enableAutoUnlock(user.id, dek);
         setAutoUnlock(true);
+        setAutoUnlockConfirmOpen(false);
         setNotice({
           kind: "info",
           text: "Passphrase unlock is off on this device. The vault will open automatically.",
@@ -201,7 +207,11 @@ function SecurityPage() {
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Could not update this setting.";
-      setNotice({ kind: "error", text: msg });
+      if (next) {
+        setAutoUnlockConfirmError(msg);
+      } else {
+        setNotice({ kind: "error", text: msg });
+      }
       setAutoUnlock(isAutoUnlockEnabled(user.id));
     } finally {
       setAutoUnlockBusy(false);
