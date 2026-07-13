@@ -793,32 +793,22 @@ function VaultPage() {
       )}
 
       {accounts && accounts.length > 0 && !selectionMode && (
-        <div
-          className="sticky top-0 z-20 -mx-6 px-6 py-2"
-          style={{
-            background: "color-mix(in oklab, var(--aegis-cream) 88%, transparent)",
-            backdropFilter: "blur(16px) saturate(1.1)",
-            WebkitBackdropFilter: "blur(16px) saturate(1.1)",
-          }}
-        >
-          <SearchField
-            value={query}
-            onChange={setQuery}
-            menu={
-              <SearchMenu
-                onSelect={() => enterSelection()}
-                onManageTags={allTags.length > 0 ? () => setTagManagerOpen(true) : undefined}
-                onClearFilters={activeTags.size > 0 ? () => setActiveTags(new Set()) : undefined}
-                activeFilterCount={activeTags.size}
-                tags={allTags}
-                activeTags={activeTags}
-                onToggleTag={toggleTagFilter}
-              />
-            }
-          />
-        </div>
+        <SearchField
+          value={query}
+          onChange={setQuery}
+          menu={
+            <SearchMenu
+              onSelect={() => enterSelection()}
+              onManageTags={allTags.length > 0 ? () => setTagManagerOpen(true) : undefined}
+              onClearFilters={activeTags.size > 0 ? () => setActiveTags(new Set()) : undefined}
+              activeFilterCount={activeTags.size}
+              tags={allTags}
+              activeTags={activeTags}
+              onToggleTag={toggleTagFilter}
+            />
+          }
+        />
       )}
-
 
       <div className="pt-2">
         <IncomingSharesSection />
