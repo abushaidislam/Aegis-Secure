@@ -616,6 +616,31 @@ function SecurityPage() {
           />
         )}
 
+        <ConfirmSheet
+          open={autoUnlockConfirmOpen}
+          icon={ShieldOff}
+          destructive
+          title="Turn off passphrase unlock?"
+          description="The vault will open on this device without asking for your passphrase, PIN or biometric."
+          bullets={[
+            "Anyone with access to this browser profile can read your codes.",
+            "The vault key is stored locally on this device only — it never leaves.",
+            "Other devices keep asking for the passphrase as normal.",
+            "You can turn this back on anytime from Security.",
+          ]}
+          noticeKind={autoUnlockConfirmError ? "error" : undefined}
+          noticeText={autoUnlockConfirmError ?? undefined}
+          confirmLabel="Turn off"
+          cancelLabel="Keep on"
+          loading={autoUnlockBusy}
+          onCancel={() => {
+            if (autoUnlockBusy) return;
+            setAutoUnlockConfirmOpen(false);
+            setAutoUnlockConfirmError(null);
+          }}
+          onConfirm={() => void applyAutoUnlockChange(true)}
+        />
+
       </AnimatePresence>
     </>
   );
