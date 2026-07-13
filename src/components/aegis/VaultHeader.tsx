@@ -47,34 +47,23 @@ export function VaultHeader({
 
   return (
     <motion.header
-      initial={{ opacity: 0, y: -8 }}
+      initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={soft}
-      className="sticky top-0 z-10 -mx-6 flex flex-col px-6 pt-[max(14px,env(safe-area-inset-top))] pb-5"
+      className="sticky top-0 z-10 -mx-6 flex flex-col px-6 pt-[max(10px,env(safe-area-inset-top))] pb-3"
       style={{
         background:
-          "linear-gradient(to bottom, color-mix(in oklab, var(--aegis-cream) 98%, transparent) 0%, color-mix(in oklab, var(--aegis-cream) 92%, transparent) 62%, color-mix(in oklab, var(--aegis-cream) 0%, transparent) 100%)",
-        backdropFilter: "blur(24px) saturate(1.2)",
-        WebkitBackdropFilter: "blur(24px) saturate(1.2)",
+          "linear-gradient(to bottom, color-mix(in oklab, var(--aegis-cream) 98%, transparent) 0%, color-mix(in oklab, var(--aegis-cream) 90%, transparent) 70%, color-mix(in oklab, var(--aegis-cream) 0%, transparent) 100%)",
+        backdropFilter: "blur(20px) saturate(1.2)",
+        WebkitBackdropFilter: "blur(20px) saturate(1.2)",
       }}
     >
-      {/* Top strip: brand chip · trailing actions */}
-      <div className="flex h-[36px] items-center justify-between">
-        <motion.div
-          initial={{ opacity: 0, x: -4 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ ...soft, delay: 0.02 }}
-          className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3"
-          style={{
-            background: CREAM_SOFT,
-            border: `1px solid ${BORDER}`,
-            boxShadow:
-              "0 1px 2px rgb(var(--aegis-ink-rgb) / 0.04), inset 0 1px 0 rgba(255,255,255,0.55)",
-          }}
-        >
+      {/* Single-row header: brand + title inline, status pill + trailing on the right */}
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
           <span
             aria-hidden
-            className="flex h-[22px] w-[22px] items-center justify-center rounded-full"
+            className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full"
             style={{
               background: CHARCOAL,
               color: CREAM_SOFT,
@@ -82,87 +71,66 @@ export function VaultHeader({
                 "inset 0 1px 0 rgba(255,255,255,0.18), 0 4px 10px -6px rgb(var(--aegis-ink-rgb) / 0.6)",
             }}
           >
-            <Shield className="h-3 w-3" strokeWidth={2.2} />
+            <Shield className="h-[13px] w-[13px]" strokeWidth={2.2} />
           </span>
-          <span
-            className="text-[11.5px]"
+          <motion.h1
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...soft, delay: 0.04 }}
+            data-testid="page-large-title"
+            className="truncate text-[22px] leading-[1.05]"
             style={{
               color: CHARCOAL,
               fontFamily: "'Geist', ui-sans-serif, system-ui, sans-serif",
-              fontWeight: 600,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
+              fontWeight: 660,
+              letterSpacing: "-0.028em",
             }}
           >
-            Vault
-          </span>
-        </motion.div>
-        {trailing && <div className="flex items-center gap-1.5">{trailing}</div>}
-      </div>
-
-      {/* Large title */}
-      <motion.h1
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...soft, delay: 0.06 }}
-        data-testid="page-large-title"
-        className="mt-4 truncate text-[34px] leading-[1.02]"
-        style={{
-          color: CHARCOAL,
-          fontFamily: "'Geist', ui-sans-serif, system-ui, sans-serif",
-          fontWeight: 680,
-          letterSpacing: "-0.04em",
-        }}
-      >
-        {title}
-      </motion.h1>
-
-      {/* Status row */}
-      <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...soft, delay: 0.11 }}
-        className="mt-2.5 flex items-center gap-2"
-      >
-        <span
-          className="flex items-center gap-1.5 rounded-full py-[5px] pl-[7px] pr-2.5 text-[11.5px]"
-          style={{
-            background: CREAM_SOFT,
-            border: `1px solid ${BORDER}`,
-            color: CHARCOAL,
-            fontWeight: 600,
-            letterSpacing: "-0.003em",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.55)",
-          }}
-        >
-          <span
-            aria-hidden
-            className="relative flex h-2 w-2 items-center justify-center"
+            {title}
+          </motion.h1>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ ...soft, delay: 0.08 }}
+            className="flex items-center gap-1.5 rounded-full py-[4px] pl-[6px] pr-2 text-[11px]"
+            style={{
+              background: CREAM_SOFT,
+              border: `1px solid ${BORDER}`,
+              color: MUTED,
+              fontWeight: 600,
+              letterSpacing: "-0.003em",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.55)",
+            }}
+            title={hasCount ? countLabel ?? `${count} synced` : emptyLabel ?? "End-to-end encrypted"}
           >
-            <span
-              className="absolute inset-0 rounded-full"
-              style={{ background: statusRing }}
-            />
-            <motion.span
-              className="relative h-[7px] w-[7px] rounded-full"
-              style={{ background: statusColor }}
-              animate={
-                syncing
-                  ? { scale: [1, 1.25, 1], opacity: [1, 0.7, 1] }
-                  : { scale: 1, opacity: 1 }
-              }
-              transition={
-                syncing
-                  ? { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
-                  : { duration: 0.2 }
-              }
-            />
-          </span>
-          {hasCount
-            ? countLabel ?? `${count} synced`
-            : emptyLabel ?? "End-to-end encrypted"}
-        </span>
-      </motion.div>
+            <span aria-hidden className="relative flex h-2 w-2 items-center justify-center">
+              <span
+                className="absolute inset-0 rounded-full"
+                style={{ background: statusRing }}
+              />
+              <motion.span
+                className="relative h-[7px] w-[7px] rounded-full"
+                style={{ background: statusColor }}
+                animate={
+                  syncing
+                    ? { scale: [1, 1.25, 1], opacity: [1, 0.7, 1] }
+                    : { scale: 1, opacity: 1 }
+                }
+                transition={
+                  syncing
+                    ? { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
+                    : { duration: 0.2 }
+                }
+              />
+            </span>
+            {hasCount ? String(count) : "E2E"}
+          </motion.span>
+          {trailing}
+        </div>
+      </div>
     </motion.header>
   );
 }
+
