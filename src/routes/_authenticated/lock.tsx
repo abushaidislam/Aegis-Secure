@@ -185,6 +185,23 @@ function LockPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Fast path: if the user opted out of the passphrase prompt on this
+      // device, restore the DEK from local storage and skip both the
+      // network round-trip and the unlock UI. Works fully offline.
+      if (isAutoUnlockEnabled(user.id)) {
+        try {
+          const dek = await loadAutoUnlockKey(user.id);
+          if (dek && !cancelled) {
+            setVaultKey(dek);
+            await finishUnlock(user.id, dek, routeAfterUnlock);
+            return;
+          }
+        } catch {
+          // Corrupt or unreadable local key — fall through and re-enrol.
+          disableAutoUnlock(user.id);
+        }
+      }
+
       const { data, error } = await supabase
         .from("vault_meta")
         .select("passphrase_hint")
@@ -198,20 +215,6 @@ function LockPage() {
       }
       if (data) {
         setPassphraseHint(data.passphrase_hint ?? null);
-        // Passphrase unlock disabled? Restore DEK from device and skip lock.
-        if (isAutoUnlockEnabled(user.id)) {
-          try {
-            const dek = await loadAutoUnlockKey(user.id);
-            if (dek && !cancelled) {
-              setVaultKey(dek);
-              await finishUnlock(user.id, dek, routeAfterUnlock);
-              return;
-            }
-          } catch {
-            // fall through to the normal unlock UI
-            disableAutoUnlock(user.id);
-          }
-        }
         setMode("unlock");
       } else {
         setMode("create");

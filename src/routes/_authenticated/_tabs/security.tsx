@@ -46,6 +46,7 @@ import {
   soft,
 } from "@/components/aegis/chrome";
 import { LargeTitle, SectionLabel, SettingsGroup, SettingsRow } from "@/components/aegis/settings";
+import { ConfirmSheet } from "@/components/aegis/ConfirmSheet";
 import { useLingui } from "@lingui/react";
 import { PasswordField, StrengthMeter, ZxcvbnMeter, scoreStrength } from "@/components/aegis/password-field";
 import {
@@ -169,24 +170,30 @@ function SecurityPage() {
   const [bioBusy, setBioBusy] = useState(false);
   const [autoUnlock, setAutoUnlock] = useState<boolean>(() => isAutoUnlockEnabled(user.id));
   const [autoUnlockBusy, setAutoUnlockBusy] = useState(false);
+  const [autoUnlockConfirmOpen, setAutoUnlockConfirmOpen] = useState(false);
+  const [autoUnlockConfirmError, setAutoUnlockConfirmError] = useState<string | null>(null);
 
-  const toggleAutoUnlock = async (next: boolean) => {
+  const requestAutoUnlockToggle = (next: boolean) => {
     if (autoUnlockBusy) return;
+    if (next) {
+      // Turning OFF the passphrase requirement — high-stakes, always confirm.
+      setAutoUnlockConfirmError(null);
+      setAutoUnlockConfirmOpen(true);
+      return;
+    }
+    void applyAutoUnlockChange(false);
+  };
+
+  const applyAutoUnlockChange = async (next: boolean) => {
     setAutoUnlockBusy(true);
     setNotice(null);
     try {
       if (next) {
-        const confirmed = window.confirm(
-          "Turn off passphrase unlock?\n\nThe vault will open on this device without asking for your passphrase, PIN or biometric. Anyone with access to this browser will be able to read your codes.\n\nContinue?",
-        );
-        if (!confirmed) {
-          setAutoUnlockBusy(false);
-          return;
-        }
         const dek = getVaultKey();
         if (!dek) throw new Error("Unlock the vault first, then turn this on.");
         await enableAutoUnlock(user.id, dek);
         setAutoUnlock(true);
+        setAutoUnlockConfirmOpen(false);
         setNotice({
           kind: "info",
           text: "Passphrase unlock is off on this device. The vault will open automatically.",
@@ -201,7 +208,11 @@ function SecurityPage() {
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Could not update this setting.";
-      setNotice({ kind: "error", text: msg });
+      if (next) {
+        setAutoUnlockConfirmError(msg);
+      } else {
+        setNotice({ kind: "error", text: msg });
+      }
       setAutoUnlock(isAutoUnlockEnabled(user.id));
     } finally {
       setAutoUnlockBusy(false);
@@ -450,13 +461,13 @@ function SecurityPage() {
                 ? "Off — this device opens the vault automatically without asking."
                 : "On — passphrase, PIN or biometric is required to open the vault."
             }
-            onClick={autoUnlockBusy ? undefined : () => void toggleAutoUnlock(!autoUnlock)}
+            onClick={autoUnlockBusy ? undefined : () => requestAutoUnlockToggle(!autoUnlock)}
             disabled={autoUnlockBusy}
             trailing={
               <Switch
                 checked={!autoUnlock}
                 disabled={autoUnlockBusy}
-                onCheckedChange={(v) => void toggleAutoUnlock(!v)}
+                onCheckedChange={(v) => requestAutoUnlockToggle(!v)}
                 onClick={(e) => e.stopPropagation()}
                 aria-label="Passphrase unlock"
               />
@@ -605,6 +616,31 @@ function SecurityPage() {
             onNotice={(n) => setNotice(n)}
           />
         )}
+
+        <ConfirmSheet
+          open={autoUnlockConfirmOpen}
+          icon={ShieldOff}
+          destructive
+          title="Turn off passphrase unlock?"
+          description="The vault will open on this device without asking for your passphrase, PIN or biometric."
+          bullets={[
+            "Anyone with access to this browser profile can read your codes.",
+            "The vault key is stored locally on this device only — it never leaves.",
+            "Other devices keep asking for the passphrase as normal.",
+            "You can turn this back on anytime from Security.",
+          ]}
+          noticeKind={autoUnlockConfirmError ? "error" : undefined}
+          noticeText={autoUnlockConfirmError ?? undefined}
+          confirmLabel="Turn off"
+          cancelLabel="Keep on"
+          loading={autoUnlockBusy}
+          onCancel={() => {
+            if (autoUnlockBusy) return;
+            setAutoUnlockConfirmOpen(false);
+            setAutoUnlockConfirmError(null);
+          }}
+          onConfirm={() => void applyAutoUnlockChange(true)}
+        />
 
       </AnimatePresence>
     </>
