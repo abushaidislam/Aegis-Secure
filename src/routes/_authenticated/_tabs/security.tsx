@@ -244,7 +244,9 @@ function SecurityPage() {
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (!cancelled) setHint(data?.passphrase_hint ?? null);
+        if (cancelled) return;
+        setHint(data?.passphrase_hint ?? null);
+        setHasPassphrase(!!data);
       });
     void isBiometricSupported().then((ok) => {
       if (!cancelled) setBioSupported(ok);
