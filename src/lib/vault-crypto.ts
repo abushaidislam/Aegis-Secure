@@ -224,7 +224,7 @@ export async function unwrapVaultKey(
     kek,
     { name: "AES-GCM", iv: wrappedKeyIv as unknown as BufferSource },
     { name: "AES-GCM", length: 256 },
-    false,
+    true, // extractable — required to persist DEK for "passphrase unlock off"
     ["encrypt", "decrypt"],
   );
 }
