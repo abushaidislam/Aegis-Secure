@@ -876,6 +876,164 @@ function ChangePassphraseSheet({
   );
 }
 
+/**
+ * First-time passphrase setup. Called when the user turns ON "Passphrase
+ * unlock" and no vault_meta exists yet. Wraps the currently-loaded DEK
+ * under the new passphrase, inserts vault_meta, and clears the local
+ * auto-unlock key so the next launch will prompt for the passphrase.
+ */
+function SetPassphraseSheet({
+  userId,
+  onClose,
+  onDone,
+}: {
+  userId: string;
+  onClose: () => void;
+  onDone: (hint: string | null) => void;
+}) {
+  const [pass, setPass] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [hint, setHint] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [zScore, setZScore] = useState<0 | 1 | 2 | 3 | 4>(0);
+
+  const canSubmit =
+    pass.length >= 10 && zScore >= 3 && pass === confirm;
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr(null);
+    if (!canSubmit) return;
+    const dek = getVaultKey();
+    if (!dek) {
+      setErr("Vault is locked. Unlock first, then try again.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { salt, wrappedKey, wrappedKeyIv, kdfAlgorithm } =
+        await wrapExistingDekWithPassphrase(dek, pass);
+      const trimmedHint = hint.trim() ? hint.trim() : null;
+      const { error } = await supabase.from("vault_meta").insert({
+        user_id: userId,
+        kdf_salt: toByteaHex(salt),
+        kdf_algorithm: kdfAlgorithm,
+        recovery_wrapped_key: toByteaHex(wrappedKey),
+        recovery_wrapped_key_iv: toByteaHex(wrappedKeyIv),
+        passphrase_hint: trimmedHint,
+      });
+      if (error) throw error;
+      // Drop the on-device auto-unlock key so the next launch prompts.
+      disableAutoUnlock(userId);
+      onDone(trimmedHint);
+    } catch (e2) {
+      setErr(e2 instanceof Error ? e2.message : "Could not set your passphrase.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.button
+        aria-label="Close"
+        onClick={saving ? undefined : onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0"
+        style={{ background: "rgb(var(--aegis-ink-rgb) / 0.35)", backdropFilter: "blur(4px)" }}
+      />
+      <motion.div
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 40, opacity: 0 }}
+        transition={soft}
+        className="relative z-10 mx-auto w-full max-w-[440px] rounded-t-[22px] px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[22px]"
+        style={{
+          background: CREAM_SOFT,
+          border: `1px solid ${BORDER}`,
+          boxShadow: "0 -12px 40px -12px rgba(0,0,0,0.25)",
+        }}
+      >
+        <div className="mb-3 flex items-start justify-between">
+          <div>
+            <div
+              className="text-[18px]"
+              style={{ fontWeight: 600, letterSpacing: "-0.01em", color: CHARCOAL }}
+            >
+              Create your passphrase
+            </div>
+            <div className="mt-1 text-[12.5px]" style={{ color: MUTED, lineHeight: 1.5 }}>
+              This becomes the master key for your vault on every device. Aegis can't
+              recover it — pick something memorable.
+            </div>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={saving ? undefined : onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-full"
+            style={{ background: "rgb(var(--aegis-ink-rgb) / 0.06)", color: CHARCOAL }}
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" strokeWidth={1.8} />
+          </motion.button>
+        </div>
+
+        <form onSubmit={submit} className="flex flex-col gap-2.5">
+          <PasswordField
+            value={pass}
+            onChange={setPass}
+            autoComplete="new-password"
+            minLength={10}
+            placeholder="Master passphrase"
+            autoFocus
+          />
+          <ZxcvbnMeter value={pass} onScore={setZScore} minScore={3} />
+          <PasswordField
+            value={confirm}
+            onChange={setConfirm}
+            autoComplete="new-password"
+            minLength={10}
+            placeholder="Confirm passphrase"
+            delay={0.05}
+          />
+          <input
+            type="text"
+            value={hint}
+            onChange={(e) => setHint(e.target.value)}
+            maxLength={80}
+            placeholder="Optional hint (never the passphrase)"
+            className="rounded-[10px] border bg-transparent px-3 py-2.5 text-[13.5px] outline-none"
+            style={{ borderColor: BORDER, color: CHARCOAL }}
+          />
+
+          {err && <Notice kind="error">{err}</Notice>}
+          {confirm && pass !== confirm && (
+            <Notice kind="error">Passphrases don't match yet.</Notice>
+          )}
+
+          <div className="pt-1">
+            <PrimaryButton type="submit" loading={saving} disabled={!canSubmit}>
+              Turn on passphrase unlock
+            </PrimaryButton>
+          </div>
+
+          <p className="pt-1 text-center text-[11px]" style={{ color: MUTED }}>
+            If you forget this passphrase, your codes can't be recovered.
+          </p>
+        </form>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 type AutoLockOption = (typeof AUTO_LOCK_OPTIONS)[number];
 
 function AutoLockSheet({
