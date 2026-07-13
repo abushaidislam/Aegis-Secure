@@ -46,6 +46,7 @@ import {
   soft,
 } from "@/components/aegis/chrome";
 import { LargeTitle, SectionLabel, SettingsGroup, SettingsRow } from "@/components/aegis/settings";
+import { ConfirmSheet } from "@/components/aegis/ConfirmSheet";
 import { useLingui } from "@lingui/react";
 import { PasswordField, StrengthMeter, ZxcvbnMeter, scoreStrength } from "@/components/aegis/password-field";
 import {
