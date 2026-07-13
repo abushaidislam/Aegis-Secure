@@ -164,10 +164,9 @@ function AuthPage() {
       if (result.redirected) return;
       navigate({ to: "/", replace: true });
     } catch (err) {
-      setNotice({
-        kind: "error",
-        text: err instanceof Error ? err.message : t("auth.error.google", "Google sign-in failed."),
-      });
+      const raw = err instanceof Error ? err.message : String(err ?? "");
+      if (typeof console !== "undefined") console.warn("[auth] google", raw);
+      setNotice({ kind: "error", text: friendlyAuthError(raw) });
       setLoading(false);
     }
   };
